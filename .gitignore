@@ -1,0 +1,81 @@
+# -------------------------
+# Flutter & Dart
+# -------------------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# Obfuscation related
+app.*.map.json
+
+# Symbolication related
+app.*.symbols
+
+# Coverage
+coverage/
+lcov.info
+
+# -------------------------
+# Android
+# -------------------------
+/android/app/debug
+/android/app/profile
+/android/app/release
+*.apk
+*.ap_
+
+# -------------------------
+# iOS & macOS
+# -------------------------
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/ServiceDefinitions.json
+ios/Runner.xcworkspace/
+ios/Pods/
+ios/Runner.xcarchive/
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Pods/
+macos/Runner.xcworkspace/
+
+# -------------------------
+# VS Code & IntelliJ
+# -------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# -------------------------
+# Environment & Secrets
+# -------------------------
+.env
+.env.*
+
+# -------------------------
+# Tests (Optional - uncomment if you want to exclude tests)
+# -------------------------
+# test/
+
+# -------------------------
+# Miscellaneous
+# -------------------------
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/

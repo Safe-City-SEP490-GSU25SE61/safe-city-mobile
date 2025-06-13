@@ -1,0 +1,115 @@
+name: safe_city_mobile
+description: "SEP490 - GSU25SE61 - Safe City Mobile"
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.8.1
+
+#Packages
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Utility Packages
+  http: ^1.2.2
+  intl: ^0.19.0
+  logger: ^2.4.0
+  lottie: ^3.1.2
+  url_launcher: ^6.3.0
+  connectivity_plus: ^6.0.5
+  flutter_native_splash: ^2.4.1
+  smooth_page_indicator: ^1.2.0+3
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  permission_handler: ^11.3.1
+  vibration: ^2.0.0
+  flutter_dotenv: ^5.1.0
+  table_calendar: ^3.0.0
+  flutter_secure_storage: ^9.2.2
+  encrypt: ^5.0.3
+
+  #Maps Integration
+  google_maps_flutter: ^2.9.0
+
+  #Local Notification
+  awesome_notifications: ^0.10.0
+  flutter_background_service: ^5.0.10
+
+  # Icons Packages
+  iconsax: ^0.0.8
+  cupertino_icons: ^1.0.8
+
+  #Specific
+  readmore: ^3.0.0
+
+  #Firebase
+  firebase_core: ^3.5.0
+  cloud_firestore: ^5.4.2
+  firebase_auth: ^5.3.0
+  firebase_storage: ^12.3.2
+  firebase_messaging: ^15.1.3
+  firebase_analytics: ^11.3.3
+  image_picker: ^1.1.2
+
+  #State Management
+  get: ^4.6.6
+  get_storage: ^2.1.1
+
+  #Google Signin
+  google_sign_in: ^6.2.1
+  flutter_rating_bar: ^4.0.1
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+
+  #Animations
+  animations: ^2.0.11
+
+
+#Packages end here
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^4.0.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logos/safecity-logo.png"
+  adaptive_icon_foreground: "assets/logos/safecity-logo.png"
+  adaptive_icon_background: "#000000"
+
+flutter:
+  uses-material-design: true
+
+  # Local assets
+  assets:
+    - .env
+    - assets/logos/
+    - assets/icons/
+    - assets/images/email_verification/
+    - assets/images/password_reset/
+    - assets/images/loading/
+    - assets/images/profiles/
+    - assets/images/payments/
+    - assets/images/signin/
+
+  # Local fonts:
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Light.otf
+          weight: 300
+        - asset: assets/fonts/Inter-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Inter-Italic.otf
+          style: italic
+        - asset: assets/fonts/Inter-MediumItalic.otf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/Inter-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.otf
+          weight: 800
