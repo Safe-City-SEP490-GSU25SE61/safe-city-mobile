@@ -1,10 +1,10 @@
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/sizes.dart';
-import '../../../../common/widgets/images/t_circular_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
+import '../../../utils/helpers/helper_functions.dart';
 
 class TUserProfileCard extends StatelessWidget {
   const TUserProfileCard({
@@ -15,6 +15,7 @@ class TUserProfileCard extends StatelessWidget {
     required this.profilePicture,
     required this.isNetworkImage,
     required this.rank,
+    required this.isBiometricVerified,
   });
 
   final VoidCallback onPressed;
@@ -23,9 +24,11 @@ class TUserProfileCard extends StatelessWidget {
   final String profilePicture;
   final bool isNetworkImage;
   final UserRank rank;
+  final bool isBiometricVerified;
 
   @override
   Widget build(BuildContext context) {
+    final dark = THelperFunctions.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.all(14.0),
       child: Stack(
@@ -36,7 +39,7 @@ class TUserProfileCard extends StatelessWidget {
             margin: const EdgeInsets.only(top: 40),
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: dark ? TColors.black : Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -44,9 +47,10 @@ class TUserProfileCard extends StatelessWidget {
                 const SizedBox(height: TSizes.lg),
                 Text(
                   fullName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: dark ? TColors.white : TColors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -56,26 +60,28 @@ class TUserProfileCard extends StatelessWidget {
                   children: [
                     Text(
                       phone,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.black54,
+                        color: dark ? TColors.white : TColors.black,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                    if (isBiometricVerified) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: TColors.success,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Đã sinh trắc học',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: TColors.success,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Đã sinh trắc học',
-                        style: TextStyle(fontSize: 12, color: Colors.white),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -103,7 +109,11 @@ class TUserProfileCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 getRankText(rank),
-                                style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: dark ? TColors.white : TColors.black,
+                                ),
                               ),
                             ],
                           ),
@@ -113,8 +123,7 @@ class TUserProfileCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: InkWell(
-                        onTap: () {
-                        },
+                        onTap: () {},
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
@@ -123,16 +132,20 @@ class TUserProfileCard extends StatelessWidget {
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(
+                            children: [
+                              const Icon(
                                 Iconsax.calendar_2,
                                 color: Colors.pink,
                                 size: 20,
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Text(
-                                'tới 26/12/2025',
-                                style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                                '30 ngày premium',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: dark ? TColors.white : TColors.black,
+                                ),
                               ),
                             ],
                           ),

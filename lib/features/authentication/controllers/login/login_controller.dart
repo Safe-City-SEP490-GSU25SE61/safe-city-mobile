@@ -8,26 +8,68 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import '../../../../data/services/authentication/authentication_service.dart';
 import '../../../../navigation_dart.dart';
 import '../../../../utils/constants/image_strings.dart';
+import '../../../../utils/helpers/biometric_helper.dart';
 import '../../../../utils/helpers/network_manager.dart';
 import '../../../../utils/popups/full_screen_loader.dart';
 import '../../../../utils/popups/loaders.dart';
 import '../../screens/register/verify_email.dart';
 
 class LoginController extends GetxController {
-  final rememberMe = false.obs;
+  final quickLogin = false.obs;
   final hidePassword = true.obs;
   final localStorage = GetStorage();
   final email = TextEditingController();
   final password = TextEditingController();
   final secureStorage = const FlutterSecureStorage();
+  final biometricHelper = BiometricHelper();
   GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
 
   @override
   void onInit() {
-    email.text = localStorage.read("remember_me_email") ?? '';
-    password.text = localStorage.read("remember_me_password") ?? '';
+    email.text = localStorage.read("biometric_login_email") ?? '';
+    password.text = localStorage.read("biometric_login_password") ?? '';
     super.onInit();
   }
+
+  Future<void> handleFingerprintLogin() async {
+    final biometricEnabled = await secureStorage.read(key: 'biometric_login_status');
+    if (biometricEnabled != 'true') {
+      TLoaders.warningSnackBar(
+        title: 'Tính năng chưa được bật',
+        message: 'Vui lòng đăng nhập bằng Email và Mật khẩu',
+      );
+      return;
+    }
+
+    final authenticated = await biometricHelper.authenticateWithBiometrics();
+    if (authenticated) {
+      final savedEmail = localStorage.read("biometric_login_email");
+      final savedPassword = localStorage.read("biometric_login_password");
+
+      if (savedEmail == null || savedPassword == null) {
+        TLoaders.errorSnackBar(
+          title: 'Không tìm thấy tài khoản',
+          message: 'Vui lòng đăng nhập lại bằng Email và Mật khẩu',
+        );
+        return;
+      }
+
+      email.text = savedEmail;
+      password.text = savedPassword;
+
+      TLoaders.successSnackBar(
+        title: 'Xác thực thành công',
+        message: 'Email và mật khẩu đã được tải',
+      );
+
+    } else {
+      TLoaders.errorSnackBar(
+        title: 'Xác thực thất bại',
+        message: 'Không thể xác thực vân tay',
+      );
+    }
+  }
+
 
   Future<void> emailAndPasswordSignIn() async {
     try {
@@ -48,11 +90,6 @@ class LoginController extends GetxController {
       if (!loginFormKey.currentState!.validate()) {
         TFullScreenLoader.stopLoading();
         return;
-      }
-
-      if (rememberMe.value) {
-        localStorage.write("remember_me_email", email.text.trim());
-        localStorage.write("remember_me_password", password.text.trim());
       }
 
       final result = await AuthenticationService().handleSignIn(

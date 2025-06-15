@@ -31,6 +31,8 @@ dependencies:
   jwt_decoder: ^2.0.1
   camera: ^0.11.1
   flutter_decorated_container: ^1.0.0
+  local_auth: ^2.3.0
+  shared_preferences: ^2.5.3
 
   #Maps Integration
   google_maps_flutter: ^2.9.0

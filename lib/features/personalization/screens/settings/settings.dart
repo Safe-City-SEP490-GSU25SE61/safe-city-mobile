@@ -55,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     isNetworkImage: true,
                     phone: '0977833648',
                     rank: UserRank.gold,
+                    isBiometricVerified: true,
                   ),
                   const SizedBox(height: TSizes.defaultSpace),
                 ],
@@ -156,7 +157,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: 'Đăng xuất',
       middleText: 'Điều này sẽ đưa bạn trở về trang đăng nhập',
       confirm: ElevatedButton(
-        onPressed: () async => logoutController.logout(),
+        // onPressed: () async => logoutController.logout(),
+        onPressed: () => (Get.to(LoginScreen())),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red,
           side: const BorderSide(color: Colors.red),

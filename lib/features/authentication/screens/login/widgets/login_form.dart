@@ -61,21 +61,27 @@ class TLoginForm extends StatelessWidget {
 
             const SizedBox(height: TSizes.spaceBtwInputFields / 2),
 
-            ///remember me and forgot password
+            ///Fingerprint verification and forgot password
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ///remember me
+                ///Fingerprint verification
                 Row(
                   children: [
-                    Obx(
-                      () => Checkbox(
-                        value: controller.rememberMe.value,
-                        onChanged: (value) => controller.rememberMe.value =
-                            !controller.rememberMe.value,
+                    InkWell(
+                      onTap: () {
+                        controller.handleFingerprintLogin();
+                      },
+                      child: Obx(
+                        () => Row(
+                          children: [
+                            Icon(Iconsax.finger_scan),
+                            const SizedBox(width: 8),
+                            Text(TTexts.quickLoginWithFingerPrint),
+                          ],
+                        ),
                       ),
                     ),
-                    const Text(TTexts.rememberMe),
                   ],
                 ),
 

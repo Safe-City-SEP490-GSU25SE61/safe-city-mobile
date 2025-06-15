@@ -22,7 +22,7 @@ class UserIdFrontRegister extends StatelessWidget {
     final dark = THelperFunctions.isDarkMode(context);
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
         if (didPop) {
           await controller.disposeCamera();
         }

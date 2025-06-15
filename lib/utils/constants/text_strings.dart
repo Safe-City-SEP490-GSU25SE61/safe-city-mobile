@@ -46,6 +46,7 @@ static const String done = "Xong";
 static const String download = "Tải về";
 static const String share = "Chia sẻ";
 static const String checkPayment = "Kiểm tra thanh toán";
+static const String quickLoginWithFingerPrint = "Xác thực bằng vân tay";
 
 // Authentication Headings Text
 static const String loginTitle = "Chào mừng quay trở lại,";
