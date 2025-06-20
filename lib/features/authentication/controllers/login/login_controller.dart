@@ -12,7 +12,6 @@ import '../../../../utils/helpers/biometric_helper.dart';
 import '../../../../utils/helpers/network_manager.dart';
 import '../../../../utils/popups/full_screen_loader.dart';
 import '../../../../utils/popups/loaders.dart';
-import '../../screens/register/verify_email.dart';
 
 class LoginController extends GetxController {
   final quickLogin = false.obs;
@@ -32,7 +31,9 @@ class LoginController extends GetxController {
   }
 
   Future<void> handleFingerprintLogin() async {
-    final biometricEnabled = await secureStorage.read(key: 'biometric_login_status');
+    final biometricEnabled = await secureStorage.read(
+      key: 'biometric_login_status',
+    );
     if (biometricEnabled != 'true') {
       TLoaders.warningSnackBar(
         title: 'Tính năng chưa được bật',
@@ -61,7 +62,6 @@ class LoginController extends GetxController {
         title: 'Xác thực thành công',
         message: 'Email và mật khẩu đã được tải',
       );
-
     } else {
       TLoaders.errorSnackBar(
         title: 'Xác thực thất bại',
@@ -69,7 +69,6 @@ class LoginController extends GetxController {
       );
     }
   }
-
 
   Future<void> emailAndPasswordSignIn() async {
     try {
@@ -101,8 +100,8 @@ class LoginController extends GetxController {
       FocusScope.of(Get.context!).unfocus();
 
       if (result['success'] == true) {
-        final accessToken = result['data']['data']?['access_token'] ?? "";
-        final refreshToken = result['data']['data']?['refresh_token'] ?? "";
+        final accessToken = result['data']['data']?['accessToken'] ?? "";
+        final refreshToken = result['data']['data']?['refreshToken'] ?? "";
 
         await secureStorage.write(key: 'access_token', value: accessToken);
         await secureStorage.write(key: 'refresh_token', value: refreshToken);
@@ -112,7 +111,7 @@ class LoginController extends GetxController {
         String? userId = decodedToken['sub'];
         await secureStorage.write(key: 'user_id', value: userId);
 
-        if (userRole == 'Customer') {
+        if (userRole == 'Citizen') {
           TLoaders.successSnackBar(
             title: 'Chào mừng quay trở lại!',
             message: 'Rất nhiều ưu đãi đang chờ đón bạn',

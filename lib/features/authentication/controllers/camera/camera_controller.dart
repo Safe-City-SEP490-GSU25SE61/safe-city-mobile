@@ -1,17 +1,33 @@
-﻿import 'dart:io';
+﻿import 'dart:convert';
+import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:http/http.dart' as http;
+
+import '../../../../utils/helpers/network_manager.dart';
+import '../../../../utils/popups/loaders.dart';
+import '../../models/user_indentity_model.dart';
 
 class UserIdCameraController extends GetxController {
+  final String? apiConnection = dotenv.env['API_DEPLOYMENT_URL'];
   CameraController? cameraController;
   Rx<File?> capturedImage = Rx<File?>(null);
   RxBool isCameraInitialized = false.obs;
   RxBool isBusyTakingPicture = false.obs;
+  RxBool isLoading = false.obs;
+
+  final Rxn<UserIdentityModel> frontImageInfo = Rxn<UserIdentityModel>();
+  final Rxn<UserIdentityModel> backImageInfo = Rxn<UserIdentityModel>();
 
   Future<void> initializeCamera() async {
+    capturedImage.value = null;
+    if (cameraController != null) {
+      await cameraController!.dispose();
+    }
     final cameras = await availableCameras();
     final frontCamera = cameras.first;
     cameraController = CameraController(frontCamera, ResolutionPreset.high);
@@ -20,18 +36,16 @@ class UserIdCameraController extends GetxController {
   }
 
   Future<void> takePicture() async {
-    if (!cameraController!.value.isInitialized) return;
-    if (cameraController!.value.isTakingPicture) return;
-    if (isBusyTakingPicture.value) return;
+    if (!cameraController!.value.isInitialized || isBusyTakingPicture.value) {
+      return;
+    }
 
     try {
       isBusyTakingPicture.value = true;
       final image = await cameraController!.takePicture();
       capturedImage.value = File(image.path);
     } catch (e) {
-      if (kDebugMode) {
-        print("Error taking picture: $e");
-      }
+      debugPrint("Error taking picture: $e");
     } finally {
       isBusyTakingPicture.value = false;
     }
@@ -49,10 +63,79 @@ class UserIdCameraController extends GetxController {
     }
   }
 
-
   @override
   void onClose() {
     cameraController?.dispose();
     super.onClose();
+  }
+
+  /// Upload the captured image and store the result in front/back info
+  Future<void> uploadIdentityCard({required bool isFront}) async {
+    final file = capturedImage.value;
+    if (file == null) return;
+
+    final uri = Uri.parse('${apiConnection}auth/identity-card');
+    final request = http.MultipartRequest('POST', uri)
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+    try {
+      isLoading.value = true;
+
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        isLoading.value = false;
+        return;
+      }
+
+      final response = await request.send();
+      final resString = await response.stream.bytesToString();
+      isLoading.value = false;
+
+      if (kDebugMode) {
+        print('Status Code: ${response.statusCode}');
+        print('Response Body: $resString');
+      }
+
+      final jsonData = json.decode(resString);
+
+      if (response.statusCode == 202 &&
+          jsonData['message'] == 'Successfully scanned identity card') {
+        final data = UserIdentityModel.fromJson(jsonData['data']);
+
+        // Check if scanned side matches expected side
+        final expectedSide = isFront ? 'cc_front' : 'cc_back';
+        if (data.cardSideType != expectedSide) {
+          TLoaders.warningSnackBar(
+            title: 'Sai mặt CCCD',
+            message:
+                'Vui lòng chụp đúng mặt ${isFront ? "TRƯỚC" : "SAU"} của CCCD.',
+          );
+          return;
+        }
+
+        if (isFront) {
+          frontImageInfo.value = data;
+        } else {
+          backImageInfo.value = data;
+        }
+      } else {
+        TLoaders.warningSnackBar(
+          title: 'Lỗi xác minh',
+          message:
+              'Không thể đọc được mặt ${isFront ? "trước" : "sau"} của CCCD. Vui lòng thử lại.',
+        );
+      }
+    } catch (e) {
+      isLoading.value = false;
+
+      if (kDebugMode) {
+        print('Error occurred: $e');
+      }
+
+      TLoaders.errorSnackBar(
+        title: 'Xảy ra lỗi rồi!',
+        message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau',
+      );
+    }
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -12,7 +11,7 @@ import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/enums.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../authentication/screens/login/login.dart';
-import '../profile/profile.dart';
+import '../membership/membership.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -54,8 +53,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     profilePicture: '',
                     isNetworkImage: true,
                     phone: '0977833648',
-                    rank: UserRank.gold,
-                    isBiometricVerified: true,
+                    rank: UserRank.protector,
+                    isBiometricVerified: true, membershipDateLeft: 12,
                   ),
                   const SizedBox(height: TSizes.defaultSpace),
                 ],
@@ -105,7 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Các gói đăng ký và ưu đãi',
                     subtitle:
                         'Gói đăng ký để  mở khóa các tính năng độc quyền ',
-                    onTap: () {},
+                    onTap: () =>(Get.to(MembershipScreen())),
                   ),
                   const SizedBox(height: TSizes.mediumSpace),
                   const TSectionHeading(

@@ -14,7 +14,7 @@ class BiometricHelper {
       }
 
       bool authenticated = await auth.authenticate(
-        localizedReason: 'Xác thực bằng vân tay để đăng nhập',
+        localizedReason: 'Sử dụng Vân tay để mở khóa Safe City',
         options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/features/authentication/screens/register/widgets/terms_and_conditions_checkbox.dart';
 
-
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import '../../../../../utils/validators/validation.dart';
@@ -19,37 +18,79 @@ class TRegisterForm extends StatelessWidget {
       key: controller.signupFormKey,
       child: Column(
         children: [
+          ///Identity card number
+          TextFormField(
+            controller: controller.email,
+            expands: false,
+            decoration: const InputDecoration(
+              labelText: TTexts.identityCardNumber,
+              prefixIcon: Icon(Iconsax.personalcard),
+            ),
+          ),
+          const SizedBox(height: TSizes.spaceBtwInputFields),
+
+          ///Identity card user full name
+          TextFormField(
+            controller: controller.email,
+            expands: false,
+            decoration: const InputDecoration(
+              labelText: TTexts.fullName,
+              prefixIcon: Icon(Iconsax.security_user),
+            ),
+          ),
+          const SizedBox(height: TSizes.spaceBtwInputFields),
+
           Row(
             children: [
-              ///First Name
+              ///Identity card user dob
               Expanded(
                 child: TextFormField(
                   controller: controller.fullName,
-                  validator: (value) =>
-                      TValidator.validateEmptyText('Họ', value),
                   expands: false,
                   decoration: const InputDecoration(
-                    labelText: TTexts.firstName,
-                    prefixIcon: Icon(Iconsax.user_add),
+                    labelText: TTexts.dateOfBirth,
+                    prefixIcon: Icon(Iconsax.cake),
                   ),
                 ),
               ),
               const SizedBox(width: TSizes.spaceBtwInputFields),
 
-              ///Last Name
+              ///Identity card user gender
               Expanded(
                 child: TextFormField(
                   controller: controller.fullName,
                   validator: (value) =>
-                      TValidator.validateEmptyText('Tên', value),
+                      TValidator.validateEmptyText('Giới tính', value),
                   expands: false,
                   decoration: const InputDecoration(
-                    labelText: TTexts.lastName,
-                    prefixIcon: Icon(Iconsax.user_add),
+                    labelText: TTexts.gender,
+                    prefixIcon: Icon(Iconsax.man),
                   ),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: TSizes.spaceBtwInputFields),
+
+          ///Identity card user place of residence
+          TextFormField(
+            controller: controller.email,
+            expands: false,
+            decoration: const InputDecoration(
+              labelText: TTexts.placeOfResidence,
+              prefixIcon: Icon(Iconsax.location),
+            ),
+          ),
+          const SizedBox(height: TSizes.spaceBtwInputFields),
+
+          ///Identity card user place of birth
+          TextFormField(
+            controller: controller.email,
+            expands: false,
+            decoration: const InputDecoration(
+              labelText: TTexts.placeOfBirth,
+              prefixIcon: Icon(Iconsax.global),
+            ),
           ),
           const SizedBox(height: TSizes.spaceBtwInputFields),
 

@@ -4,6 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 import 'package:safe_city_mobile/utils/helpers/helper_functions.dart';
 
+import 'features/incident_live_map/screens/incident_live_map.dart';
 import 'features/personalization/screens/settings/settings.dart';
 
 class NavigationMenu extends StatelessWidget {
@@ -59,7 +60,7 @@ class NavigationController extends GetxController {
   final Rx<int> selectedIndex = 0.obs;
 
   final screens = [
-    Container(color: Colors.red),
+    const IncidentLiveMapScreen(),
     Container(color: Colors.purple),
     Container(color: Colors.orange),
     Container(color: Colors.blue),

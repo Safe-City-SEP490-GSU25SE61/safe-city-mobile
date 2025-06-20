@@ -72,14 +72,12 @@ class TLoginForm extends StatelessWidget {
                       onTap: () {
                         controller.handleFingerprintLogin();
                       },
-                      child: Obx(
-                        () => Row(
-                          children: [
-                            Icon(Iconsax.finger_scan),
-                            const SizedBox(width: 8),
-                            Text(TTexts.quickLoginWithFingerPrint),
-                          ],
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(Iconsax.finger_scan),
+                          const SizedBox(width: 8),
+                          Text(TTexts.quickLoginWithFingerPrint),
+                        ],
                       ),
                     ),
                   ],
@@ -99,8 +97,7 @@ class TLoginForm extends StatelessWidget {
               width: double.infinity,
               height: 60,
               child: ElevatedButton(
-                // onPressed: () => controller.emailAndPasswordSignIn(),
-                onPressed: () => Get.to(() => const NavigationMenu()),
+                onPressed: () => controller.emailAndPasswordSignIn(),
                 child: const Text(TTexts.signIn),
               ),
             ),

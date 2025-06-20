@@ -16,6 +16,7 @@ class TUserProfileCard extends StatelessWidget {
     required this.isNetworkImage,
     required this.rank,
     required this.isBiometricVerified,
+    required this.membershipDateLeft,
   });
 
   final VoidCallback onPressed;
@@ -25,6 +26,7 @@ class TUserProfileCard extends StatelessWidget {
   final bool isNetworkImage;
   final UserRank rank;
   final bool isBiometricVerified;
+  final int membershipDateLeft;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +142,7 @@ class TUserProfileCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                '30 ngày premium',
+                                '$membershipDateLeft ngày premium',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,

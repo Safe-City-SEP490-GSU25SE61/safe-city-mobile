@@ -20,11 +20,16 @@ static const String homeAppbarTitle10 = "Express Yourself, Stitch by Stitch";
 //Authentication Form Text
 static const String firstName = "Họ";
 static const String lastName = "Tên";
+static const String fullName = "Họ và tên";
 static const String email = "E-Mail";
 static const String password = "Mật Khẩu";
 static const String newPassword = "New Password";
-static const String username = "Tên người dùng";
+static const String identityCardNumber = "Số CCCD";
+static const String dateOfBirth = "Ngày sinh";
+static const String placeOfResidence = "Nơi cư trú";
+static const String placeOfBirth = "Nơi đăng ký khai sinh";
 static const String phoneNo = "Số điện thoại";
+static const String gender = "Giới tính";
 static const String rememberMe = "Duy trì đăng nhập";
 static const String inputOtp = "Nhập mã otp";
 static const String forgetPassword = "Quên mật khẩu?";
