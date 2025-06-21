@@ -20,7 +20,7 @@ class TImages {
   static const String frogSkater = "assets/icons/9360-skater-frog.png";
 
   //--Loading Images
-  static const String screenLoading = "assets/images/loading/Hand-Loading.json";
+  static const String loadingCircle = "assets/images/loading/loading-circle.gif";
   static const String screenLoading2 = "assets/images/loading/food-vlogger.json";
   static const String screenLoadingSparkle1 = "assets/images/loading/sparkle-peek-a-boo.gif";
   static const String screenLoadingSparkle2 = "assets/images/loading/sparkle-hehe.gif";

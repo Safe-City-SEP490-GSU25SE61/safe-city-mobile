@@ -5,6 +5,7 @@
   bool? gender;
   String? issueDate;
   String? placeOfIssue;
+  String? placeOfBirth;
   String? expiryDate;
   String? address;
   String? cardSideType;
@@ -22,6 +23,7 @@
     this.expiryDate,
     this.address,
     this.cardSideType,
+    this.placeOfBirth,
     this.email,
     this.password,
     this.phone,
@@ -41,6 +43,7 @@
       email: json['email'],
       password: json['password'],
       phone: json['phone'],
+      placeOfBirth: json['placeOfBirth'],
     );
   }
 
@@ -54,5 +57,6 @@
     "expiryDate": expiryDate,
     "address": address,
     "cardSideType": cardSideType,
+    "placeOfBirth": placeOfBirth,
   };
 }

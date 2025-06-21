@@ -22,7 +22,7 @@ class LogoutController extends GetxController {
       //start loading
       TFullScreenLoader.openLoadingDialog(
         'Đang xử lí chờ xíu...',
-        TImages.screenLoadingSparkle3,
+        TImages.loadingCircle,
       );
 
       //check internet connectivity

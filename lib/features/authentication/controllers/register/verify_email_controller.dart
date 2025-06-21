@@ -39,7 +39,7 @@ class VerifyEmailController extends GetxController {
 
     try {
       TFullScreenLoader.openLoadingDialog(
-          'Đang xử lí chờ xíu...', TImages.screenLoadingSparkle3);
+          'Đang xử lí chờ xíu...', TImages.loadingCircle);
 
       String? email = await storage.read(key: "user_email_verification");
       final response = await client
