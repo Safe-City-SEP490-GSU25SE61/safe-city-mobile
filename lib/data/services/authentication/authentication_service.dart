@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -17,26 +18,42 @@ class AuthenticationService {
     required String password,
     required String dateOfBirth,
     required bool gender,
+    required String idNumber,
+    required String issueDate,
+    required String expiryDate,
+    required String placeOfIssue,
+    required String address,
+    required File frontImage,
+    required File backImage,
   }) async {
-    var userRegisterInformation = {
-      "fullName": fullName.trim(),
-      "email": email.trim(),
-      "phone": phone.trim(),
-      "password": password.trim(),
-      "dateOfBirth": dateOfBirth,
-      "gender": gender,
-    };
+    final uri = Uri.parse('${apiConnection}auth/register');
+    final request = http.MultipartRequest('POST', uri);
 
     try {
-      var response = await client
-          .post(
-            Uri.parse('${apiConnection}auth/register'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(userRegisterInformation),
-          )
-          .timeout(const Duration(seconds: 10));
+      request.fields['fullName'] = fullName.trim();
+      request.fields['email'] = email.trim();
+      request.fields['phone'] = phone.trim();
+      request.fields['password'] = password.trim();
+      request.fields['dateOfBirth'] = dateOfBirth;
+      request.fields['gender'] = gender.toString();
+      request.fields['idNumber'] = idNumber;
+      request.fields['issueDate'] = issueDate;
+      request.fields['expiryDate'] = expiryDate;
+      request.fields['placeOfIssue'] = placeOfIssue;
+      request.fields['address'] = address;
 
-      var responseData = jsonDecode(response.body);
+      request.files.add(
+        await http.MultipartFile.fromPath('frontImage', frontImage.path),
+      );
+      request.files.add(
+        await http.MultipartFile.fromPath('backImage', backImage.path),
+      );
+
+      final response = await request.send().timeout(
+        const Duration(seconds: 10),
+      );
+      final responseBody = await response.stream.bytesToString();
+      final responseData = jsonDecode(responseBody);
 
       if (response.statusCode == 202) {
         if (kDebugMode) {
@@ -45,7 +62,7 @@ class AuthenticationService {
         return {"success": true, "data": responseData};
       } else if (response.statusCode == 400) {
         if (kDebugMode) {
-          print('Validation Error: ${response.body}');
+          print('Validation Error: $responseBody');
         }
         return {
           "success": false,
@@ -55,7 +72,7 @@ class AuthenticationService {
         };
       } else if (response.statusCode == 409) {
         if (kDebugMode) {
-          print('Register failed: ${response.body}');
+          print('Register failed: $responseBody');
         }
         return {
           "success": false,

@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:http/http.dart' as http;
@@ -11,10 +13,12 @@ import 'package:http/http.dart' as http;
 import '../../../../utils/helpers/network_manager.dart';
 import '../../../../utils/popups/loaders.dart';
 import '../../models/user_indentity_model.dart';
+import '../register/register_controller.dart';
 
 class UserIdCameraController extends GetxController {
   final String? apiConnection = dotenv.env['API_DEPLOYMENT_URL'];
   CameraController? cameraController;
+  final controller = Get.put(SignupController());
   Rx<File?> capturedImage = Rx<File?>(null);
   RxBool isCameraInitialized = false.obs;
   RxBool isBusyTakingPicture = false.obs;
@@ -61,6 +65,26 @@ class UserIdCameraController extends GetxController {
       cameraController = null;
       isCameraInitialized.value = false;
     }
+  }
+
+  void mergeFrontAndBackInfo() {
+    final front = frontImageInfo.value;
+    final back = backImageInfo.value;
+
+    if (front == null || back == null) return;
+
+    final merged = UserIdentityModel(
+      fullName: front.fullName,
+      idNumber: front.idNumber,
+      dateOfBirth: front.dateOfBirth,
+      gender: front.gender,
+      issueDate: back.issueDate,
+      placeOfIssue: back.placeOfIssue,
+      expiryDate: back.expiryDate,
+      address: back.address,
+    );
+
+    controller.identityCardData.value = merged;
   }
 
   @override
@@ -115,8 +139,14 @@ class UserIdCameraController extends GetxController {
 
         if (isFront) {
           frontImageInfo.value = data;
+          controller.identityCardData.value = data;
         } else {
           backImageInfo.value = data;
+          controller.identityCardData.value = data;
+        }
+
+        if (frontImageInfo.value != null && backImageInfo.value != null) {
+          mergeFrontAndBackInfo();
         }
       } else {
         TLoaders.warningSnackBar(

@@ -43,4 +43,16 @@
       phone: json['phone'],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    "fullName": fullName,
+    "idNumber": idNumber,
+    "dateOfBirth": dateOfBirth,
+    "gender": gender,
+    "issueDate": issueDate,
+    "placeOfIssue": placeOfIssue,
+    "expiryDate": expiryDate,
+    "address": address,
+    "cardSideType": cardSideType,
+  };
 }

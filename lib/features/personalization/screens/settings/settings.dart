@@ -10,6 +10,7 @@ import '../../../../common/widgets/texts/section_heading.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/enums.dart';
 import '../../../../utils/constants/sizes.dart';
+import '../../../authentication/controllers/logout/logout_controller.dart';
 import '../../../authentication/screens/login/login.dart';
 import '../membership/membership.dart';
 
@@ -150,14 +151,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void logoutAccountWarningPopup() {
-    final logoutController = null;
+    final logoutController = Get.put(LogoutController());
     Get.defaultDialog(
       contentPadding: const EdgeInsets.all(TSizes.md),
       title: 'Đăng xuất',
       middleText: 'Điều này sẽ đưa bạn trở về trang đăng nhập',
       confirm: ElevatedButton(
-        // onPressed: () async => logoutController.logout(),
-        onPressed: () => (Get.to(LoginScreen())),
+        onPressed: () async => logoutController.logout(),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red,
           side: const BorderSide(color: Colors.red),
