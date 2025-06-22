@@ -22,6 +22,7 @@ class AuthenticationService {
     required String issueDate,
     required String expiryDate,
     required String placeOfIssue,
+    required String placeOfBirth,
     required String address,
     required File frontImage,
     required File backImage,
@@ -40,6 +41,7 @@ class AuthenticationService {
       request.fields['issueDate'] = issueDate;
       request.fields['expiryDate'] = expiryDate;
       request.fields['placeOfIssue'] = placeOfIssue;
+      request.fields['placeOfBirth'] = placeOfBirth;
       request.fields['address'] = address;
 
       request.files.add(
@@ -86,6 +88,9 @@ class AuthenticationService {
         };
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('Register failed: $e');
+      }
       return {"success": false, "message": 'Đã xảy ra sự cố: $e'};
     }
   }

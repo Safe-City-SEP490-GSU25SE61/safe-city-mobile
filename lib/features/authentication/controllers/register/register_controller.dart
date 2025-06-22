@@ -30,7 +30,7 @@ class SignupController extends GetxController {
       //start loading
       TFullScreenLoader.openLoadingDialog(
         'Đang xử lí chờ xíu...',
-        TImages.screenLoadingSparkle2,
+        TImages.loadingCircle,
       );
 
       //check internet connectivity
@@ -66,9 +66,10 @@ class SignupController extends GetxController {
         dateOfBirth: identity.dateOfBirth!,
         gender: identity.gender ?? false,
         idNumber: identity.idNumber!,
-        issueDate: identity.issueDate!,
-        expiryDate: identity.expiryDate!,
+        issueDate: _formatDate(identity.issueDate!),
+        expiryDate: _formatDate(identity.expiryDate!),
         placeOfIssue: identity.placeOfIssue!,
+        placeOfBirth: identity.placeOfBirth!,
         address: identity.address!,
         frontImage: userIdCamera.frontImageInfo.value != null
             ? userIdCamera.capturedImage.value!
@@ -85,9 +86,7 @@ class SignupController extends GetxController {
           title: 'Đã gửi email với mã otp!',
           message: 'Vui lòng check email để lấy mã otp',
         );
-        Get.to(() => VerifyEmailScreen(
-          email: email.text.trim(),
-        ));
+        Get.to(() => VerifyEmailScreen(email: email.text.trim()));
         await storage.write(key: "user_email_verification", value: email.text);
       } else {
         TLoaders.warningSnackBar(
@@ -101,6 +100,17 @@ class SignupController extends GetxController {
         title: 'Xảy ra lỗi rồi!',
         message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau',
       );
+    }
+  }
+
+  String _formatDate(String rawDate) {
+    try {
+      final parsedDate = DateTime.parse(rawDate);
+      return '${parsedDate.year.toString().padLeft(4, '0')}-'
+          '${parsedDate.month.toString().padLeft(2, '0')}-'
+          '${parsedDate.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return rawDate;
     }
   }
 }

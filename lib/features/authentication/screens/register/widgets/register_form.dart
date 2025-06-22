@@ -92,7 +92,7 @@ class TRegisterForm extends StatelessWidget {
 
             /// Place of birth
             TextFormField(
-              initialValue: identity?.placeOfIssue ?? '',
+              initialValue: identity?.placeOfBirth ?? '',
               enabled: false,
               readOnly: true,
               decoration: const InputDecoration(

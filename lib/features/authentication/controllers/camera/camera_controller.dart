@@ -80,6 +80,7 @@ class UserIdCameraController extends GetxController {
       gender: front.gender,
       issueDate: back.issueDate,
       placeOfIssue: back.placeOfIssue,
+      placeOfBirth: back.placeOfBirth,
       expiryDate: back.expiryDate,
       address: back.address,
     );
