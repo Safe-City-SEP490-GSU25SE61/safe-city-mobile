@@ -8,6 +8,7 @@ import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import '../../../../../utils/validators/validation.dart';
 import '../../../controllers/login/login_controller.dart';
+import '../../password_configuration/forget_password.dart';
 import '../../register/register.dart';
 import '../../register/user_id_front_register.dart';
 
@@ -85,7 +86,7 @@ class TLoginForm extends StatelessWidget {
 
                 ///forgot password
                 TextButton(
-                  onPressed: () => {},
+                  onPressed: () => Get.to(ForgetPassword()),
                   child: const Text(TTexts.forgetPassword),
                 ),
               ],
