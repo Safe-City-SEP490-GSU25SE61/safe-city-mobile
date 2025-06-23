@@ -14,7 +14,8 @@ class TValidator {
 
     // Regular expression for email validation
     final emailRegExp = RegExp(
-        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    );
     if (!emailRegExp.hasMatch(value)) {
       return 'Email không hợp lệ';
     }
@@ -51,15 +52,17 @@ class TValidator {
     return null;
   }
 
-// static String? validateUsername(String? value) {
-//   if (value == null || value.isEmpty) {
-//     return 'Username is required';
-//   }
-//   final usernameRegExp =
-//       RegExp(r'(?=.{8,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])');
-//   if (!usernameRegExp.hasMatch(value)) {
-//     return 'Invalid username, ensure it contains a number and does not include special characters';
-//   }
-//   return null;
-// }
+  static String? validateOTP(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Mã xác minh là bắt buộc';
+    }
+
+    // Check if it has exactly 6 digits
+    final otpRegExp = RegExp(r'^\d{6}$');
+    if (!otpRegExp.hasMatch(value)) {
+      return 'Mã xác minh phải gồm 6 chữ số';
+    }
+
+    return null;
+  }
 }
