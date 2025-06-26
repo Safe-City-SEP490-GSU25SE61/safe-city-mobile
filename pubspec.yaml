@@ -101,6 +101,7 @@ flutter:
     - assets/images/payments/
     - assets/images/signin/
     - assets/images/ranking/
+    - assets/images/default_avatar/
 
   # Local fonts:
   fonts:

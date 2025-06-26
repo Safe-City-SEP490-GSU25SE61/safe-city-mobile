@@ -23,6 +23,7 @@ static const String lastName = "Tên";
 static const String fullName = "Họ và tên";
 static const String email = "E-Mail";
 static const String password = "Mật Khẩu";
+static const String oldPassword = "Mật khẩu cũ";
 static const String newPassword = "Nhập mật khẩu mới";
 static const String identityCardNumber = "Số CCCD";
 static const String dateOfBirth = "Ngày sinh";

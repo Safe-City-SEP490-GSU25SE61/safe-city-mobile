@@ -11,8 +11,8 @@ import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/enums.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../authentication/controllers/logout/logout_controller.dart';
-import '../../../authentication/screens/login/login.dart';
 import '../membership/membership.dart';
+import '../profile/profile.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -55,7 +55,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     isNetworkImage: true,
                     phone: '0977833648',
                     rank: UserRank.protector,
-                    isBiometricVerified: true, membershipDateLeft: 12,
+                    isBiometricVerified: true,
+                    membershipDateLeft: 12,
                   ),
                   const SizedBox(height: TSizes.defaultSpace),
                 ],
@@ -79,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Iconsax.user_edit,
                     title: 'Thông tin cá nhân',
                     subtitle: 'Chỉnh sửa thông tin cá nhân của bạn',
-                    onTap: () {},
+                    onTap: () => Get.to(() => const ProfileScreen()),
                   ),
                   TSettingsMenuTile(
                     icon: Iconsax.security_safe,
@@ -105,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Các gói đăng ký và ưu đãi',
                     subtitle:
                         'Gói đăng ký để  mở khóa các tính năng độc quyền ',
-                    onTap: () =>(Get.to(MembershipScreen())),
+                    onTap: () => (Get.to(MembershipScreen())),
                   ),
                   const SizedBox(height: TSizes.mediumSpace),
                   const TSectionHeading(
