@@ -9,8 +9,11 @@ import '../../../../common/widgets/list_titles/t_user_profile_title_card.dart';
 import '../../../../common/widgets/texts/section_heading.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/enums.dart';
+import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
+import '../../../../utils/helpers/user_rank_helper.dart';
 import '../../../authentication/controllers/logout/logout_controller.dart';
+import '../../controllers/user_profile_controller.dart';
 import '../membership/membership.dart';
 import '../profile/profile.dart';
 
@@ -22,9 +25,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final userController = Get.put(UserProfileController());
+
   @override
   void initState() {
     super.initState();
+    userController.fetchUserProfile();
   }
 
   @override
@@ -48,16 +54,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
 
                   ///User Profile Card
-                  TUserProfileCard(
-                    onPressed: () {},
-                    fullName: 'Dang Dinh Tai',
-                    profilePicture: '',
-                    isNetworkImage: true,
-                    phone: '0977833648',
-                    rank: UserRank.protector,
-                    isBiometricVerified: true,
-                    membershipDateLeft: 12,
-                  ),
+                  Obx(() {
+                    final isLoading = userController.profileLoading.value;
+                    final user = userController.user.value;
+                    final String imageUrl = user.imageUrl;
+                    final bool isImageValid =
+                        imageUrl.isNotEmpty && imageUrl != "null";
+                    final bool isMale = user.gender == true;
+                    final String fallbackAvatar = isMale
+                        ? TImages.userImageMale
+                        : TImages.userImageWoman;
+                    return TUserProfileCard(
+                      onPressed: () {},
+                      fullName: user.fullName,
+                      phone: user.phone,
+                      profilePicture: isLoading
+                          ? null
+                          : isImageValid
+                          ? imageUrl
+                          : fallbackAvatar,
+                      isNetworkImage: isImageValid,
+                      rank: getUserRankFromString(user.achievementName),
+                      isBiometricVerified: user.isBiometricEnabled,
+                      remainingTime:
+                          user.currentSubscription.localizedRemainingTime,
+                    );
+                  }),
+
                   const SizedBox(height: TSizes.defaultSpace),
                 ],
               ),

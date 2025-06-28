@@ -64,23 +64,54 @@ class ProfileScreen extends StatelessWidget {
                               userController.user.value.imageUrl;
                           final String genderAvatar =
                               userController.user.value.gender == true
-                              ? TImages.maleAvatar
-                              : TImages.femaleAvatar;
+                              ? TImages.userImageMale
+                              : TImages.userImageWoman;
                           if (userController.imageUploading.value) {
                             return const TShimmerEffect(
-                              width: 100,
-                              height: 100,
+                              width: 120,
+                              height: 120,
                             );
                           } else {
-                            return TCircularImage(
-                              key: ValueKey(imageUrl),
-                              image: imageUrl.isNotEmpty
-                                  ? imageUrl
-                                  : genderAvatar,
-                              width: 100,
-                              height: 100,
-                              padding: 0,
-                              isNetworkImage: imageUrl.isNotEmpty,
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                TCircularImage(
+                                  key: ValueKey(imageUrl),
+                                  image: imageUrl.isNotEmpty
+                                      ? imageUrl
+                                      : genderAvatar,
+                                  width: 100,
+                                  height: 100,
+                                  padding: 0,
+                                  isNetworkImage: imageUrl.isNotEmpty,
+                                ),
+                                if (userController.user.value.isBiometricEnabled)
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 3,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: TColors.success,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: TColors.white,width: 2)
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Icon(
+                                            Icons.verified,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             );
                           }
                         }),

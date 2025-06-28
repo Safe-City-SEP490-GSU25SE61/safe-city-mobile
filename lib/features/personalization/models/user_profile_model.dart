@@ -93,4 +93,27 @@ class CurrentSubscription {
       remainingTime: json['remainingTime'] ?? '',
     );
   }
+
+  /// Convert "2d 3h 12m" => Duration
+  Duration get parsedDuration {
+    final regex = RegExp(r'(\d+)d\s+(\d+)h\s+(\d+)m');
+    final match = regex.firstMatch(remainingTime);
+    if (match != null) {
+      final days = int.tryParse(match.group(1)!) ?? 0;
+      final hours = int.tryParse(match.group(2)!) ?? 0;
+      final minutes = int.tryParse(match.group(3)!) ?? 0;
+      return Duration(days: days, hours: hours, minutes: minutes);
+    }
+    return Duration.zero;
+  }
+
+  /// Example: "2 ngày 3 giờ 12 phút"
+  String get localizedRemainingTime {
+    final d = parsedDuration;
+    if (d == Duration.zero) return "Chưa có gói";
+    return "${d.inDays} ngày ${d.inHours % 24} giờ ${d.inMinutes % 60} phút";
+  }
+
+  /// Check if user has valid subscription
+  bool get isActive => parsedDuration > Duration.zero;
 }

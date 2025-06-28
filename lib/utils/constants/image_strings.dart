@@ -46,28 +46,19 @@ class TImages {
   static const String kimbapIcon = "assets/images/icons/kimbap.gif";
   static const String newIcon = "assets/images/icons/new.gif";
 
-  //--Profiles Images
-  static const String userImage1 = "assets/images/profiles/profile_image_1.png";
-  static const String userImage2 = "assets/images/profiles/profile_image_2.png";
-  static const String userImage3 = "assets/images/profiles/profile_image_3.png";
-  static const String doctorImageUrl =
-      "https://img.freepik.com/premium-photo/3d-cartoon-illustration-doctor-man-with-hospital-background-stethoscope_175994-85482.jpg";
-  static const String chatImageLogo =
-      "assets/images/icons/chat-message-logo-icon.png";
+  //--Default Avatar Images
+  static const String userImageWoman = "assets/images/default_avatar/avatar_woman.png";
+  static const String userImageMale = "assets/images/default_avatar/avatar_male.png";
 
   //--Payment Images
   static const String paypal = "assets/images/payments/paypal.png";
   static const String visa = "assets/images/payments/visa.png";
 
   //--Ranking Images
-  static const String unrank = "assets/images/ranking/unrank.png";
+  static const String unRank = "assets/images/ranking/unrank.png";
   static const String bronze = "assets/images/ranking/bronze-rank.png";
   static const String silver = "assets/images/ranking/silver-rank.png";
   static const String gold = "assets/images/ranking/gold-rank.png";
   static const String platinum = "assets/images/ranking/platinum-rank.png";
   static const String protector = "assets/images/ranking/protector-rank.png";
-
-  //--Default Avatar Images
-  static const String femaleAvatar = "assets/images/default_avatar/female.gif";
-  static const String maleAvatar = "assets/images/default_avatar/male.gif";
 }
