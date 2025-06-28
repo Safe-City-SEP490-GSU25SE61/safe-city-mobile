@@ -54,7 +54,10 @@ class UserProfileService {
     }
   }
 
-  Future<Map<String, dynamic>> changePassword(String oldPassword, String newPassword) async {
+  Future<Map<String, dynamic>> changePassword(
+    String oldPassword,
+    String newPassword,
+  ) async {
     final token = await getAccessToken();
     if (token == null) {
       return {'success': false, 'message': 'No token found'};
@@ -84,64 +87,59 @@ class UserProfileService {
     }
   }
 
+  Future<Map<String, Object>> updateUserProfilePicture(XFile image) async {
+    String? accessToken = await getAccessToken();
+    if (accessToken == null) {
+      return {"success": false, "message": "No access token found"};
+    }
 
-// Future<Map<String, Object>> updateUserProfilePicture(XFile image) async {
-  //   String? accessToken = await getAccessToken();
-  //   if (accessToken == null) {
-  //     return {"success": false, "message": "No access token found"};
-  //   }
-  //
-  //   String? userId = await secureStorage.read(key: 'user_id');
-  //
-  //   try {
-  //     var request = http.MultipartRequest(
-  //       'POST',
-  //       Uri.parse(
-  //           '${TConnectionStrings.deployment}setting/account/upload-image/$userId'),
-  //     );
-  //     request.headers['Authorization'] = 'Bearer $accessToken';
-  //     request.headers['Accept'] = '*/*';
-  //
-  //     var file = await http.MultipartFile.fromPath(
-  //       'file',
-  //       image.path,
-  //     );
-  //     request.files.add(file);
-  //
-  //     var response = await request.send().timeout(const Duration(seconds: 10));
-  //     final responseData = await http.Response.fromStream(response);
-  //
-  //     if (response.statusCode == 200) {
-  //       final responseJson = jsonDecode(responseData.body);
-  //       if (kDebugMode) {
-  //         print(
-  //             'Successfully updated profile picture: ${responseJson["data"]["imageUrl"]}');
-  //       }
-  //       return {
-  //         "success": true,
-  //         "message": "Profile picture updated successfully",
-  //         "imageUrl": responseJson["data"]["imageUrl"]
-  //       };
-  //     } else {
-  //       final responseJson = jsonDecode(responseData.body);
-  //       if (kDebugMode) {
-  //         print('Failed to update profile picture: ${responseJson["message"]}');
-  //       }
-  //       return {
-  //         "success": false,
-  //         "message": 'Failed to update profile picture',
-  //       };
-  //     }
-  //   } catch (e) {
-  //     if (kDebugMode) {
-  //       print('Error updating profile picture: $e');
-  //     }
-  //     return {
-  //       "success": false,
-  //       "message": 'Error updating profile picture: $e'
-  //     };
-  //   }
-  // }
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${apiConnection}settings/profile/avatar'),
+      );
+      request.headers['Authorization'] = 'Bearer $accessToken';
+      request.headers['Accept'] = '*/*';
+
+      var file = await http.MultipartFile.fromPath('file', image.path);
+      request.files.add(file);
+
+      var response = await request.send().timeout(const Duration(seconds: 10));
+      final responseData = await http.Response.fromStream(response);
+
+      if (response.statusCode == 200) {
+        final responseJson = jsonDecode(responseData.body);
+        if (kDebugMode) {
+          print(
+            'Successfully updated profile picture: ${responseJson["message"]}',
+          );
+        }
+        return {
+          "success": true,
+          "message":
+              responseJson["message"] ?? "Profile picture updated successfully",
+        };
+      } else {
+        final responseJson = jsonDecode(responseData.body);
+        if (kDebugMode) {
+          print('Failed to update profile picture: ${responseJson["message"]}');
+        }
+        return {
+          "success": false,
+          "message":
+              responseJson["message"] ?? "Failed to update profile picture",
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating profile picture: $e');
+      }
+      return {
+        "success": false,
+        "message": 'Error updating profile picture: $e',
+      };
+    }
+  }
 
   // Future<Map<String, Object>> updateUserProfile(Map<String, dynamic> updatedFields) async {
   //   String? accessToken = await getAccessToken();

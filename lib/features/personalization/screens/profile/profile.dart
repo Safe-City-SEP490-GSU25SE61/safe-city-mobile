@@ -66,26 +66,48 @@ class ProfileScreen extends StatelessWidget {
                               userController.user.value.gender == true
                               ? TImages.userImageMale
                               : TImages.userImageWoman;
+
                           if (userController.imageUploading.value) {
                             return const TShimmerEffect(
-                              width: 120,
-                              height: 120,
+                              width: 100,
+                              height: 100,
+                              radius: 100,
                             );
                           } else {
+                            final bool isNetworkImage = imageUrl.isNotEmpty;
+
                             return Stack(
                               alignment: Alignment.center,
                               children: [
-                                TCircularImage(
-                                  key: ValueKey(imageUrl),
-                                  image: imageUrl.isNotEmpty
-                                      ? imageUrl
-                                      : genderAvatar,
+                                Container(
                                   width: 100,
                                   height: 100,
-                                  padding: 0,
-                                  isNetworkImage: imageUrl.isNotEmpty,
+                                  decoration: BoxDecoration(
+                                    color: Colors.pink.shade100,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(50),
+                                    child: isNetworkImage
+                                        ? Image.network(
+                                            imageUrl,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.asset(
+                                            genderAvatar,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
                                 ),
-                                if (userController.user.value.isBiometricEnabled)
+
+                                if (userController
+                                    .user
+                                    .value
+                                    .isBiometricEnabled)
                                   Positioned(
                                     bottom: 0,
                                     right: 3,
@@ -97,17 +119,11 @@ class ProfileScreen extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: TColors.success,
                                         borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(color: TColors.white,width: 2)
                                       ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: const [
-                                          Icon(
-                                            Icons.verified,
-                                            color: Colors.white,
-                                            size: 16,
-                                          ),
-                                        ],
+                                      child: const Icon(
+                                        Icons.verified,
+                                        color: Colors.white,
+                                        size: 16,
                                       ),
                                     ),
                                   ),
@@ -115,11 +131,11 @@ class ProfileScreen extends StatelessWidget {
                             );
                           }
                         }),
-                        // TextButton(
-                        //   onPressed: () =>
-                        //       userController.handleImageProfileUpload(),
-                        //   child: const Text('Thay ảnh đại diện'),
-                        // ),
+                        TextButton(
+                          onPressed: () =>
+                              userController.handleImageProfileUpload(),
+                          child: const Text('Thay ảnh đại diện'),
+                        ),
                       ],
                     ),
                   ),

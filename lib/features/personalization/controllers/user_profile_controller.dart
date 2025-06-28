@@ -76,6 +76,45 @@ class UserProfileController extends GetxController {
     }
   }
 
+  Future<void> handleImageProfileUpload() async {
+    try {
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxHeight: 2000,
+        maxWidth: 2000,
+      );
+
+      if (image != null) {
+        imageUploading.value = true;
+
+        final result = await UserProfileService().updateUserProfilePicture(
+          image,
+        );
+
+        if (result['success'] == true) {
+          await fetchUserProfile();
+          TLoaders.successSnackBar(
+            title: 'Thành công',
+            message: 'Cập nhật ảnh đại diện thành công',
+          );
+        } else {
+          TLoaders.errorSnackBar(
+            title: 'Xảy ra lỗi rồi!',
+            message: result['message'] ?? 'Không thể cập nhật ảnh đại diện',
+          );
+        }
+      }
+    } catch (e) {
+      TLoaders.errorSnackBar(
+        title: 'Xảy ra lỗi rồi!',
+        message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau',
+      );
+    } finally {
+      imageUploading.value = false;
+    }
+  }
+
   // Future<void> updateUserProfile() async {
   //   final selectedDob = DateTime(
   //     year.value,
@@ -125,39 +164,4 @@ class UserProfileController extends GetxController {
   //   }
   // }
   //
-  // Future<void> handleImageProfileUpload() async {
-  //   try {
-  //     final image = await ImagePicker().pickImage(
-  //         source: ImageSource.gallery,
-  //         imageQuality: 80,
-  //         maxHeight: 1200,
-  //         maxWidth: 1200);
-  //
-  //     if (image != null) {
-  //       imageUploading.value = true;
-  //
-  //       final result =
-  //           await UserProfileService().updateUserProfilePicture(image);
-  //
-  //       if (result['success'] == true) {
-  //         user.update((user) {
-  //           if (user != null) {
-  //             user.imageUrl = result['imageUrl'] as String;
-  //           }
-  //         });
-  //         TLoaders.successSnackBar(
-  //             title: 'Thành công', message: 'Cập nhật ảnh đại diện thành công');
-  //       } else {
-  //         TLoaders.errorSnackBar(
-  //             title: 'Xảy ra lỗi rồi!', message: result['message']);
-  //       }
-  //     }
-  //   } catch (e) {
-  //     TLoaders.errorSnackBar(
-  //         title: 'Xảy ra lỗi rồi!',
-  //         message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau');
-  //   } finally {
-  //     imageUploading.value = false;
-  //   }
-  // }
 }
