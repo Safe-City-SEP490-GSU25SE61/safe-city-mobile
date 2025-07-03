@@ -28,7 +28,7 @@ class SubscriptionService {
 
   Future<String?> createSubscription(int packageId, String token) async {
     final url = Uri.parse(
-      '${apiConnection}subscriptions?packageId=$packageId&returnUrl=https://google.com&cancelUrl=https://google.com',
+      '${apiConnection}subscriptions?packageId=$packageId&returnUrl=safe-city://payment-success&cancelUrl=safe-city://payment-cancel',
     );
 
     final response = await client.post(

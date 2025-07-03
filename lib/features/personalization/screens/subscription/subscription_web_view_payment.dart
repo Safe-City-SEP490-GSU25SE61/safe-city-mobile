@@ -1,7 +1,11 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:safe_city_mobile/features/personalization/screens/subscription/subscription_payment_cancel.dart';
+import 'package:safe_city_mobile/features/personalization/screens/subscription/subscription_payment_success.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
+import '../../../../utils/handlers/app_link_handler.dart';
 
 class SubscriptionWebViewPayment extends StatefulWidget {
   final String url;
@@ -26,6 +30,17 @@ class _SubscriptionWebViewPaymentScreenState
         NavigationDelegate(
           onPageStarted: (String url) {
             debugPrint('Page started loading: $url');
+            final uri = Uri.parse(url);
+            if (uri.scheme == 'safe-city' && uri.host == 'payment-success') {
+              debugPrint('Intercepted deep link in WebView: $url');
+              Get.offAll(() => const PaymentSuccessScreen());
+            }
+
+            if (uri.scheme == 'safe-city' && uri.host == 'payment-cancel') {
+              debugPrint('User cancelled payment');
+              Navigator.pop(context);
+              Get.offAll(() => const PaymentCancelScreen());
+            }
           },
           onPageFinished: (String url) {
             debugPrint('Page finished loading: $url');
@@ -44,7 +59,7 @@ class _SubscriptionWebViewPaymentScreenState
       appBar: const TAppBar(
         title: Text('Gói đăng ký'),
         showCloseButton: false,
-        showBackArrow: true,
+        showBackArrow: false,
       ),
       body: WebViewWidget(controller: _controller),
     );

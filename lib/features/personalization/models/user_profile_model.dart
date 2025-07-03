@@ -107,11 +107,18 @@ class CurrentSubscription {
     return Duration.zero;
   }
 
-  /// Example: "2 ngày 3 giờ 12 phút"
+  /// Localized time display based on remaining time granularity
   String get localizedRemainingTime {
     final d = parsedDuration;
     if (d == Duration.zero) return "Chưa có gói";
-    return "${d.inDays} ngày ${d.inHours % 24} giờ ${d.inMinutes % 60} phút";
+
+    if (d.inDays >= 1) {
+      return "${d.inDays} ngày";
+    } else if (d.inHours >= 1) {
+      return "${d.inHours} giờ";
+    } else {
+      return "${d.inMinutes} phút";
+    }
   }
 
   /// Check if user has valid subscription

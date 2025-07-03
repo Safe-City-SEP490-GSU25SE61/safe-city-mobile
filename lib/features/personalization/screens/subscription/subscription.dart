@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/helpers/hex_color_extension.dart';
+import '../../controllers/profile/user_profile_controller.dart';
 import '../../controllers/subcription/subcription_controller.dart';
 
 class SubscriptionScreen extends StatelessWidget {
@@ -38,7 +39,11 @@ class SubscriptionScreen extends StatelessWidget {
                   : TColors.primary;
               final firstWord = package.name.split(' ').first;
               final darkerColor = baseColor.darken(0.25);
-
+              final user = Get.put(UserProfileController()).user.value;
+              final isCurrentPackage =
+                  user.currentSubscription.packageName == package.name;
+              final shouldDisableButton =
+                  user.currentSubscription.packageName.isNotEmpty;
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -85,23 +90,38 @@ class SubscriptionScreen extends StatelessWidget {
                       style: const TextStyle(color: Colors.white),
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: TColors.white,
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
+                    Material(
+                      color: isCurrentPackage
+                          ? Colors.grey.shade300
+                          : shouldDisableButton
+                          ? Colors.grey.shade100
+                          : TColors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: shouldDisableButton && !isCurrentPackage
+                            ? null
+                            : () => subscriptionController.subscribeToPackage(
+                                package.id,
+                              ),
+                        child: Container(
+                          height: 50,
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          child: Text(
+                            isCurrentPackage
+                                ? user
+                                      .currentSubscription
+                                      .localizedRemainingTime
+                                : 'Lấy $firstWord',
+                            style: TextStyle(
+                              color: shouldDisableButton
+                                  ? Colors.grey
+                                  : Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
-                        onPressed: () {
-                          subscriptionController.subscribeToPackage(package.id);
-                        },
-                        child: Text(
-                          'Lấy $firstWord',
-                          style: const TextStyle(color: Colors.black),
                         ),
                       ),
                     ),
