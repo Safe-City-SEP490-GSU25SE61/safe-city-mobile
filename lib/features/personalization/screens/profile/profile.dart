@@ -9,17 +9,14 @@ import 'package:safe_city_mobile/features/personalization/screens/profile/widget
 
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../common/widgets/effects/shimmer_effect.dart';
-import '../../../../common/widgets/images/t_circular_image.dart';
 import '../../../../common/widgets/texts/section_heading.dart';
 import '../../../../utils/constants/colors.dart';
-import '../../../../utils/constants/enums.dart';
 import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
 import 'package:get/get.dart';
 
-import '../../../../utils/helpers/user_rank_gradient.dart';
 import '../../../../utils/helpers/user_rank_helper.dart';
-import '../../controllers/user_profile_controller.dart';
+import '../../controllers/profile/user_profile_controller.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

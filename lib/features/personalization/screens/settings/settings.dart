@@ -8,14 +8,14 @@ import '../../../../common/widgets/list_titles/settings_menu_title.dart';
 import '../../../../common/widgets/list_titles/t_user_profile_title_card.dart';
 import '../../../../common/widgets/texts/section_heading.dart';
 import '../../../../utils/constants/colors.dart';
-import '../../../../utils/constants/enums.dart';
 import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/helpers/user_rank_helper.dart';
 import '../../../authentication/controllers/logout/logout_controller.dart';
-import '../../controllers/user_profile_controller.dart';
-import '../membership/membership.dart';
+import '../../controllers/profile/user_profile_controller.dart';
+import '../login_and_security/login_and_security.dart';
 import '../profile/profile.dart';
+import '../subscription/subscription.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -80,7 +80,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           user.currentSubscription.localizedRemainingTime,
                     );
                   }),
-
                   const SizedBox(height: TSizes.defaultSpace),
                 ],
               ),
@@ -109,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Iconsax.security_safe,
                     title: 'Đăng nhập và bảo mật',
                     subtitle: 'Kiểm tra trạng thái và cài đặt bảo mật',
-                    onTap: () {},
+                    onTap: () => Get.to(() => const LoginAndSecurityScreen()),
                   ),
                   TSettingsMenuTile(
                     icon: Iconsax.notification,
@@ -129,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Các gói đăng ký và ưu đãi',
                     subtitle:
                         'Gói đăng ký để  mở khóa các tính năng độc quyền ',
-                    onTap: () => (Get.to(MembershipScreen())),
+                    onTap: () => (Get.to(SubscriptionScreen())),
                   ),
                   const SizedBox(height: TSizes.mediumSpace),
                   const TSectionHeading(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -39,7 +40,13 @@ class UserProfileService {
           print('Successfully retrieved user information: $data');
         }
 
-        return UserProfileModel.fromJson(data['data']);
+        final profile = UserProfileModel.fromJson(data['data']);
+        final isBiometric = data['data']['isBiometricEnabled'] ?? false;
+        await secureStorage.write(
+          key: 'isBiometricLoginEnabled',
+          value: isBiometric.toString(),
+        );
+        return profile;
       } else {
         if (kDebugMode) {
           print("Failed to retrieve user profile: ${response.body}");
@@ -141,56 +148,72 @@ class UserProfileService {
     }
   }
 
-  // Future<Map<String, Object>> updateUserProfile(Map<String, dynamic> updatedFields) async {
-  //   String? accessToken = await getAccessToken();
-  //   if (accessToken == null) {
-  //     return {"success": false, "message": "No access token found"};
-  //   }
-  //
-  //   String? userId = await secureStorage.read(key: 'user_id');
-  //
-  //   try {
-  //     var response = await client
-  //         .post(
-  //             Uri.parse(
-  //                 '${TConnectionStrings.deployment}setting/account/update/$userId'),
-  //             headers: {
-  //               'Content-Type': 'application/json',
-  //               'Authorization': 'Bearer $accessToken'
-  //             },
-  //             body: jsonEncode(updatedFields))
-  //         .timeout(const Duration(seconds: 10));
-  //
-  //     if (response.statusCode == 200) {
-  //       if (kDebugMode) {
-  //         print('Successfully updated user profile');
-  //       }
-  //       return {
-  //         "success": true,
-  //         "message": "User profile updated successfully"
-  //       };
-  //     } else if (response.statusCode == 404) {
-  //       if (kDebugMode) {
-  //         print('User not found: ${response.body}');
-  //       }
-  //       return {
-  //         "success": false,
-  //         "message": "User not found",
-  //       };
-  //     } else {
-  //       if (kDebugMode) {
-  //         print('Failed to update user profile: ${response.body}');
-  //       }
-  //       return {
-  //         "success": false,
-  //         "message": 'Failed to update user profile',
-  //       };
-  //     }
-  //   } catch (e) {
-  //     if (kDebugMode) {
-  //       print('Error updating user profile: $e');
-  //     }
-  //     return {"success": false, "message": 'Error updating user profile: $e'};
-  //   }
-  // }
+  Future<Map<String, Object>> updateUserProfile({
+    required String deviceId,
+    required bool isBiometricEnabled,
+    required String email,
+    required String phone,
+    File? frontImage,
+    File? backImage,
+  }) async {
+    final String? accessToken = await getAccessToken();
+    if (accessToken == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+
+    final uri = Uri.parse('${apiConnection}settings/profile/biometric');
+
+    final request = http.MultipartRequest('PUT', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $accessToken',
+      'accept': '*/*',
+    });
+
+    request.fields['deviceId'] = deviceId;
+    request.fields['isBiometricEnabled'] = isBiometricEnabled.toString();
+    request.fields['email'] = email;
+    request.fields['phone'] = phone;
+
+    if (frontImage != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath('frontImage', frontImage.path),
+      );
+    }
+
+    if (backImage != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath('backImage', backImage.path),
+      );
+    }
+
+    try {
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 10),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return {
+          "success": true,
+          "message": "Biometric profile updated successfully",
+        };
+      } else {
+        if (kDebugMode) {
+          print('Failed response: ${response.body}');
+        }
+        return {
+          "success": false,
+          "message": "Failed to update biometric profile",
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error: $e');
+      }
+      return {
+        "success": false,
+        "message": "Error updating biometric profile: $e",
+      };
+    }
+  }
 }

@@ -6,7 +6,7 @@ import '../../../../../common/widgets/appbar/appbar.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import '../../../../../utils/validators/validation.dart';
-import '../../../controllers/user_profile_controller.dart';
+import '../../../controllers/profile/user_profile_controller.dart';
 
 class ChangeUserPassword extends StatelessWidget {
   const ChangeUserPassword({super.key});

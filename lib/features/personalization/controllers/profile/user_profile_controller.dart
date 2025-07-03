@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../utils/constants/image_strings.dart';
-import '../../../../utils/popups/full_screen_loader.dart';
-import '../../../../utils/popups/loaders.dart';
+import '../../../../../utils/constants/image_strings.dart';
+import '../../../../../utils/popups/full_screen_loader.dart';
+import '../../../../../utils/popups/loaders.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../../data/services/personalization/user_profile_service.dart';
-import '../../../utils/helpers/network_manager.dart';
+import '../../../../data/services/personalization/user_profile_service.dart';
+import '../../../../utils/helpers/network_manager.dart';
 
-import '../models/user_profile_model.dart';
-import '../screens/profile/profile.dart';
+import '../../models/user_profile_model.dart';
+import '../../screens/profile/profile.dart';
 
 class UserProfileController extends GetxController {
   static UserProfileController get instance => Get.find();
@@ -55,6 +55,12 @@ class UserProfileController extends GetxController {
     if (!profileFormKey.currentState!.validate()) return;
 
     TFullScreenLoader.openLoadingDialog('Đang xử lý...', TImages.loadingCircle);
+
+    final isConnected = await NetworkManager.instance.isConnected();
+    if (!isConnected) {
+      TFullScreenLoader.stopLoading();
+      return;
+    }
 
     final result = await userProfileService.changePassword(
       oldPassword.text.trim(),

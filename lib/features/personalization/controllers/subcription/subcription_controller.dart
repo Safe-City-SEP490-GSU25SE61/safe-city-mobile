@@ -1,0 +1,51 @@
+﻿import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
+
+import '../../../../data/services/personalization/subcription_service.dart';
+import '../../models/subcription_package_model.dart';
+
+class SubscriptionController extends GetxController {
+  static SubscriptionController get instance => Get.find();
+  final subscriptionService = Get.put(SubscriptionService());
+
+  var isLoading = false.obs;
+  var activePackages = <SubscriptionPackageModel>[].obs;
+
+  @override
+  void onInit() {
+    fetchPackages();
+    super.onInit();
+  }
+
+  Future<void> fetchPackages() async {
+    try {
+      isLoading(true);
+      final packages = await subscriptionService.fetchActivePackages();
+      activePackages.assignAll(packages);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading packages: $e');
+      }
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  // Future<void> subscribeToPackage(int packageId) async {
+  //   try {
+  //     final token = await secureStorage.read(key: 'token');
+  //     if (token == null) throw Exception('Token missing');
+  //
+  //     final checkoutUrl = await subscriptionService.createSubscription(packageId, token);
+  //     if (checkoutUrl != null) {
+  //       Get.to(() => WebViewScreen(url: checkoutUrl));
+  //     } else {
+  //       Get.snackbar("Lỗi", "Không thể lấy link thanh toán");
+  //     }
+  //   } catch (e) {
+  //     print('Subscription error: $e');
+  //     Get.snackbar("Lỗi", "Đã xảy ra lỗi khi đăng ký gói");
+  //   }
+  // }
+
+}
