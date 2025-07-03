@@ -96,7 +96,9 @@ class SubscriptionScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(24),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          subscriptionController.subscribeToPackage(package.id);
+                        },
                         child: Text(
                           'Lấy $firstWord',
                           style: const TextStyle(color: Colors.black),

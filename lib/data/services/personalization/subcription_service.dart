@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -22,6 +23,27 @@ class SubscriptionService {
           .toList();
     } else {
       throw Exception('Failed to load subscription packages');
+    }
+  }
+
+  Future<String?> createSubscription(int packageId, String token) async {
+    final url = Uri.parse(
+      '${apiConnection}subscriptions?packageId=$packageId&returnUrl=https://google.com&cancelUrl=https://google.com',
+    );
+
+    final response = await client.post(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'accept': '*/*'},
+    );
+
+    if (response.statusCode == 200) {
+      final jsonBody = json.decode(response.body);
+      return jsonBody['data']['checkoutUrl'];
+    } else {
+      if (kDebugMode) {
+        print('Failed to create subscription: ${response.body}');
+      }
+      return null;
     }
   }
 }
