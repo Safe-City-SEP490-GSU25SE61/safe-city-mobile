@@ -42,16 +42,72 @@ class SubscriptionHistoryScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = controller.history[index];
               return Card(
+                color: TColors.lightGrey,
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
-                  title: Text(item.packageName),
+                  title: Text(
+                    item.packageName,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Mã đơn: ${item.orderCode}"),
-                      Text("Phương thức: ${item.paymentMethod}"),
-                      Text("Trạng thái: ${item.status}"),
-                      Text("Thời gian thanh toán: ${item.paidAt}"),
+                      RichText(
+                        text: TextSpan(
+                          text: "Mã đơn: ",
+                          style: DefaultTextStyle.of(context).style,
+                          children: [
+                            TextSpan(
+                              text: item.orderCode,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      RichText(
+                        text: TextSpan(
+                          text: "Phương thức: ",
+                          style: DefaultTextStyle.of(context).style,
+                          children: [
+                            TextSpan(
+                              text: item.paymentMethod,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      RichText(
+                        text: TextSpan(
+                          text: "Trạng thái: ",
+                          style: DefaultTextStyle.of(context).style,
+                          children: [
+                            TextSpan(
+                              text: item.status,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      RichText(
+                        text: TextSpan(
+                          text: "Thời gian: ",
+                          style: DefaultTextStyle.of(context).style,
+                          children: [
+                            TextSpan(
+                              text: item.paidAt,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   trailing: Text(
@@ -61,7 +117,8 @@ class SubscriptionHistoryScreen extends StatelessWidget {
                     ).format(item.amount),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: TColors.success,
+                      fontSize: 18,
                     ),
                   ),
                 ),
