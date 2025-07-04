@@ -2,7 +2,6 @@
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-import 'package:iconsax/iconsax.dart';
 
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/helpers/helper_functions.dart';
