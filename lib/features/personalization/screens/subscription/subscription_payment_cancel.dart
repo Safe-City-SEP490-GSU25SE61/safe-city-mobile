@@ -1,7 +1,9 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../navigation_dart.dart';
+import '../../../../utils/constants/image_strings.dart';
 
 class PaymentCancelScreen extends StatelessWidget {
   const PaymentCancelScreen({super.key});
@@ -19,15 +21,15 @@ class PaymentCancelScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.cancel_outlined,
-              size: 100,
-              color: Colors.red,
+            Lottie.asset(
+              TImages.cancelStatus,
+              width: 500,
+              height: 200,
+              repeat: true,
             ),
-            const SizedBox(height: 20),
             const Text(
               "Giao dịch bị huỷ hoặc thất bại!",
-              style: TextStyle(fontSize: 20),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
         ),

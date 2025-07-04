@@ -5,7 +5,6 @@ import 'package:safe_city_mobile/features/personalization/screens/subscription/s
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
-import '../../../../utils/handlers/app_link_handler.dart';
 
 class SubscriptionWebViewPayment extends StatefulWidget {
   final String url;

@@ -17,7 +17,7 @@ class TVerticalProductShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return TGridLayout(
       itemCount: itemCount,
-      itemBuilder: (_, __) => const SizedBox(
+      itemBuilder: (_, _) => const SizedBox(
         width: 180,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

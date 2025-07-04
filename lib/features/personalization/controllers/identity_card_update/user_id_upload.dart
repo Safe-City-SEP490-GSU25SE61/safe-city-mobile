@@ -13,9 +13,6 @@ import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/helpers/device_id_helper.dart';
 import '../../../../utils/helpers/helper_functions.dart';
-import '../../../../utils/popups/full_screen_loader.dart';
-import '../../../../utils/popups/loaders.dart';
-import '../../../authentication/controllers/camera/camera_controller.dart';
 import '../login_and_security/user_login_and_security_controller.dart';
 import '../profile/user_profile_controller.dart';
 
@@ -48,47 +45,59 @@ class UserIdUploadScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Obx(() => GestureDetector(
-              onTap: () => pickImage(true),
-              child: SizedBox(
-                width: double.infinity,
-                height: 220,
-                child: DecoratedContainer(
-                  strokeWidth: 3,
-                  dashSpace: 4,
-                  dashWidth: 14,
-                  cornerRadius: 12,
-                  strokeColor: dark ? TColors.white : TColors.darkerGrey,
-                  child: frontImage.value == null
-                      ? const Center(child: Text('Tải lên ảnh CCCD mặt trước'))
-                      : ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(frontImage.value!, fit: BoxFit.cover),
+            Obx(
+              () => GestureDetector(
+                onTap: () => pickImage(true),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 220,
+                  child: DecoratedContainer(
+                    strokeWidth: 3,
+                    dashSpace: 4,
+                    dashWidth: 14,
+                    cornerRadius: 12,
+                    strokeColor: dark ? TColors.white : TColors.darkerGrey,
+                    child: frontImage.value == null
+                        ? const Center(
+                            child: Text('Tải lên ảnh CCCD mặt trước'),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              frontImage.value!,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                   ),
                 ),
               ),
-            )),
+            ),
             const SizedBox(height: 24),
-            Obx(() => GestureDetector(
-              onTap: () => pickImage(false),
-              child: SizedBox(
-                width: double.infinity,
-                height: 220,
-                child: DecoratedContainer(
-                  strokeWidth: 3,
-                  dashSpace: 4,
-                  dashWidth: 14,
-                  cornerRadius: 12,
-                  strokeColor: dark ? TColors.white : TColors.darkerGrey,
-                  child: backImage.value == null
-                      ? const Center(child: Text('Tải lên ảnh CCCD mặt sau'))
-                      : ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(backImage.value!, fit: BoxFit.cover),
+            Obx(
+              () => GestureDetector(
+                onTap: () => pickImage(false),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 220,
+                  child: DecoratedContainer(
+                    strokeWidth: 3,
+                    dashSpace: 4,
+                    dashWidth: 14,
+                    cornerRadius: 12,
+                    strokeColor: dark ? TColors.white : TColors.darkerGrey,
+                    child: backImage.value == null
+                        ? const Center(child: Text('Tải lên ảnh CCCD mặt sau'))
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              backImage.value!,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                   ),
                 ),
               ),
-            )),
+            ),
             const SizedBox(height: 32),
           ],
         ),
@@ -96,5 +105,3 @@ class UserIdUploadScreen extends StatelessWidget {
     );
   }
 }
-
-

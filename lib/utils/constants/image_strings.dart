@@ -23,22 +23,10 @@ class TImages {
   //--Loading Images
   static const String loadingCircle =
       "assets/images/loading/loading-circle.gif";
-  static const String screenLoading2 =
-      "assets/images/loading/food-vlogger.json";
-  static const String screenLoadingSparkle1 =
-      "assets/images/loading/sparkle-peek-a-boo.gif";
-  static const String screenLoadingSparkle2 =
-      "assets/images/loading/sparkle-hehe.gif";
-  static const String screenLoadingSparkle3 =
-      "assets/images/loading/sparkle-mask.gif";
-  static const String screenLoadingSparkle4 =
-      "assets/images/loading/sparkle-lighter.gif";
-  static const String screenLoadingRobin =
-      "assets/images/loading/robin-singing.gif";
-  static const String screenLoadingAcheron =
-      "assets/images/loading/acheron-questioning.gif";
-  static const String screenLoadingWorkInProgress =
-      "assets/images/loading/work-in-progress.gif";
+
+  //--Success Status Images
+  static const String successStatus = "assets/images/status/success.json";
+  static const String cancelStatus = "assets/images/status/cancel.json";
 
   //--Icon Images
   static const String grillIcon = "assets/images/icons/grill.gif";
@@ -47,8 +35,10 @@ class TImages {
   static const String newIcon = "assets/images/icons/new.gif";
 
   //--Default Avatar Images
-  static const String userImageWoman = "assets/images/default_avatar/avatar_woman.png";
-  static const String userImageMale = "assets/images/default_avatar/avatar_male.png";
+  static const String userImageWoman =
+      "assets/images/default_avatar/avatar_woman.png";
+  static const String userImageMale =
+      "assets/images/default_avatar/avatar_male.png";
 
   //--Payment Images
   static const String paypal = "assets/images/payments/paypal.png";

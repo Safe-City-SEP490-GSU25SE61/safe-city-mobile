@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 
 import '../../../../common/widgets/success_screen/success_screen.dart';
 import '../../../../data/services/authentication/http_interceptor.dart';
