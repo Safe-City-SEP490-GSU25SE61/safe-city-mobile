@@ -10,6 +10,7 @@ import 'package:safe_city_mobile/utils/constants/colors.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../utils/constants/sizes.dart';
+import '../../../../utils/constants/text_strings.dart';
 import '../../../../utils/helpers/helper_functions.dart';
 import '../../controllers/camera/camera_controller.dart';
 
@@ -104,9 +105,18 @@ class UserIdFrontRegister extends StatelessWidget {
                               ),
                             );
                           }),
-
-                          const SizedBox(height: 32),
-
+                          const SizedBox(height: TSizes.spaceBtwItems),
+                          Text(
+                            TTexts.identityDataConfirmation,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              fontStyle: FontStyle.italic,
+                              color: dark ? Colors.white70 : Colors.black54,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: TSizes.spaceBtwItems),
                           SizedBox(
                             width: double.infinity,
                             height: 60,

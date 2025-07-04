@@ -2,6 +2,7 @@
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:safe_city_mobile/features/personalization/screens/subscription/subscription_history.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../utils/constants/colors.dart';
@@ -14,9 +15,11 @@ class SubscriptionScreen extends StatelessWidget {
   SubscriptionScreen({super.key});
 
   final subscriptionController = Get.put(SubscriptionController());
+  final userController = Get.put(UserProfileController());
 
   Future<void> _handleRefresh() async {
     await subscriptionController.fetchPackages();
+    await userController.fetchUserProfile();
   }
 
   @override
@@ -37,7 +40,9 @@ class SubscriptionScreen extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: InkWell(
-                  onTap: () {},
+                  onTap: () {
+                    Get.to(() => SubscriptionHistoryScreen());
+                  },
                   borderRadius: BorderRadius.circular(30),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -73,7 +78,7 @@ class SubscriptionScreen extends StatelessWidget {
                     : TColors.primary;
                 final firstWord = package.name.split(' ').first;
                 final darkerColor = baseColor.darken(0.25);
-                final user = Get.put(UserProfileController()).user.value;
+                final user = userController.user.value;
                 final isCurrentPackage =
                     user.currentSubscription.packageName == package.name;
                 final shouldDisableButton = user.currentSubscription.isActive;

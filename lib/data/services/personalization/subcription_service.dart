@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../../../features/personalization/models/subcription_package_model.dart';
+import '../../../features/personalization/models/subscription_history_model.dart';
 
 class SubscriptionService {
   var client = http.Client();
@@ -44,6 +45,28 @@ class SubscriptionService {
         print('Failed to create subscription: ${response.body}');
       }
       return null;
+    }
+  }
+
+  Future<List<SubscriptionHistoryModel>> fetchSubscriptionHistory(
+    String token,
+  ) async {
+    final url = Uri.parse('${apiConnection}subscriptions/history');
+
+    final response = await client.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final body = json.decode(response.body);
+      final List data = body['data'];
+      return data.map((e) => SubscriptionHistoryModel.fromJson(e)).toList();
+    } else {
+      if (kDebugMode) {
+        print('Failed to fetch subscription history: ${response.body}');
+      }
+      throw Exception('Failed to fetch subscription history');
     }
   }
 }

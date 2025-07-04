@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../data/services/personalization/subcription_service.dart';
 import '../../models/subcription_package_model.dart';
+import '../../models/subscription_history_model.dart';
 import '../../screens/subscription/subscription_web_view_payment.dart';
 
 class SubscriptionController extends GetxController {
@@ -11,11 +12,13 @@ class SubscriptionController extends GetxController {
   final subscriptionService = Get.put(SubscriptionService());
   final secureStorage = const FlutterSecureStorage();
   var isLoading = false.obs;
+  var history = <SubscriptionHistoryModel>[].obs;
   var activePackages = <SubscriptionPackageModel>[].obs;
 
   @override
   void onInit() {
     fetchPackages();
+    fetchPaymentHistory();
     super.onInit();
   }
 
@@ -38,9 +41,12 @@ class SubscriptionController extends GetxController {
       final accessToken = await secureStorage.read(key: 'access_token');
       if (accessToken == null) throw Exception('Token missing');
 
-      final checkoutUrl = await subscriptionService.createSubscription(packageId, accessToken);
+      final checkoutUrl = await subscriptionService.createSubscription(
+        packageId,
+        accessToken,
+      );
       if (checkoutUrl != null) {
-        Get.to(() => SubscriptionWebViewPayment(url: checkoutUrl));
+        Get.offAll(() => SubscriptionWebViewPayment(url: checkoutUrl));
       } else {
         Get.snackbar("Lỗi", "Không thể lấy link thanh toán");
       }
@@ -49,6 +55,24 @@ class SubscriptionController extends GetxController {
         print('Subscription error: $e');
       }
       Get.snackbar("Lỗi", "Đã xảy ra lỗi khi đăng ký gói");
+    }
+  }
+
+  Future<void> fetchPaymentHistory() async {
+    try {
+      isLoading.value = true;
+      final token = await secureStorage.read(key: 'access_token');
+      if (token == null) throw Exception('Token missing');
+
+      final result = await subscriptionService.fetchSubscriptionHistory(token);
+      history.assignAll(result);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching history: $e');
+      }
+      Get.snackbar("Lỗi", "Không thể tải lịch sử đăng ký");
+    } finally {
+      isLoading.value = false;
     }
   }
 }
