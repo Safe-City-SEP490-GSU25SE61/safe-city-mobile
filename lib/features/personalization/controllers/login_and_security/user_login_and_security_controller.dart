@@ -52,7 +52,7 @@ class UserLoginAndSecurityController extends GetxController {
         );
 
         if (!didConfirm) {
-          TLoaders.warningSnackBar(title: '', message: 'Xác thực bị hủy.');
+          TLoaders.warningSnackBar(title: 'Xác thực bị hủy', message: 'Xác thực sinh trắc học đã bị hủy vui lòng thử lại.');
           return;
         }
       }
@@ -87,11 +87,11 @@ class UserLoginAndSecurityController extends GetxController {
 
       if (result['success']) {
         await _secureStorage.write(
-          key: 'isBiometricLoginEnabled',
+          key: 'is_biometric_login_enabled',
           value: enable.toString(),
         );
 
-        await _secureStorage.write(key: 'deviceId', value: deviceId);
+        await _secureStorage.write(key: 'device_id', value: deviceId);
 
         isBiometricEnabled.value = enable;
 

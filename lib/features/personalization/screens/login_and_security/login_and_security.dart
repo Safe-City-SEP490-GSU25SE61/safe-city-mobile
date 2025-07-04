@@ -6,6 +6,7 @@ import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/helpers/helper_functions.dart';
 import '../../../authentication/controllers/camera/camera_controller.dart';
 import '../../controllers/login_and_security/user_login_and_security_controller.dart';
+import '../profile/profile.dart';
 
 class LoginAndSecurityScreen extends StatelessWidget {
   const LoginAndSecurityScreen({super.key});
@@ -36,6 +37,7 @@ class LoginAndSecurityScreen extends StatelessWidget {
             const SizedBox(height: TSizes.spaceBtwItems),
 
             Card(
+              color: dark ? TColors.darkerBlack : TColors.lightGrey,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -192,8 +194,8 @@ class LoginAndSecurityScreen extends StatelessWidget {
                                     style: TextStyle(color: Colors.black),
                                   ),
                                   onTap: () {
-                                    // TODO: Handle facial verification
                                     Navigator.pop(context);
+                                    Get.to(() => ProfileScreen());
                                   },
                                 ),
                                 const SizedBox(height: 10),

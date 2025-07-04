@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../../../../../utils/constants/image_strings.dart';
 import '../../../../../utils/popups/full_screen_loader.dart';
@@ -29,6 +30,7 @@ class UserProfileController extends GetxController {
   final imageUploading = false.obs;
   final hideOldPassword = true.obs;
   final hideNewPassword = true.obs;
+  final showFullProfile = false.obs;
   final secureStorage = const FlutterSecureStorage();
   GlobalKey<FormState> profileFormKey = GlobalKey<FormState>();
 
@@ -36,6 +38,7 @@ class UserProfileController extends GetxController {
   void onInit() {
     super.onInit();
     fetchUserProfile();
+    unlockFullProfile();
   }
 
   Future<void> fetchUserProfile() async {
@@ -118,6 +121,38 @@ class UserProfileController extends GetxController {
       );
     } finally {
       imageUploading.value = false;
+    }
+  }
+
+  Future<void> unlockFullProfile() async {
+    final biometricEnabled = await secureStorage.read(
+      key: 'is_biometric_login_enabled',
+    );
+
+    if (biometricEnabled != 'true') {
+      TLoaders.warningSnackBar(
+        title: 'Tính năng chưa được bật',
+        message: 'Vui lòng bật tính năng sinh trắc học để xem chi tiết hồ sơ',
+      );
+      return;
+    }
+
+    final auth = LocalAuthentication();
+    final didConfirm = await auth.authenticate(
+      localizedReason: 'Xác thực vân tay để xem toàn bộ thông tin cá nhân',
+      options: const AuthenticationOptions(
+        biometricOnly: true,
+        stickyAuth: true,
+      ),
+    );
+
+    if (didConfirm) {
+      showFullProfile.value = true;
+    } else {
+      TLoaders.warningSnackBar(
+        title: 'Xác thực thất bại',
+        message: 'Bạn cần xác thực để xem thông tin đầy đủ.',
+      );
     }
   }
 

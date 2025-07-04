@@ -15,23 +15,26 @@ import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
 import 'package:get/get.dart';
 
+import '../../../../utils/constants/text_strings.dart';
 import '../../../../utils/helpers/user_rank_helper.dart';
 import '../../controllers/profile/user_profile_controller.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  ProfileScreen({super.key});
+
+  final userController = Get.put(UserProfileController());
 
   Future<void> _handleRefresh() async {
     await Future.delayed(const Duration(seconds: 1));
-    UserProfileController.instance.fetchUserProfile();
+    userController.fetchUserProfile();
   }
 
   @override
   Widget build(BuildContext context) {
-    final userController = Get.put(UserProfileController());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!userController.profileLoading.value) {
         userController.fetchUserProfile();
+        userController.showFullProfile.value = false;
       }
     });
     return Scaffold(
@@ -185,81 +188,114 @@ class ProfileScreen extends StatelessWidget {
 
                   const Divider(),
                   const SizedBox(height: TSizes.spaceBtwItems),
-                  const TSectionHeading(
-                    title: 'Thông tin cá nhân',
-                    showActionButton: true,
-                    buttonTitle: 'Cập nhật CCCD',
-                  ),
-                  const SizedBox(height: TSizes.spaceBtwItems),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserName()),
-                    onPressed: () => {},
-                    title: 'Số định danh',
-                    value: userController.user.value.idNumber,
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserName()),
-                    onPressed: () => {},
-                    title: 'Tên đầy đủ',
-                    value: userController.user.value.fullName,
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserDob()),
-                    onPressed: () => {},
-                    title: 'Ngày sinh',
-                    value: DateFormat(
-                      'dd/MM/yyyy',
-                    ).format(userController.user.value.dateOfBirth),
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserGender()),
-                    onPressed: () => {},
-                    title: 'Giới tính',
-                    value: userController.user.value.gender ? 'Nam' : 'Nữ',
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserGender()),
-                    onPressed: () => {},
-                    title: 'Nơi cư trú',
-                    value: userController.user.value.address,
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserGender()),
-                    onPressed: () => {},
-                    title: 'Nơi khai sinh',
-                    value: userController.user.value.placeOfBirth,
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserGender()),
-                    onPressed: () => {},
-                    title: 'Thời gian cấp',
-                    value: DateFormat(
-                      'dd/MM/yyyy',
-                    ).format(userController.user.value.issueDate),
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserGender()),
-                    onPressed: () => {},
-                    title: 'Hết hạn vào',
-                    value: DateFormat(
-                      'dd/MM/yyyy',
-                    ).format(userController.user.value.expiryDate),
-                    showIcon: false,
-                  ),
-                  TProfileMenu(
-                    // onPressed: () => Get.off(() => const ChangeUserGender()),
-                    onPressed: () => {},
-                    title: 'Nơi cấp CCD',
-                    value: userController.user.value.placeOfIssue,
-                    showIcon: false,
-                  ),
+                  Obx(() {
+                    if (!userController.showFullProfile.value) {
+                      return Column(
+                        children: [
+                          const TSectionHeading(
+                            title: 'Thông tin cá nhân',
+                            showActionButton: true,
+                            buttonTitle: 'Cập nhật CCCD',
+                          ),
+                          const Text(
+                            TTexts.identityDataIsHidden,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: TSizes.spaceBtwItems),
+                          SizedBox(
+                            width: 140,
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  userController.unlockFullProfile(),
+                              icon: const Icon(Icons.fingerprint),
+                              label: const Text('Xác thực'),
+                              style: ElevatedButton.styleFrom(
+                                textStyle: const TextStyle(fontSize: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: TSizes.spaceBtwItems),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        const TSectionHeading(
+                          title: 'Thông tin cá nhân',
+                          showActionButton: true,
+                          buttonTitle: 'Cập nhật CCCD',
+                        ),
+                        const SizedBox(height: TSizes.spaceBtwItems),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Số định danh',
+                          value: userController.user.value.idNumber,
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Tên đầy đủ',
+                          value: userController.user.value.fullName,
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Ngày sinh',
+                          value: DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(userController.user.value.dateOfBirth),
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Giới tính',
+                          value: userController.user.value.gender
+                              ? 'Nam'
+                              : 'Nữ',
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Nơi cư trú',
+                          value: userController.user.value.address,
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Nơi khai sinh',
+                          value: userController.user.value.placeOfBirth,
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Thời gian cấp',
+                          value: DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(userController.user.value.issueDate),
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Hết hạn vào',
+                          value: DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(userController.user.value.expiryDate),
+                          showIcon: false,
+                        ),
+                        TProfileMenu(
+                          onPressed: () => {},
+                          title: 'Nơi cấp CCD',
+                          value: userController.user.value.placeOfIssue,
+                          showIcon: false,
+                        ),
+                      ],
+                    );
+                  }),
 
                   const Divider(),
                   const SizedBox(height: TSizes.spaceBtwSections),
