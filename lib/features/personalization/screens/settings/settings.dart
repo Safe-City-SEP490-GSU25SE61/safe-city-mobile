@@ -8,11 +8,14 @@ import '../../../../common/widgets/list_titles/settings_menu_title.dart';
 import '../../../../common/widgets/list_titles/t_user_profile_title_card.dart';
 import '../../../../common/widgets/texts/section_heading.dart';
 import '../../../../utils/constants/colors.dart';
-import '../../../../utils/constants/enums.dart';
+import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
+import '../../../../utils/helpers/user_rank_helper.dart';
 import '../../../authentication/controllers/logout/logout_controller.dart';
-import '../../../authentication/screens/login/login.dart';
-import '../membership/membership.dart';
+import '../../controllers/profile/user_profile_controller.dart';
+import '../login_and_security/login_and_security.dart';
+import '../profile/profile.dart';
+import '../subscription/subscription.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,9 +25,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final userController = Get.put(UserProfileController());
+
   @override
   void initState() {
     super.initState();
+    userController.fetchUserProfile();
   }
 
   @override
@@ -48,15 +54,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
 
                   ///User Profile Card
-                  TUserProfileCard(
-                    onPressed: () {},
-                    fullName: 'Dang Dinh Tai',
-                    profilePicture: '',
-                    isNetworkImage: true,
-                    phone: '0977833648',
-                    rank: UserRank.protector,
-                    isBiometricVerified: true, membershipDateLeft: 12,
-                  ),
+                  Obx(() {
+                    final isLoading = userController.profileLoading.value;
+                    final user = userController.user.value;
+                    final String imageUrl = user.imageUrl;
+                    final bool isImageValid =
+                        imageUrl.isNotEmpty && imageUrl != "null";
+                    final bool isMale = user.gender == true;
+                    final String fallbackAvatar = isMale
+                        ? TImages.userImageMale
+                        : TImages.userImageWoman;
+                    return TUserProfileCard(
+                      onPressed: () {},
+                      fullName: user.fullName,
+                      phone: user.phone,
+                      profilePicture: isLoading
+                          ? null
+                          : isImageValid
+                          ? imageUrl
+                          : fallbackAvatar,
+                      isNetworkImage: isImageValid,
+                      rank: getUserRankFromString(user.achievementName),
+                      isBiometricVerified: user.isBiometricEnabled,
+                      remainingTime:
+                          user.currentSubscription.localizedRemainingTime,
+                    );
+                  }),
                   const SizedBox(height: TSizes.defaultSpace),
                 ],
               ),
@@ -79,13 +102,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Iconsax.user_edit,
                     title: 'Thông tin cá nhân',
                     subtitle: 'Chỉnh sửa thông tin cá nhân của bạn',
-                    onTap: () {},
+                    onTap: () => Get.to(() => const ProfileScreen()),
                   ),
                   TSettingsMenuTile(
                     icon: Iconsax.security_safe,
                     title: 'Đăng nhập và bảo mật',
                     subtitle: 'Kiểm tra trạng thái và cài đặt bảo mật',
-                    onTap: () {},
+                    onTap: () => Get.to(() => const LoginAndSecurityScreen()),
                   ),
                   TSettingsMenuTile(
                     icon: Iconsax.notification,
@@ -105,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Các gói đăng ký và ưu đãi',
                     subtitle:
                         'Gói đăng ký để  mở khóa các tính năng độc quyền ',
-                    onTap: () =>(Get.to(MembershipScreen())),
+                    onTap: () => (Get.to(SubscriptionScreen())),
                   ),
                   const SizedBox(height: TSizes.mediumSpace),
                   const TSectionHeading(

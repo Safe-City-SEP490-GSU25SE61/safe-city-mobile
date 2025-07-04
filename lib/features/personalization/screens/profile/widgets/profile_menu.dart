@@ -11,6 +11,7 @@ class TProfileMenu extends StatelessWidget {
     this.value,
     this.icon = Iconsax.arrow_right_34,
     this.onIconPressed,
+    this.showIcon = true,
   });
 
   final IconData icon;
@@ -18,36 +19,48 @@ class TProfileMenu extends StatelessWidget {
   final VoidCallback? onIconPressed;
   final String title;
   final String? value;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onPressed,
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(vertical: TSizes.spaceBtwItems / 1.5),
+        padding: const EdgeInsets.symmetric(
+          vertical: TSizes.spaceBtwItems / 1.5,
+        ),
         child: Row(
           children: [
-            Expanded(
-              flex: 3,
-              child: Text(title,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  overflow: TextOverflow.ellipsis),
-            ),
+            /// Title
             Expanded(
               flex: 4,
-              child: Text((value != null && value!.isNotEmpty) ? value! : 'Thiết lập ngay',
-                  style: (value != null && value!.isNotEmpty)
-                      ? Theme.of(context).textTheme.bodyMedium
-                      : Theme.of(context).textTheme.bodySmall,
-                  overflow: TextOverflow.ellipsis),
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
+
+            /// Value or fallback
             Expanded(
-              child: GestureDetector(
+              flex: 7,
+              child: Text(
+                (value != null && value!.isNotEmpty)
+                    ? value!
+                    : 'Thiết lập ngay',
+                style: (value != null && value!.isNotEmpty)
+                    ? Theme.of(context).textTheme.bodyMedium
+                    : Theme.of(context).textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+            /// Icon (only shown if showIcon is true, no Expanded)
+            if (showIcon)
+              GestureDetector(
                 onTap: onIconPressed,
                 child: Icon(icon, size: 18),
               ),
-            ),
           ],
         ),
       ),

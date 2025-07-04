@@ -5,28 +5,29 @@ import 'package:flutter/material.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/helpers/helper_functions.dart';
+import '../effects/shimmer_effect.dart';
 
 class TUserProfileCard extends StatelessWidget {
   const TUserProfileCard({
     super.key,
     required this.onPressed,
-    required this.fullName,
-    required this.phone,
-    required this.profilePicture,
-    required this.isNetworkImage,
+    this.fullName,
+    this.phone,
+    this.profilePicture,
+    this.isNetworkImage = true,
     required this.rank,
-    required this.isBiometricVerified,
-    required this.membershipDateLeft,
+    this.isBiometricVerified = false,
+    this.remainingTime,
   });
 
   final VoidCallback onPressed;
-  final String fullName;
-  final String phone;
-  final String profilePicture;
+  final String? fullName;
+  final String? phone;
+  final String? profilePicture;
   final bool isNetworkImage;
   final UserRank rank;
   final bool isBiometricVerified;
-  final int membershipDateLeft;
+  final String? remainingTime;
 
   @override
   Widget build(BuildContext context) {
@@ -46,27 +47,34 @@ class TUserProfileCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                const SizedBox(height: TSizes.lg),
-                Text(
-                  fullName,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: dark ? TColors.white : TColors.black,
-                  ),
-                ),
+                const SizedBox(height: TSizes.xl),
+
+                /// Full name
+                fullName == null
+                    ? const TShimmerEffect(width: 120, height: 18)
+                    : Text(
+                        fullName!,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: dark ? TColors.white : TColors.black,
+                        ),
+                      ),
                 const SizedBox(height: 4),
 
+                /// Phone + biometric
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      phone,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: dark ? TColors.white : TColors.black,
-                      ),
-                    ),
+                    phone == null
+                        ? const TShimmerEffect(width: 100, height: 14)
+                        : Text(
+                            phone!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: dark ? TColors.white : TColors.black,
+                            ),
+                          ),
                     if (isBiometricVerified) ...[
                       const SizedBox(width: 8),
                       Container(
@@ -88,7 +96,7 @@ class TUserProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // 2 Action Buttons
+                /// Action Buttons
                 Row(
                   children: [
                     Expanded(
@@ -132,25 +140,29 @@ class TUserProfileCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Iconsax.calendar_2,
-                                color: Colors.pink,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '$membershipDateLeft ngày premium',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: dark ? TColors.white : TColors.black,
+                          child: remainingTime == null
+                              ? const TShimmerEffect(width: 100, height: 14)
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Iconsax.calendar_2,
+                                      color: Colors.pink,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      remainingTime!,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: dark
+                                            ? TColors.white
+                                            : TColors.black,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),
@@ -169,32 +181,23 @@ class TUserProfileCard extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 4),
             ),
-            child: profilePicture.isNotEmpty
-                ? ClipRRect(
+            child: profilePicture == null
+                ? const TShimmerEffect(width: 80, height: 80, radius: 100)
+                : ClipRRect(
                     borderRadius: BorderRadius.circular(40),
                     child: isNetworkImage
                         ? Image.network(
-                            profilePicture,
+                            profilePicture!,
                             width: 80,
                             height: 80,
                             fit: BoxFit.cover,
                           )
                         : Image.asset(
-                            profilePicture,
+                            profilePicture!,
                             width: 80,
                             height: 80,
                             fit: BoxFit.cover,
                           ),
-                  )
-                : Center(
-                    child: Text(
-                      fullName.isNotEmpty ? fullName[0] : '',
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
                   ),
           ),
         ],

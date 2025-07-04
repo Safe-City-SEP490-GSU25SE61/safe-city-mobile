@@ -5,12 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 
 import '../../../../common/widgets/success_screen/success_screen.dart';
 import '../../../../data/services/authentication/http_interceptor.dart';
 import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/text_strings.dart';
+import '../../../../utils/helpers/network_manager.dart';
 import '../../../../utils/popups/full_screen_loader.dart';
 import '../../../../utils/popups/loaders.dart';
 import '../../screens/login/login.dart';
@@ -40,6 +40,12 @@ class VerifyEmailController extends GetxController {
     try {
       TFullScreenLoader.openLoadingDialog(
           'Đang xử lí chờ xíu...', TImages.loadingCircle);
+
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        return;
+      }
 
       String? email = await storage.read(key: "user_email_verification");
       final response = await client

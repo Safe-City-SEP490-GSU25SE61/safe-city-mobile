@@ -23,6 +23,7 @@ static const String lastName = "Tên";
 static const String fullName = "Họ và tên";
 static const String email = "E-Mail";
 static const String password = "Mật Khẩu";
+static const String oldPassword = "Mật khẩu cũ";
 static const String newPassword = "Nhập mật khẩu mới";
 static const String identityCardNumber = "Số CCCD";
 static const String dateOfBirth = "Ngày sinh";
@@ -62,13 +63,13 @@ static const String forgetPasswordSubTitle = "Đừng lo, đôi khi mọi ngư�
 static const String changeYourPasswordTitle = "Email đặt lại mật khẩu đã được gửi.";
 static const String changeYourPasswordSubTitle = "Bảo mật tài khoản của bạn là ưu tiên hàng đầu của chúng tôi! Chúng tôi đã gửi cho bạn một liên kết bảo mật để thay đổi mật khẩu và giữ an toàn cho tài khoản của bạn.";
 static const String confirmEmail = "Hãy xác minh email của bạn!";
-static const String confirmEmailSubTitle = "KGrill đang chờ bạn! Xác nhận email của bạn để mở khóa trải nghiệm ẩm thực tuyệt vời và khám phá vô vàn ưu đãi hấp dẫn cùng những món ăn được chọn lựa riêng cho bạn.";
+static const String confirmEmailSubTitle = "Safe City đang chờ bạn! Xác nhận email của bạn để mở khóa trải nghiệm an toàn tuyệt đối và khám phá hàng loạt tiện ích hữu ích dành riêng cho bạn.";
 static const String emailNotReceivedMessage = "Chưa nhận được email? Hãy kiểm tra thư mục thư rác hoặc thư rác của bạn hoặc gửi lại.";
 static const String yourAccountCreatedTitle = "Tài khoản tạo thành công!";
 static const String yourAccountCreatedSubTitle = "Chào mừng đến với thế giới ẩm thực của bạn: Tài khoản của bạn đã được tạo, hãy bắt đầu tận hưởng niềm vui đặt đồ ăn trực tuyến ngay thôi!";
 static const String homeAppBarTitle = "Chào mừng đến với KGrill";
 static const String homeAppBarSubTitle = "おはよう ございます";
 
-//Chat Feature Text
-static const String startChatting = "Bắt đầu nhắn tin...";
+//Security and Safety Confirmation
+  static const String identityDataConfirmation = "Hình ảnh và thông tin CCCD sẽ được lưu trữ bảo mật và chỉ được sử dụng nhằm mục đích xác minh danh tính, tuân thủ pháp luật và đảm bảo an toàn cho người dùng.";
 }

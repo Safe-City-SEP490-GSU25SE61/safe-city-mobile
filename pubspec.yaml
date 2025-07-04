@@ -33,6 +33,9 @@ dependencies:
   flutter_decorated_container: ^1.0.0
   local_auth: ^2.3.0
   shared_preferences: ^2.5.3
+  device_info_plus: ^11.5.0
+  webview_flutter: ^4.13.0
+  app_links: ^6.4.0
 
   #Maps Integration
   google_maps_flutter: ^2.9.0
@@ -49,12 +52,12 @@ dependencies:
   readmore: ^3.0.0
 
   #Firebase
-#  firebase_core: ^3.5.0
-#  cloud_firestore: ^5.4.2
-#  firebase_auth: ^5.3.0
-#  firebase_storage: ^12.3.2
-#  firebase_messaging: ^15.1.3
-#  firebase_analytics: ^11.3.3
+  #  firebase_core: ^3.5.0
+  #  cloud_firestore: ^5.4.2
+  #  firebase_auth: ^5.3.0
+  #  firebase_storage: ^12.3.2
+  #  firebase_messaging: ^15.1.3
+  #  firebase_analytics: ^11.3.3
   image_picker: ^1.1.2
 
   #State Management
@@ -97,10 +100,11 @@ flutter:
     - assets/images/email_verification/
     - assets/images/password_reset/
     - assets/images/loading/
-    - assets/images/profiles/
     - assets/images/payments/
     - assets/images/signin/
     - assets/images/ranking/
+    - assets/images/default_avatar/
+    - assets/images/status/
 
   # Local fonts:
   fonts:
