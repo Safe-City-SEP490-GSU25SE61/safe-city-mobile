@@ -8,7 +8,6 @@ import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/helpers/helper_functions.dart';
 import '../../../../utils/popups/loaders.dart';
-import '../../../authentication/controllers/camera/camera_controller.dart';
 import '../../controllers/login_and_security/user_login_and_security_controller.dart';
 import '../../controllers/profile/user_profile_controller.dart';
 import '../profile/profile.dart';

@@ -38,7 +38,7 @@ dependencies:
   app_links: ^6.4.0
 
   #Maps Integration
-  google_maps_flutter: ^2.9.0
+  mapbox_maps_flutter: ^2.9.0
 
   #Local Notification
   awesome_notifications: ^0.10.1

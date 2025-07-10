@@ -1,36 +1,32 @@
 ﻿import 'package:flutter/material.dart';
-import '../../../../common/widgets/appbar/appbar.dart';
-import '../../../../utils/constants/colors.dart';
-import '../../../../utils/helpers/helper_functions.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
-class IncidentLiveMapScreen extends StatelessWidget {
+class IncidentLiveMapScreen extends StatefulWidget {
   const IncidentLiveMapScreen({super.key});
+  @override
+  State<IncidentLiveMapScreen> createState() => _IncidentLiveMapScreenState();
+}
 
-  Future<void> _handleRefresh() async {
-    await Future.delayed(const Duration(seconds: 1));
-    // 🔥 TODO: Add your API call here to refresh membership data
+class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
+  MapboxMap? mapboxMap;
+
+  void _onMapCreated(MapboxMap controller) {
+    mapboxMap = controller;
+    mapboxMap!.setCamera(CameraOptions(
+      center: Point(coordinates: Position(106.67393252105423, 10.831951418898154)),
+      zoom: 12.0,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final dark = THelperFunctions.isDarkMode(context);
-
+    final styleUrl = dotenv.env['GOONG_STYLE_URL']!;
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _handleRefresh,
-        color: TColors.primary,
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            Text(
-              'Live Map Screen',
-              style: TextStyle(
-                fontSize: 18,
-                color: dark ? Colors.white : Colors.black,
-              ),
-            ),
-          ],
-        ),
+      body: MapWidget(
+        key: const ValueKey("map"),
+        styleUri: styleUrl,
+        onMapCreated: _onMapCreated,
       ),
     );
   }
