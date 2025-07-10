@@ -12,6 +12,7 @@ import '../../../../utils/helpers/biometric_helper.dart';
 import '../../../../utils/helpers/network_manager.dart';
 import '../../../../utils/popups/full_screen_loader.dart';
 import '../../../../utils/popups/loaders.dart';
+import '../../screens/login/login.dart';
 
 class LoginController extends GetxController {
   final quickLogin = false.obs;
@@ -113,12 +114,14 @@ class LoginController extends GetxController {
           title: 'Thiết bị chưa được kích hoạt',
           message: 'Bạn chưa bật đăng nhập vân tay cho thiết bị này.',
         );
+        Get.offAll(() => const LoginScreen());
       } else {
         TFullScreenLoader.stopLoading();
         TLoaders.errorSnackBar(
           title: 'Đăng nhập thất bại',
           message: result['message'] ?? 'Lỗi không xác định.',
         );
+        Get.offAll(() => const LoginScreen());
       }
     } catch (e) {
       if (kDebugMode) {
@@ -129,6 +132,7 @@ class LoginController extends GetxController {
         title: 'Xảy ra lỗi rồi!',
         message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau',
       );
+      Get.offAll(() => const LoginScreen());
     }
   }
 

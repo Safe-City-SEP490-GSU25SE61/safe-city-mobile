@@ -188,32 +188,42 @@ class UserProfileService {
 
     try {
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15),
       );
       final response = await http.Response.fromStream(streamedResponse);
+
+      if (kDebugMode) {
+        print(
+          "Update profile response: ${response.statusCode} -> ${response.body}",
+        );
+      }
+
+      final jsonBody = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         return {
           "success": true,
-          "message": "Biometric profile updated successfully",
+          "message": jsonBody["message"] ?? "Successfully updated profile",
         };
-      } else {
-        if (kDebugMode) {
-          print('Failed response: ${response.body}');
-        }
+      } else if (response.statusCode == 400) {
         return {
           "success": false,
-          "message": "Failed to update biometric profile",
+          "message": jsonBody["message"] ?? "Validation Error",
+          "errors": jsonBody["errors"] ?? {},
+        };
+      } else {
+        return {
+          "success": false,
+          "message": "Unexpected error occurred",
+          "statusCode": response.statusCode,
+          "body": jsonBody,
         };
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error: $e');
+        print("Error updating profile: $e");
       }
-      return {
-        "success": false,
-        "message": "Error updating biometric profile: $e",
-      };
+      return {"success": false, "message": "Exception occurred: $e"};
     }
   }
 }

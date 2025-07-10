@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,11 +20,8 @@ class UserProfileController extends GetxController {
   static UserProfileController get instance => Get.find();
   Rx<UserProfileModel> user = UserProfileModel.empty().obs;
   final userProfileService = Get.put(UserProfileService());
-  final fullName = TextEditingController();
   final email = TextEditingController();
   final phone = TextEditingController();
-  final dob = TextEditingController();
-  final gender = TextEditingController();
   final oldPassword = TextEditingController();
   final newPassword = TextEditingController();
   var userUpdateProfile = {}.obs;
@@ -32,13 +31,13 @@ class UserProfileController extends GetxController {
   final hideNewPassword = true.obs;
   final showFullProfile = false.obs;
   final secureStorage = const FlutterSecureStorage();
+  final _auth = LocalAuthentication();
   GlobalKey<FormState> profileFormKey = GlobalKey<FormState>();
 
   @override
   void onInit() {
     super.onInit();
     fetchUserProfile();
-    unlockFullProfile();
   }
 
   Future<void> fetchUserProfile() async {
@@ -125,6 +124,48 @@ class UserProfileController extends GetxController {
   }
 
   Future<void> unlockFullProfile() async {
+    try {
+      final biometricEnabled = await secureStorage.read(
+        key: 'is_biometric_login_enabled',
+      );
+
+      if (biometricEnabled != 'true') {
+        TLoaders.warningSnackBar(
+          title: 'Tính năng chưa được bật',
+          message: 'Vui lòng bật tính năng sinh trắc học để xem chi tiết hồ sơ',
+        );
+        return;
+      }
+
+      final auth = LocalAuthentication();
+      final didConfirm = await auth.authenticate(
+        localizedReason: 'Xác thực vân tay để xem toàn bộ thông tin cá nhân',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+
+      if (didConfirm) {
+        showFullProfile.value = true;
+      } else {
+        showFullProfile.value = false;
+        TLoaders.warningSnackBar(
+          title: 'Xác thực thất bại',
+          message: 'Bạn cần xác thực để xem thông tin đầy đủ.',
+        );
+      }
+    } catch (e) {
+      TLoaders.errorSnackBar(
+        title: 'Xảy ra lỗi rồi!',
+        message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau',
+      );
+    }
+  }
+
+  Future<void> updateEmailAndPhoneOnly() async {
+    if (!profileFormKey.currentState!.validate()) return;
+
     final biometricEnabled = await secureStorage.read(
       key: 'is_biometric_login_enabled',
     );
@@ -132,77 +173,117 @@ class UserProfileController extends GetxController {
     if (biometricEnabled != 'true') {
       TLoaders.warningSnackBar(
         title: 'Tính năng chưa được bật',
-        message: 'Vui lòng bật tính năng sinh trắc học để xem chi tiết hồ sơ',
+        message: 'Vui lòng bật tính năng sinh trắc học để cập nhật thông tin',
       );
       return;
     }
 
-    final auth = LocalAuthentication();
-    final didConfirm = await auth.authenticate(
-      localizedReason: 'Xác thực vân tay để xem toàn bộ thông tin cá nhân',
+    final didConfirm = await _auth.authenticate(
+      localizedReason: 'Xác thực vân tay để tắt sinh trắc học',
       options: const AuthenticationOptions(
         biometricOnly: true,
         stickyAuth: true,
       ),
     );
 
-    if (didConfirm) {
-      showFullProfile.value = true;
-    } else {
-      TLoaders.warningSnackBar(
-        title: 'Xác thực thất bại',
-        message: 'Bạn cần xác thực để xem thông tin đầy đủ.',
+    if (!didConfirm) {
+      TLoaders.warningSnackBar(title: 'Xác thực bị hủy', message: 'Xác thực sinh trắc học đã bị hủy vui lòng thử lại.');
+      return;
+    }
+
+    TFullScreenLoader.openLoadingDialog(
+      'Đang cập nhật thông tin...',
+      TImages.loadingCircle,
+    );
+
+    final isConnected = await NetworkManager.instance.isConnected();
+    if (!isConnected) {
+      TFullScreenLoader.stopLoading();
+      return;
+    }
+
+    try {
+      final deviceId = await secureStorage.read(key: 'device_id');
+      final result = await userProfileService.updateUserProfile(
+        deviceId: deviceId!,
+        isBiometricEnabled: true,
+        email: email.text.trim(),
+        phone: phone.text.trim(),
+        frontImage: null,
+        backImage: null,
       );
+
+      TFullScreenLoader.stopLoading();
+
+      if (result['success'] == true) {
+        TLoaders.successSnackBar(
+          title: 'Thành công',
+          message: "Cập nhật thông tin thành công",
+        );
+        await fetchUserProfile();
+        Get.back();
+      } else {
+        TLoaders.errorSnackBar(
+          title: 'Thất bại',
+          message: result['message'] ?? 'Không thể cập nhật thông tin',
+        );
+
+        if (result.containsKey("errors")) {
+          final errors = result['errors'] as Map<String, dynamic>;
+          errors.forEach((key, value) {
+            TLoaders.warningSnackBar(title: key, message: value.toString());
+          });
+        }
+      }
+    } catch (e) {
+      TFullScreenLoader.stopLoading();
+      TLoaders.errorSnackBar(title: 'Lỗi hệ thống', message: e.toString());
     }
   }
 
-  // Future<void> updateUserProfile() async {
-  //   final selectedDob = DateTime(
-  //     year.value,
-  //     convertVietnameseToMonth(month.value),
-  //     day.value,
-  //   ).toUtc();
-  //   final updatedFields = {
-  //     "fullName":
-  //         fullName.text.isNotEmpty ? fullName.text : user.value.fullName,
-  //     "email": email.text.isNotEmpty ? email.text : user.value.email,
-  //     "phone": phone.text.isNotEmpty ? phone.text : user.value.phone,
-  //     "dateOfBirth": selectedDob.toIso8601String(),
-  //     "gender": gender.text == 'Male' ? true : false,
-  //     "imageUrl": user.value.imageUrl,
-  //   };
-  //
-  //   try {
-  //     TFullScreenLoader.openLoadingDialog(
-  //         'Đang xử lí chờ xíu...', TImages.screenLoadingSparkle2);
-  //
-  //     final isConnected = await NetworkManager.instance.isConnected();
-  //     if (!isConnected) {
-  //       TFullScreenLoader.stopLoading();
-  //       return;
-  //     }
-  //
-  //     if (!profileFormKey.currentState!.validate()) {
-  //       TFullScreenLoader.stopLoading();
-  //       return;
-  //     }
-  //     final result = await userProfileService.updateUserProfile(updatedFields);
-  //     if (result['success'] == true) {
-  //       TLoaders.successSnackBar(
-  //           title: 'Thành công', message: 'Cập nhật thành công');
-  //       TFullScreenLoader.stopLoading();
-  //       await fetchUserProfile();
-  //       Get.off(() => const ProfileScreen());
-  //     } else {
-  //       TLoaders.errorSnackBar(
-  //           title: 'Xảy ra lỗi!', message: result['message']);
-  //     }
-  //   } catch (e) {
-  //     TLoaders.errorSnackBar(
-  //         title: 'Lỗi!', message: 'Không thể cập nhật hồ sơ');
-  //   } finally {
-  //     profileLoading.value = false;
-  //   }
-  // }
-  //
+  Future<void> updateIdentityCardOnly({
+    required File frontImage,
+    required File backImage,
+  }) async {
+    TFullScreenLoader.openLoadingDialog(
+      'Đang tải ảnh CCCD...',
+      TImages.loadingCircle,
+    );
+
+    final isConnected = await NetworkManager.instance.isConnected();
+    if (!isConnected) {
+      TFullScreenLoader.stopLoading();
+      return;
+    }
+
+    try {
+      final deviceId = await secureStorage.read(key: 'device_id');
+      final result = await userProfileService.updateUserProfile(
+        deviceId: deviceId!,
+        isBiometricEnabled: true,
+        email: user.value.email,
+        phone: user.value.phone,
+        frontImage: frontImage,
+        backImage: backImage,
+      );
+
+      TFullScreenLoader.stopLoading();
+
+      if (result['success'] == true) {
+        TLoaders.successSnackBar(
+          title: 'Thành công',
+          message: result['message'].toString(),
+        );
+        await fetchUserProfile();
+      } else {
+        TLoaders.errorSnackBar(
+          title: 'Xảy ra lỗi xác thực',
+          message: 'Hình ảnh CCCD chưa chính xác, vui lòng thử lại',
+        );
+      }
+    } catch (e) {
+      TFullScreenLoader.stopLoading();
+      TLoaders.errorSnackBar(title: 'Lỗi hệ thống', message: e.toString());
+    }
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:safe_city_mobile/features/personalization/screens/profile/widgets/change_email_and_phone.dart';
 import 'package:safe_city_mobile/features/personalization/screens/profile/widgets/change_user_password.dart';
 import 'package:safe_city_mobile/features/personalization/screens/profile/widgets/point_profile_menu.dart';
 import 'package:safe_city_mobile/features/personalization/screens/profile/widgets/profile_menu.dart';
@@ -18,6 +19,7 @@ import 'package:get/get.dart';
 import '../../../../utils/constants/text_strings.dart';
 import '../../../../utils/helpers/user_rank_helper.dart';
 import '../../controllers/profile/user_profile_controller.dart';
+import '../login_and_security/login_and_security.dart';
 
 class ProfileScreen extends StatelessWidget {
   ProfileScreen({super.key});
@@ -148,7 +150,7 @@ class ProfileScreen extends StatelessWidget {
                     title: 'Hồ sơ của tôi',
                     showActionButton: true,
                     buttonTitle: 'Cập nhật thông tin',
-                    onPressed: () => Get.to(() => {}),
+                    onPressed: () => Get.to(() => ChangeEmailAndPhoneScreen()),
                   ),
                   const SizedBox(height: TSizes.spaceBtwItems),
 
@@ -225,10 +227,11 @@ class ProfileScreen extends StatelessWidget {
 
                     return Column(
                       children: [
-                        const TSectionHeading(
+                        TSectionHeading(
                           title: 'Thông tin cá nhân',
                           showActionButton: true,
                           buttonTitle: 'Cập nhật CCCD',
+                          onPressed: () => Get.to(() => const LoginAndSecurityScreen()),
                         ),
                         const SizedBox(height: TSizes.spaceBtwItems),
                         TProfileMenu(
