@@ -12,6 +12,7 @@ import '../../../../utils/helpers/biometric_helper.dart';
 import '../../../../utils/helpers/network_manager.dart';
 import '../../../../utils/popups/full_screen_loader.dart';
 import '../../../../utils/popups/loaders.dart';
+import '../../screens/login/login.dart';
 
 class LoginController extends GetxController {
   final quickLogin = false.obs;
@@ -23,50 +24,115 @@ class LoginController extends GetxController {
   final biometricHelper = BiometricHelper();
   GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
 
-  @override
-  void onInit() {
-    email.text = localStorage.read("biometric_login_email") ?? '';
-    password.text = localStorage.read("biometric_login_password") ?? '';
-    super.onInit();
-  }
-
   Future<void> handleFingerprintLogin() async {
-    final biometricEnabled = await secureStorage.read(
-      key: 'biometric_login_status',
-    );
-    if (biometricEnabled != 'true') {
-      TLoaders.warningSnackBar(
-        title: 'Tính năng chưa được bật',
-        message: 'Vui lòng đăng nhập bằng Email và Mật khẩu',
+    try {
+      TFullScreenLoader.openLoadingDialog(
+        'Đang xử lí chờ xíu...',
+        TImages.loadingCircle,
       );
-      return;
-    }
 
-    final authenticated = await biometricHelper.authenticateWithBiometrics();
-    if (authenticated) {
-      final savedEmail = localStorage.read("biometric_login_email");
-      final savedPassword = localStorage.read("biometric_login_password");
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        return;
+      }
 
-      if (savedEmail == null || savedPassword == null) {
+      final biometricEnabled = await secureStorage.read(
+        key: 'is_biometric_login_enabled',
+      );
+
+      if (biometricEnabled != 'true') {
+        TFullScreenLoader.stopLoading();
+        TLoaders.warningSnackBar(
+          title: 'Tính năng chưa được bật',
+          message: 'Vui lòng đăng nhập bằng Email và Mật khẩu',
+        );
+        return;
+      }
+
+      final authenticated = await biometricHelper.authenticateWithBiometrics();
+      if (!authenticated) {
+        TFullScreenLoader.stopLoading();
         TLoaders.errorSnackBar(
-          title: 'Không tìm thấy tài khoản',
+          title: 'Xác thực thất bại',
+          message: 'Không thể xác thực vân tay',
+        );
+        return;
+      }
+
+      final savedEmail = await secureStorage.read(key: "biometric_login_email");
+      final savedPassword = await secureStorage.read(
+        key: "biometric_login_password",
+      );
+      final deviceId = await secureStorage.read(key: 'device_id');
+
+      if (savedEmail == null || savedPassword == null || deviceId == null) {
+        TLoaders.errorSnackBar(
+          title: 'Thông tin đăng nhập không đầy đủ',
           message: 'Vui lòng đăng nhập lại bằng Email và Mật khẩu',
         );
         return;
       }
 
-      email.text = savedEmail;
-      password.text = savedPassword;
+      final result = await AuthenticationService().handleBiometricLogin(
+        email: savedEmail,
+        password: savedPassword,
+        deviceId: deviceId,
+      );
+      TFullScreenLoader.stopLoading();
 
-      TLoaders.successSnackBar(
-        title: 'Xác thực thành công',
-        message: 'Email và mật khẩu đã được tải',
-      );
-    } else {
+      if (result['success']) {
+        final accessToken = result['data']['data']?['accessToken'] ?? "";
+        final refreshToken = result['data']['data']?['refreshToken'] ?? "";
+
+        await secureStorage.write(key: 'access_token', value: accessToken);
+        await secureStorage.write(key: 'refresh_token', value: refreshToken);
+
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
+        String? userRole = decodedToken['role'];
+        String? userId = decodedToken['sub'];
+
+        await secureStorage.write(key: 'user_id', value: userId);
+
+        if (userRole == 'Citizen') {
+          TLoaders.successSnackBar(
+            title: 'Chào mừng quay trở lại!',
+            message: 'Rất nhiều ưu đãi đang chờ đón bạn',
+          );
+          Get.offAll(() => const NavigationMenu());
+        } else {
+          TLoaders.errorSnackBar(
+            title: 'Không hợp lệ',
+            message: 'Vai trò người dùng không hợp lệ',
+          );
+        }
+      } else if (result['unauthorized'] == true &&
+          result['message'] ==
+              "You haven't enabled biometrics on this device yet.") {
+        TFullScreenLoader.stopLoading();
+        TLoaders.warningSnackBar(
+          title: 'Thiết bị chưa được kích hoạt',
+          message: 'Bạn chưa bật đăng nhập vân tay cho thiết bị này.',
+        );
+        Get.offAll(() => const LoginScreen());
+      } else {
+        TFullScreenLoader.stopLoading();
+        TLoaders.errorSnackBar(
+          title: 'Đăng nhập thất bại',
+          message: result['message'] ?? 'Lỗi không xác định.',
+        );
+        Get.offAll(() => const LoginScreen());
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error occurred: $e');
+      }
+      TFullScreenLoader.stopLoading();
       TLoaders.errorSnackBar(
-        title: 'Xác thực thất bại',
-        message: 'Không thể xác thực vân tay',
+        title: 'Xảy ra lỗi rồi!',
+        message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau',
       );
+      Get.offAll(() => const LoginScreen());
     }
   }
 
@@ -105,6 +171,21 @@ class LoginController extends GetxController {
 
         await secureStorage.write(key: 'access_token', value: accessToken);
         await secureStorage.write(key: 'refresh_token', value: refreshToken);
+
+        final isBiometricEnabled = localStorage.read(
+          "is_biometric_login_enabled",
+        );
+        if (isBiometricEnabled == null ||
+            isBiometricEnabled.toString().trim().isEmpty) {
+          await secureStorage.write(
+            key: 'biometric_login_email',
+            value: email.text.trim(),
+          );
+          await secureStorage.write(
+            key: 'biometric_login_password',
+            value: password.text.trim(),
+          );
+        }
 
         Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
         String? userRole = decodedToken['role'];

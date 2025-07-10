@@ -142,4 +142,45 @@ class AuthenticationService {
       return {"loginFailed": false, "message": 'Đã xảy ra sự cố: $e'};
     }
   }
+
+  Future<Map<String, dynamic>> handleBiometricLogin({
+    required String email,
+    required String password,
+    required String deviceId,
+  }) async {
+    try {
+      final uri = Uri.parse('${apiConnection}auth/biometric-login');
+      final response = await client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "email": email.trim(),
+          "password": password.trim(),
+          "deviceId": deviceId,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          print('Successful Login: $responseData');
+        }
+        return {"success": true, "data": responseData};
+      } else if (response.statusCode == 401) {
+        return {
+          "success": false,
+          "unauthorized": true,
+          "message": responseData['message'],
+        };
+      } else {
+        return {
+          "success": false,
+          "message": responseData['message'] ?? 'Lỗi không xác định',
+        };
+      }
+    } catch (e) {
+      return {"success": false, "message": 'Lỗi hệ thống: $e'};
+    }
+  }
 }

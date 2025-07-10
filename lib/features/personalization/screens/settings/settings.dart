@@ -102,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Iconsax.user_edit,
                     title: 'Thông tin cá nhân',
                     subtitle: 'Chỉnh sửa thông tin cá nhân của bạn',
-                    onTap: () => Get.to(() => const ProfileScreen()),
+                    onTap: () => Get.to(() => ProfileScreen()),
                   ),
                   TSettingsMenuTile(
                     icon: Iconsax.security_safe,
@@ -128,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Các gói đăng ký và ưu đãi',
                     subtitle:
                         'Gói đăng ký để  mở khóa các tính năng độc quyền ',
-                    onTap: () => (Get.to(SubscriptionScreen())),
+                    onTap: () => Get.to(() => SubscriptionScreen()),
                   ),
                   const SizedBox(height: TSizes.mediumSpace),
                   const TSectionHeading(

@@ -2,8 +2,9 @@
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-
+import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../utils/constants/colors.dart';
+import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/helpers/helper_functions.dart';
 import '../../controllers/subcription/subcription_controller.dart';
 
@@ -21,11 +22,10 @@ class SubscriptionHistoryScreen extends StatelessWidget {
     final dark = THelperFunctions.isDarkMode(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Lịch sử đăng ký"),
-        backgroundColor: Colors.transparent,
-        foregroundColor: dark ? Colors.white : Colors.black,
-        elevation: 0,
+      appBar: const TAppBar(
+        title: Text('Lịch sử đăng ký gói'),
+        showCloseButton: false,
+        showBackArrow: true,
       ),
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
@@ -41,12 +41,16 @@ class SubscriptionHistoryScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = controller.history[index];
               return Card(
-                color: TColors.lightGrey,
+                color: dark ? TColors.white : TColors.lightGrey,
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   title: Text(
                     item.packageName,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,54 +58,61 @@ class SubscriptionHistoryScreen extends StatelessWidget {
                       RichText(
                         text: TextSpan(
                           text: "Mã đơn: ",
-                          style: DefaultTextStyle.of(context).style,
+                          style: TextStyle(color: Colors.black),
                           children: [
                             TextSpan(
                               text: item.orderCode,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      SizedBox(height: TSizes.xs),
                       RichText(
                         text: TextSpan(
                           text: "Phương thức: ",
-                          style: DefaultTextStyle.of(context).style,
+                          style: TextStyle(color: Colors.black),
                           children: [
                             TextSpan(
                               text: item.paymentMethod,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      SizedBox(height: TSizes.xs),
                       RichText(
                         text: TextSpan(
                           text: "Trạng thái: ",
-                          style: DefaultTextStyle.of(context).style,
+                          style: TextStyle(color: Colors.black),
                           children: [
                             TextSpan(
                               text: item.status,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      SizedBox(height: TSizes.xs),
                       RichText(
                         text: TextSpan(
                           text: "Thời gian: ",
-                          style: DefaultTextStyle.of(context).style,
+                          style: TextStyle(color: Colors.black),
                           children: [
                             TextSpan(
                               text: item.paidAt,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
                           ],

@@ -1,11 +1,17 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/helpers/helper_functions.dart';
+import '../../../../utils/popups/loaders.dart';
 import '../../../authentication/controllers/camera/camera_controller.dart';
 import '../../controllers/login_and_security/user_login_and_security_controller.dart';
+import '../../controllers/profile/user_profile_controller.dart';
+import '../profile/profile.dart';
 
 class LoginAndSecurityScreen extends StatelessWidget {
   const LoginAndSecurityScreen({super.key});
@@ -19,7 +25,6 @@ class LoginAndSecurityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
     final controller = Get.put(UserLoginAndSecurityController());
-    final cameraController = Get.put(UserIdCameraController());
     return Scaffold(
       appBar: TAppBar(title: Text('Tùy chỉnh tài khoản'), showBackArrow: true),
       body: RefreshIndicator(
@@ -36,6 +41,7 @@ class LoginAndSecurityScreen extends StatelessWidget {
             const SizedBox(height: TSizes.spaceBtwItems),
 
             Card(
+              color: dark ? TColors.darkerBlack : TColors.lightGrey,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -175,7 +181,168 @@ class LoginAndSecurityScreen extends StatelessWidget {
                                     'Để tài khoản được bảo mật tốt nhất',
                                     style: TextStyle(color: Colors.black),
                                   ),
-                                  onTap: () {},
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.vertical(
+                                          top: Radius.circular(20),
+                                        ),
+                                      ),
+                                      backgroundColor: TColors.lightGrey,
+                                      builder: (context) {
+                                        File? frontImage;
+                                        File? backImage;
+
+                                        return StatefulBuilder(
+                                          builder: (context, setState) {
+                                            return Padding(
+                                              padding: MediaQuery.of(
+                                                context,
+                                              ).viewInsets,
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(
+                                                  16.0,
+                                                ),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Text(
+                                                      'Cập nhật CCCD gắn chip',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 18,
+                                                        color: Colors.black,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceAround,
+                                                      children: [
+                                                        _buildImagePickerBox(
+                                                          context: context,
+                                                          label: 'Mặt trước',
+                                                          imageFile: frontImage,
+                                                          onTap: () async {
+                                                            final picked = await ImagePicker()
+                                                                .pickImage(
+                                                                  source:
+                                                                      ImageSource
+                                                                          .gallery,
+                                                                  imageQuality:
+                                                                      80,
+                                                                  maxHeight:
+                                                                      2000,
+                                                                  maxWidth:
+                                                                      2000,
+                                                                );
+                                                            if (picked !=
+                                                                null) {
+                                                              setState(
+                                                                () => frontImage =
+                                                                    File(
+                                                                      picked
+                                                                          .path,
+                                                                    ),
+                                                              );
+                                                            }
+                                                          },
+                                                        ),
+                                                        _buildImagePickerBox(
+                                                          context: context,
+                                                          label: 'Mặt sau',
+                                                          imageFile: backImage,
+                                                          onTap: () async {
+                                                            final picked = await ImagePicker()
+                                                                .pickImage(
+                                                                  source:
+                                                                      ImageSource
+                                                                          .gallery,
+                                                                  imageQuality:
+                                                                      80,
+                                                                  maxHeight:
+                                                                      2000,
+                                                                  maxWidth:
+                                                                      2000,
+                                                                );
+                                                            if (picked !=
+                                                                null) {
+                                                              setState(
+                                                                () => backImage =
+                                                                    File(
+                                                                      picked
+                                                                          .path,
+                                                                    ),
+                                                              );
+                                                            }
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 20),
+                                                    SizedBox(
+                                                      width: double.infinity,
+                                                      child: ElevatedButton.icon(
+                                                        icon: const Icon(
+                                                          Icons.save_alt,
+                                                        ),
+                                                        label: const Text(
+                                                          'Lưu ảnh CCCD',
+                                                        ),
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor:
+                                                              TColors.primary,
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                vertical: 12,
+                                                              ),
+                                                        ),
+                                                        onPressed: () async {
+                                                          if (frontImage ==
+                                                                  null ||
+                                                              backImage ==
+                                                                  null) {
+                                                            TLoaders.warningSnackBar(
+                                                              title:
+                                                                  'Thiếu ảnh',
+                                                              message:
+                                                                  'Vui lòng chọn đầy đủ ảnh mặt trước và mặt sau CCCD.',
+                                                            );
+                                                            return;
+                                                          }
+
+                                                          final userProfileController =
+                                                              Get.put(
+                                                                UserProfileController(),
+                                                              );
+                                                          Navigator.pop(
+                                                            context,
+                                                          ); // Close bottom sheet
+                                                          await userProfileController
+                                                              .updateIdentityCardOnly(
+                                                                frontImage:
+                                                                    frontImage!,
+                                                                backImage:
+                                                                    backImage!,
+                                                              );
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
                                 ),
                                 const Divider(),
                                 ListTile(
@@ -192,8 +359,8 @@ class LoginAndSecurityScreen extends StatelessWidget {
                                     style: TextStyle(color: Colors.black),
                                   ),
                                   onTap: () {
-                                    // TODO: Handle facial verification
                                     Navigator.pop(context);
+                                    Get.to(() => ProfileScreen());
                                   },
                                 ),
                                 const SizedBox(height: 10),
@@ -213,4 +380,42 @@ class LoginAndSecurityScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _buildImagePickerBox({
+  required BuildContext context,
+  required String label,
+  required File? imageFile,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 120,
+      height: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: TColors.darkGrey),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: imageFile != null
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.file(imageFile, fit: BoxFit.cover),
+            )
+          : Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.add_photo_alternate_outlined, size: 30),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: const TextStyle(fontSize: 14, color: Colors.black),
+                  ),
+                ],
+              ),
+            ),
+    ),
+  );
 }
