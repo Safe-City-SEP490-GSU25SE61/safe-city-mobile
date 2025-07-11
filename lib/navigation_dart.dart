@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 import 'package:safe_city_mobile/utils/helpers/helper_functions.dart';
 
-import 'features/incident_live_map/screens/incident_live_map.dart';
+import 'features/incident_live_map/screens/widgets/incident_live_map.dart';
 import 'features/incident_report/screens/incident_report.dart';
 import 'features/personalization/screens/settings/settings.dart';
 
