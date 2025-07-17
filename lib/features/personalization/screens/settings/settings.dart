@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:safe_city_mobile/features/personalization/screens/settings/widgets/about_app.dart';
+import 'package:safe_city_mobile/features/personalization/screens/settings/widgets/membership_tier.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../common/widgets/custom_shapes/containers/primary_header_container.dart';
@@ -121,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Thành tựu và cấp bậc',
                     subtitle:
                         'Các thành tựu khi tham gia vào các hoạt động trên app',
-                    onTap: () => {},
+                    onTap: () => Get.to(() => MembershipTierScreen()),
                   ),
                   TSettingsMenuTile(
                     icon: Iconsax.calendar_2,
@@ -147,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Iconsax.mobile,
                     title: 'Thông tin chung ',
                     subtitle: 'Điều khoản, chính sách và thông tin hệ thống',
-                    onTap: () {},
+                    onTap: () => Get.to(() => AboutAppScreen()),
                   ),
 
                   ///Logout

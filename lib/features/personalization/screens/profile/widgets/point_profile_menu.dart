@@ -35,10 +35,24 @@ class TPointDisplay extends StatelessWidget {
           Expanded(
             flex: 4,
             child: hasPoints
-                ? Text(
-                    '$totalPoint',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    overflow: TextOverflow.ellipsis,
+                ? RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$totalPoint',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: TColors.accent,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' Điểm',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: TColors.accent),
+                        ),
+                      ],
+                    ),
                   )
                 : RichText(
                     text: TextSpan(

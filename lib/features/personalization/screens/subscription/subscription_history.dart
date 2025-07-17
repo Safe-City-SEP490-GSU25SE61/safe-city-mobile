@@ -31,6 +31,12 @@ class SubscriptionHistoryScreen extends StatelessWidget {
         onRefresh: _handleRefresh,
         color: TColors.primary,
         child: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(color: TColors.primary),
+            );
+          }
+
           if (controller.history.isEmpty) {
             return const Center(child: Text("Không có lịch sử đăng ký"));
           }
