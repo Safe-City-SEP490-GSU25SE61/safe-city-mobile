@@ -51,4 +51,7 @@ class TImages {
   static const String gold = "assets/images/ranking/gold-rank.png";
   static const String platinum = "assets/images/ranking/platinum-rank.png";
   static const String protector = "assets/images/ranking/protector-rank.png";
+  //--Map Images
+  static const String currentLocationIconPuck = "assets/images/map/pulsing_dot.gif";
+  static const String locationIcon = "assets/images/map/location-icon.png";
 }

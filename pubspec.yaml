@@ -39,6 +39,7 @@ dependencies:
 
   #Maps Integration
   mapbox_maps_flutter: ^2.9.0
+  geolocator: ^14.0.2
 
   #Local Notification
   awesome_notifications: ^0.10.1
@@ -105,6 +106,7 @@ flutter:
     - assets/images/ranking/
     - assets/images/default_avatar/
     - assets/images/status/
+    - assets/images/map/
 
   # Local fonts:
   fonts:

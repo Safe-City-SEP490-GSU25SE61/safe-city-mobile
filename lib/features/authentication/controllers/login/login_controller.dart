@@ -15,6 +15,7 @@ import '../../../../utils/popups/loaders.dart';
 import '../../screens/login/login.dart';
 
 class LoginController extends GetxController {
+  final rememberMe = false.obs;
   final quickLogin = false.obs;
   final hidePassword = true.obs;
   final localStorage = GetStorage();
@@ -119,7 +120,7 @@ class LoginController extends GetxController {
         TFullScreenLoader.stopLoading();
         TLoaders.errorSnackBar(
           title: 'Đăng nhập thất bại',
-          message: result['message'] ?? 'Lỗi không xác định.',
+          message: 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau.',
         );
         Get.offAll(() => const LoginScreen());
       }
