@@ -20,6 +20,9 @@ class MapController extends GetxController {
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY']!;
   final searchController = TextEditingController();
   final RxList<GoongPredictionModel> predictions = <GoongPredictionModel>[].obs;
+  final Rx<GoongPredictionModel?> selectedLocation = Rx<GoongPredictionModel?>(
+    null,
+  );
 
   Future<void> initMap(MapboxMap controller, bool isDarkMode) async {
     mapboxMap = controller;
@@ -52,10 +55,24 @@ class MapController extends GetxController {
         ),
       ),
     );
+    final tapInteraction = LongTapInteraction.onMap((context) async {
+      final tappedPoint = context.point;
+      final lat = tappedPoint.coordinates.lat.toDouble();
+      final lng = tappedPoint.coordinates.lng.toDouble();
+      await reverseGeocodeFromCoordinates(lat, lng);
+      await _addCustomMarker(tappedPoint);
+    });
+    controller.addInteraction(
+      tapInteraction,
+      interactionID: "long-tap-to-select-location",
+    );
   }
 
   Future<void> searchPlace(String input) async {
-    final loc = await geo.Geolocator.getCurrentPosition();
+    final loc =
+        await geo.Geolocator.getLastKnownPosition() ??
+        await geo.Geolocator.getCurrentPosition();
+
     final userLat = loc.latitude;
     final userLng = loc.longitude;
 
@@ -63,73 +80,70 @@ class MapController extends GetxController {
         'https://rsapi.goong.io/v2/place/autocomplete'
         '?input=$input'
         '&location=$userLat,$userLng'
-        '&limit=5'
-        '&has_deprecated_administrative_unit=false'
-        '&api_key=$goongMapTilesKey';
+        '&limit=5&api_key=$goongMapTilesKey'
+        '&more_compound=true'
+        '&has_deprecated_administrative_unit=false';
 
     final acRes = await http.get(Uri.parse(acUrl));
     if (acRes.statusCode != 200) return;
 
-    final acData = jsonDecode(acRes.body);
-    final preds = (acData['predictions'] as List)
+    final preds = (jsonDecode(acRes.body)['predictions'] as List)
         .map((e) => GoongPredictionModel.fromJson(e))
         .toList();
 
-    final detailedPredictions = await Future.wait(
+    if (kDebugMode) {
+      print("🔢 Predictions count: ${preds.length}");
+      for (var p in preds) {
+        print(
+          "🔍 Prediction: ${p.description}, ${p.mainText}, ${p.secondaryText}, ${p.placeId}",
+        );
+      }
+    }
+
+    final detailed = await Future.wait(
       preds.map((p) async {
         try {
-          final det = await http.get(
-            Uri.parse(
-              'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
-            ),
-          );
-
-          if (det.statusCode == 200) {
-            final loc = jsonDecode(det.body)['result']['geometry']['location'];
+          final res = await http
+              .get(
+                Uri.parse(
+                  'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
+                ),
+              )
+              .timeout(const Duration(seconds: 3));
+          if (res.statusCode == 200) {
+            final loc = jsonDecode(res.body)['result']['geometry']['location'];
             p.lat = loc['lat'];
             p.lng = loc['lng'];
-          } else {
-            debugPrint('❌ Place detail failed for ${p.placeId}');
           }
-        } catch (e) {
-          debugPrint('❌ Exception during place detail: $e');
-        }
+        } catch (_) {}
         return p;
       }),
     );
 
-    final coords = detailedPredictions
+    final coords = detailed
         .where((p) => p.lat != null && p.lng != null)
         .toList();
 
+    if (coords.isEmpty) return;
+
     final destCoords = coords.map((p) => '${p.lat},${p.lng}').join('|');
 
-    if (destCoords.isNotEmpty) {
-      final dmUrl =
-          'https://rsapi.goong.io/v2/distancematrix'
-          '?origins=$userLat,$userLng'
-          '&destinations=$destCoords'
-          '&vehicle=car'
-          '&api_key=$goongMapTilesKey';
+    final dmUrl =
+        'https://rsapi.goong.io/v2/distancematrix?origins=$userLat,$userLng&destinations=$destCoords&vehicle=car&api_key=$goongMapTilesKey';
 
-      try {
-        final dmRes = await http.get(Uri.parse(dmUrl));
-        if (dmRes.statusCode == 200) {
-          final elements =
-              jsonDecode(dmRes.body)['rows'][0]['elements'] as List;
-
-          for (var i = 0; i < coords.length; i++) {
-            final el = elements[i];
-            coords[i].distanceText = (el['status'] == 'OK')
-                ? el['distance']['text']
-                : null;
-          }
-        } else {
-          debugPrint('❌ DistanceMatrix failed: ${dmRes.body}');
+    try {
+      final dmRes = await http.get(Uri.parse(dmUrl));
+      if (dmRes.statusCode == 200) {
+        final elements = jsonDecode(dmRes.body)['rows'][0]['elements'] as List;
+        for (var i = 0; i < coords.length; i++) {
+          final el = elements[i];
+          coords[i].distanceText = el['status'] == 'OK'
+              ? el['distance']['text']
+              : null;
         }
-      } catch (e) {
-        debugPrint('❌ Exception during distance matrix fetch: $e');
       }
+    } catch (e) {
+      debugPrint('❌ Distance matrix error: $e');
     }
 
     predictions.value = coords;
@@ -137,7 +151,7 @@ class MapController extends GetxController {
 
   Future<void> selectPlace(String placeId) async {
     final url =
-        'https://rsapi.goong.io/Place/Detail?place_id=$placeId&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/place/detail?place_id=$placeId&api_key=$goongMapTilesKey';
     final res = await http.get(Uri.parse(url));
 
     if (res.statusCode == 200) {
@@ -155,6 +169,18 @@ class MapController extends GetxController {
         }
         return;
       }
+
+      final model = GoongPredictionModel(
+        description:
+            data['result']['formatted_address'] ?? data['result']['name'] ?? '',
+        placeId: placeId,
+        mainText: data['result']['name'] ?? '',
+        secondaryText: data['result']['formatted_address'] ?? '',
+      );
+      model.lat = lat;
+      model.lng = lng;
+
+      selectedLocation.value = model;
 
       final point = Point(coordinates: Position(lng, lat));
 
@@ -180,7 +206,7 @@ class MapController extends GetxController {
     bool serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return TLoaders.warningSnackBar(
-        title: 'Lỗi',
+        title: 'Lỗi quyền truy cập',
         message: 'Vui lòng bật định vị GPS',
       );
     }
@@ -190,7 +216,7 @@ class MapController extends GetxController {
       permission = await geo.Geolocator.requestPermission();
       if (permission == geo.LocationPermission.denied) {
         return TLoaders.warningSnackBar(
-          title: 'Lỗi',
+          title: 'Lỗi quyền truy cập',
           message: 'Ứng dụng cần quyền truy cập vị trí',
         );
       }
@@ -198,7 +224,7 @@ class MapController extends GetxController {
 
     if (permission == geo.LocationPermission.deniedForever) {
       return TLoaders.warningSnackBar(
-        title: 'Lỗi',
+        title: 'Lỗi quyền truy cập',
         message: 'Vị trí đã bị từ chối vĩnh viễn.',
       );
     }
@@ -233,5 +259,51 @@ class MapController extends GetxController {
   Future<Uint8List> getImageFromAsset(String path) async {
     final ByteData bytes = await rootBundle.load(path);
     return bytes.buffer.asUint8List();
+  }
+
+  Future<void> clearSelectedLocation() async {
+    selectedLocation.value = null;
+    await _customMarkerManager?.deleteAll();
+  }
+
+  Future<void> reverseGeocodeFromCoordinates(double lat, double lng) async {
+    final url = Uri.parse(
+      'https://rsapi.goong.io/v2/geocode'
+      '?latlng=$lat,$lng'
+      '&limit=1'
+      '&has_deprecated_administrative_unit=true'
+      '&api_key=$goongMapTilesKey',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final results = data['results'];
+        if (results != null && results.isNotEmpty) {
+          final item = results[0];
+          final model = GoongPredictionModel(
+            placeId: item['place_id'],
+            mainText: item['name'] ?? "Vị trí đã chọn",
+            secondaryText: item['address'] ?? '',
+            description: item['formatted_address'] ?? '',
+          );
+          model.lat = lat;
+          model.lng = lng;
+
+          selectedLocation.value = model;
+
+          if (kDebugMode) {
+            print("📍 Reverse geocoded: ${model.description}");
+          }
+        } else {
+          debugPrint("⚠️ Không tìm thấy địa chỉ từ tọa độ.");
+        }
+      } else {
+        debugPrint("❌ Reverse geocode failed: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("❌ Lỗi reverse geocode: $e");
+    }
   }
 }

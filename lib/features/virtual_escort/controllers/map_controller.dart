@@ -55,81 +55,67 @@ class MapController extends GetxController {
   }
 
   Future<void> searchPlace(String input) async {
-    final loc = await geo.Geolocator.getCurrentPosition();
+    final loc =
+        await geo.Geolocator.getLastKnownPosition() ??
+        await geo.Geolocator.getCurrentPosition();
+
     final userLat = loc.latitude;
     final userLng = loc.longitude;
 
     final acUrl =
-        'https://rsapi.goong.io/v2/place/autocomplete'
-        '?input=$input'
-        '&location=$userLat,$userLng'
-        '&limit=5'
-        '&has_deprecated_administrative_unit=false'
-        '&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/place/autocomplete?input=$input&location=$userLat,$userLng&limit=5&has_deprecated_administrative_unit=false&api_key=$goongMapTilesKey';
 
     final acRes = await http.get(Uri.parse(acUrl));
     if (acRes.statusCode != 200) return;
 
-    final acData = jsonDecode(acRes.body);
-    final preds = (acData['predictions'] as List)
+    final preds = (jsonDecode(acRes.body)['predictions'] as List)
         .map((e) => GoongPredictionModel.fromJson(e))
         .toList();
 
-    final detailedPredictions = await Future.wait(
+    final detailed = await Future.wait(
       preds.map((p) async {
         try {
-          final det = await http.get(
-            Uri.parse(
-              'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
-            ),
-          );
-
-          if (det.statusCode == 200) {
-            final loc = jsonDecode(det.body)['result']['geometry']['location'];
+          final res = await http
+              .get(
+                Uri.parse(
+                  'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
+                ),
+              )
+              .timeout(const Duration(seconds: 3));
+          if (res.statusCode == 200) {
+            final loc = jsonDecode(res.body)['result']['geometry']['location'];
             p.lat = loc['lat'];
             p.lng = loc['lng'];
-          } else {
-            debugPrint('❌ Place detail failed for ${p.placeId}');
           }
-        } catch (e) {
-          debugPrint('❌ Exception during place detail: $e');
-        }
+        } catch (_) {}
         return p;
       }),
     );
 
-    final coords = detailedPredictions
+    final coords = detailed
         .where((p) => p.lat != null && p.lng != null)
         .toList();
 
+    if (coords.isEmpty) return;
+
     final destCoords = coords.map((p) => '${p.lat},${p.lng}').join('|');
 
-    if (destCoords.isNotEmpty) {
-      final dmUrl =
-          'https://rsapi.goong.io/v2/distancematrix'
-          '?origins=$userLat,$userLng'
-          '&destinations=$destCoords'
-          '&vehicle=car'
-          '&api_key=$goongMapTilesKey';
+    final dmUrl =
+        'https://rsapi.goong.io/v2/distancematrix?origins=$userLat,$userLng&destinations=$destCoords&vehicle=car&api_key=$goongMapTilesKey';
 
-      try {
-        final dmRes = await http.get(Uri.parse(dmUrl));
-        if (dmRes.statusCode == 200) {
-          final elements =
-              jsonDecode(dmRes.body)['rows'][0]['elements'] as List;
-
-          for (var i = 0; i < coords.length; i++) {
-            final el = elements[i];
-            coords[i].distanceText = (el['status'] == 'OK')
-                ? el['distance']['text']
-                : null;
-          }
-        } else {
-          debugPrint('❌ DistanceMatrix failed: ${dmRes.body}');
+    try {
+      final dmRes = await http.get(Uri.parse(dmUrl));
+      if (dmRes.statusCode == 200) {
+        final elements = jsonDecode(dmRes.body)['rows'][0]['elements'] as List;
+        for (var i = 0; i < coords.length; i++) {
+          final el = elements[i];
+          coords[i].distanceText = el['status'] == 'OK'
+              ? el['distance']['text']
+              : null;
         }
-      } catch (e) {
-        debugPrint('❌ Exception during distance matrix fetch: $e');
       }
+    } catch (e) {
+      debugPrint('❌ Distance matrix error: $e');
     }
 
     predictions.value = coords;

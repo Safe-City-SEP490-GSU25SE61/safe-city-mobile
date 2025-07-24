@@ -4,9 +4,11 @@ import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 import 'package:safe_city_mobile/utils/helpers/helper_functions.dart';
 
+import 'features/community_blog/screens/community_blog.dart';
 import 'features/incident_live_map/screens/incident_live_map.dart';
 import 'features/incident_report/screens/incident_report.dart';
 import 'features/personalization/screens/settings/settings.dart';
+import 'features/virtual_escort/screens/virtual_escort.dart';
 
 class NavigationMenu extends StatelessWidget {
   const NavigationMenu({super.key});
@@ -63,8 +65,8 @@ class NavigationController extends GetxController {
   final screens = [
     const IncidentLiveMapScreen(),
     const IncidentReportScreen(),
-    Container(color: Colors.orange),
-    Container(color: Colors.blue),
+    const CommunityBlogScreen(),
+    const VirtualEscortScreen(),
     const SettingsScreen(),
   ];
 }

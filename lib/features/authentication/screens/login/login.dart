@@ -3,9 +3,6 @@ import 'package:safe_city_mobile/features/authentication/screens/login/widgets/l
 import 'package:safe_city_mobile/features/authentication/screens/login/widgets/login_header.dart';
 
 import '../../../../common/styles/spacing_styles.dart';
-import '../../../../common/widgets/login_signup/form_divider.dart';
-import '../../../../utils/constants/sizes.dart';
-import '../../../../utils/constants/text_strings.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -23,7 +20,6 @@ class LoginScreen extends StatelessWidget {
 
               ///Form
               TLoginForm(),
-
             ],
           ),
         ),

@@ -6,12 +6,14 @@
   double? lat;
   double? lng;
   String? distanceText;
+  String? updatedAddress;
 
   GoongPredictionModel({
     required this.description,
     required this.placeId,
     required this.mainText,
     required this.secondaryText,
+    this.updatedAddress,
   });
 
   factory GoongPredictionModel.fromJson(Map<String, dynamic> json) {

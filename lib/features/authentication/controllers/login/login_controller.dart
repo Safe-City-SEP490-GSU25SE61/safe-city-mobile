@@ -139,20 +139,17 @@ class LoginController extends GetxController {
 
   Future<void> emailAndPasswordSignIn() async {
     try {
-      //start loading
       TFullScreenLoader.openLoadingDialog(
         'Đang xử lí chờ xíu...',
         TImages.loadingCircle,
       );
 
-      //check internet connectivity
       final isConnected = await NetworkManager.instance.isConnected();
       if (!isConnected) {
         TFullScreenLoader.stopLoading();
         return;
       }
 
-      //form validation
       if (!loginFormKey.currentState!.validate()) {
         TFullScreenLoader.stopLoading();
         return;

@@ -65,4 +65,18 @@ class TValidator {
 
     return null;
   }
+
+  static String? validateDropdown(String? fieldName, String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Vui lòng chọn $fieldName';
+    }
+    return null;
+  }
+
+  static String? validateDateTime(String? fieldName, String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Hãy chọn $fieldName';
+    }
+    return null;
+  }
 }

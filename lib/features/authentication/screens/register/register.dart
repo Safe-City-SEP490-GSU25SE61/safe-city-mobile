@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:safe_city_mobile/features/authentication/screens/register/widgets/register_form.dart';
-
 import '../../../../common/widgets/appbar/appbar.dart';
-import '../../../../common/widgets/custom_shapes/containers/primary_header_container.dart';
-import '../../../../common/widgets/login_signup/form_divider.dart';
-
-import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
-import '../../../../utils/constants/text_strings.dart';
-import '../../../../utils/helpers/helper_functions.dart';
 import '../login/login.dart';
 
 class RegisterScreen extends StatelessWidget {

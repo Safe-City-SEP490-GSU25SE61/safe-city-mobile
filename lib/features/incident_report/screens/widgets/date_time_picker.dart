@@ -2,9 +2,12 @@
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../utils/helpers/helper_functions.dart';
+import '../../../../utils/validators/validation.dart';
 
 class DateTimePickerField extends StatefulWidget {
-  const DateTimePickerField({super.key});
+  final void Function(DateTime? dateTime)? onChanged;
+
+  const DateTimePickerField({super.key, this.onChanged});
 
   @override
   State<DateTimePickerField> createState() => _DateTimePickerFieldState();
@@ -13,6 +16,22 @@ class DateTimePickerField extends StatefulWidget {
 class _DateTimePickerFieldState extends State<DateTimePickerField> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController timeController = TextEditingController();
+
+  DateTime? selectedDate;
+  TimeOfDay? selectedTime;
+
+  void _notifyChange() {
+    if (selectedDate != null && selectedTime != null) {
+      final fullDateTime = DateTime(
+        selectedDate!.year,
+        selectedDate!.month,
+        selectedDate!.day,
+        selectedTime!.hour,
+        selectedTime!.minute,
+      );
+      widget.onChanged?.call(fullDateTime);
+    }
+  }
 
   Future<void> selectDate() async {
     DateTime? pickedDate = await showDatePicker(
@@ -24,9 +43,11 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
 
     if (pickedDate != null) {
       setState(() {
+        selectedDate = pickedDate;
         dateController.text =
             "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
       });
+      _notifyChange();
     }
   }
 
@@ -42,8 +63,10 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
 
     if (pickedTime != null) {
       setState(() {
+        selectedTime = pickedTime;
         timeController.text = pickedTime.format(context);
       });
+      _notifyChange();
     }
   }
 
@@ -71,7 +94,7 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
-                  children: [
+                  children: const [
                     TextSpan(
                       text: '*',
                       style: TextStyle(
@@ -82,10 +105,11 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
                   ],
                 ),
               ),
-              prefixIcon: Icon(Iconsax.calendar),
+              prefixIcon: const Icon(Iconsax.calendar),
             ),
             readOnly: true,
             onTap: selectDate,
+            validator: (value) => TValidator.validateDateTime('ngày', value),
           ),
         ),
         const SizedBox(width: 12),
@@ -101,7 +125,7 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
-                  children: [
+                  children: const [
                     TextSpan(
                       text: '*',
                       style: TextStyle(
@@ -112,10 +136,12 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
                   ],
                 ),
               ),
-              prefixIcon: Icon(Iconsax.clock),
+              prefixIcon: const Icon(Iconsax.clock),
             ),
             readOnly: true,
             onTap: selectTime,
+            validator: (value) =>
+                TValidator.validateDateTime('thời gian', value),
           ),
         ),
       ],
