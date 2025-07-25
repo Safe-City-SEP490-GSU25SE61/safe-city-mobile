@@ -1,12 +1,19 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../utils/helpers/helper_functions.dart';
 
 class AdvancedVideoPlayer extends StatefulWidget {
   final String videoUrl;
+  final bool isFullscreen;
 
-  const AdvancedVideoPlayer({super.key, required this.videoUrl});
+  const AdvancedVideoPlayer({
+    super.key,
+    required this.videoUrl,
+    this.isFullscreen = false,
+  });
 
   @override
   State<AdvancedVideoPlayer> createState() => _AdvancedVideoPlayerState();
@@ -15,6 +22,7 @@ class AdvancedVideoPlayer extends StatefulWidget {
 class _AdvancedVideoPlayerState extends State<AdvancedVideoPlayer> {
   late VideoPlayerController _controller;
   bool _isControlsVisible = true;
+  Timer? _hideTimer;
 
   @override
   void initState() {
@@ -26,19 +34,43 @@ class _AdvancedVideoPlayerState extends State<AdvancedVideoPlayer> {
 
   @override
   void dispose() {
+    _hideTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   void _togglePlayPause() {
     setState(() {
-      _controller.value.isPlaying ? _controller.pause() : _controller.play();
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+        _hideTimer?.cancel();
+      } else {
+        _controller.play();
+        _startHideTimer();
+      }
     });
   }
 
   void _toggleControlsVisibility() {
     setState(() {
       _isControlsVisible = !_isControlsVisible;
+    });
+
+    if (_isControlsVisible && _controller.value.isPlaying) {
+      _startHideTimer();
+    } else {
+      _hideTimer?.cancel();
+    }
+  }
+
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (_controller.value.isPlaying) {
+        setState(() {
+          _isControlsVisible = false;
+        });
+      }
     });
   }
 
@@ -51,26 +83,33 @@ class _AdvancedVideoPlayerState extends State<AdvancedVideoPlayer> {
       );
     }
 
+    final video = AspectRatio(
+      aspectRatio: _controller.value.aspectRatio,
+      child: VideoPlayer(_controller),
+    );
+
     return GestureDetector(
       onTap: _toggleControlsVisibility,
       child: Stack(
-        alignment: Alignment.bottomCenter,
+        alignment: Alignment.center,
         children: [
-          AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          ),
+          widget.isFullscreen ? Center(child: video) : video,
 
           if (_isControlsVisible) _buildControlsOverlay(),
 
-          VideoProgressIndicator(
-            _controller,
-            allowScrubbing: true,
-            padding: const EdgeInsets.all(8),
-            colors: VideoProgressColors(
-              playedColor: Colors.red,
-              backgroundColor: Colors.grey.shade300,
-              bufferedColor: Colors.grey.shade500,
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: VideoProgressIndicator(
+              _controller,
+              allowScrubbing: true,
+              padding: const EdgeInsets.all(8),
+              colors: VideoProgressColors(
+                playedColor: Colors.red,
+                backgroundColor: Colors.grey.shade300,
+                bufferedColor: Colors.grey.shade500,
+              ),
             ),
           ),
         ],
@@ -120,23 +159,17 @@ class _AdvancedVideoPlayerState extends State<AdvancedVideoPlayer> {
           right: 12,
           bottom: 2,
           child: IconButton(
-            icon: Text(
-              String.fromCharCode(Icons.fullscreen.codePoint),
-              style: TextStyle(
-                fontSize: 24,
-                fontFamily: Icons.fullscreen.fontFamily,
-                package: Icons.fullscreen.fontPackage,
-                color: Colors.white,
-                shadows: const [
-                  Shadow(
-                    color: Colors.black,
-                    blurRadius: 4,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
+            icon: Icon(
+              widget.isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+              color: Colors.white,
             ),
-            onPressed: _toggleFullscreen,
+            onPressed: () {
+              if (widget.isFullscreen) {
+                Navigator.pop(context);
+              } else {
+                _toggleFullscreen();
+              }
+            },
           ),
         ),
       ],
@@ -144,32 +177,16 @@ class _AdvancedVideoPlayerState extends State<AdvancedVideoPlayer> {
   }
 
   void _toggleFullscreen() {
-    final dark = THelperFunctions.isDarkMode(context);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
           backgroundColor: Colors.black,
           body: SafeArea(
-            child: Stack(
-              children: [
-                Center(
-                  child: AspectRatio(
-                    aspectRatio: _controller.value.aspectRatio,
-                    child: VideoPlayer(_controller),
-                  ),
-                ),
-                Positioned(
-                  top: 24,
-                  left: 8,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: dark ? Colors.white : Colors.black,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-              ],
+            child: Center(
+              child: AdvancedVideoPlayer(
+                videoUrl: widget.videoUrl,
+                isFullscreen: true,
+              ),
             ),
           ),
         ),

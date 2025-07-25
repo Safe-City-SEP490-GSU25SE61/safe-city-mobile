@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:safe_city_mobile/features/incident_report/screens/widgets/image_fullscreen_widget.dart';
 import 'package:safe_city_mobile/features/incident_report/screens/widgets/video_player_widget.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 
@@ -16,7 +17,6 @@ class ReportDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = THelperFunctions.isDarkMode(context);
     final statusEnum = ReportStatus.values.firstWhere(
       (e) => e.value == report.status,
       orElse: () => ReportStatus.pending,
@@ -67,9 +67,21 @@ class ReportDetailScreen extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       itemCount: report.imageUrls.length,
                       itemBuilder: (context, index) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(report.imageUrls[index]),
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => FullScreenImageViewer(
+                                  images: report.imageUrls,
+                                  initialIndex: index,
+                                ),
+                              ),
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(report.imageUrls[index]),
+                          ),
                         );
                       },
                       separatorBuilder: (_, _) => const SizedBox(width: 8),
