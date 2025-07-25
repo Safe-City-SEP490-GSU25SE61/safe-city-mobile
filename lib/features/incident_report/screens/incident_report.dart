@@ -211,17 +211,34 @@ class IncidentReportScreen extends StatelessWidget {
                           await Get.to(() => const LiveMapScreen());
                         },
                         icon: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(50),
                             color: dark
                                 ? TColors.white.withValues(alpha: 0.9)
                                 : TColors.softGrey.withValues(alpha: 0.9),
                           ),
-                          padding: const EdgeInsets.all(8),
-                          child: const Icon(
-                            Iconsax.gps,
-                            color: TColors.primary,
-                            size: 20,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(
+                                Iconsax.gps,
+                                color: TColors.primary,
+                                size: 20,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Chọn',
+                                style: TextStyle(
+                                  color: TColors.primary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
