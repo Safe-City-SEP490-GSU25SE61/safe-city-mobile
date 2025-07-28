@@ -91,10 +91,10 @@ class TTexts {
   static const String anonymousReportOnNotice = "Bạn đã bật chế độ ẩn danh. Thông tin cá nhân của bạn sẽ không hiển thị với Cán bộ cộng đồng, nhưng bạn vẫn sẽ được cộng điểm tích lũy cho báo cáo.";
   static const String anonymousReportOffNotice = 'Bạn đã tắt chế độ ẩn danh. Thông tin cá nhân của bạn sẽ được hiển thị với Cán bộ cộng đồng. Bạn sẽ được cộng điểm tích lũy cho báo cáo nếu được duyệt.';
   static const String incidentReportNotice = '''
-• Báo cáo nên kèm theo bằng chứng để giúp xác minh rõ ràng hơn và tăng cơ hội được cộng điểm.
-• Báo cáo độc hại hoặc không liên quan có thể bị trừ điểm uy tín cá nhân.
-• Người dùng có điểm uy tín dưới 2 sẽ không thể gửi báo cáo.
-• Mỗi báo cáo sẽ mất thời gian để được giải quyết và xác minh bởi cán bộ cộng đồng.
+• Vui lòng đính kèm bằng chứng để tăng cơ hội được cộng điểm.
+• Báo cáo sai lệch hoặc không liên quan có thể bị trừ uy tín.
+• Người dùng có uy tín dưới 2 không thể gửi báo cáo.
+• Mỗi báo cáo cần thời gian để được xử lý và xác minh.
 ''';
 
 

@@ -5,7 +5,9 @@
   final String address;
   final String occurredAt;
   final String type;
+  final String subCategory;
   final String description;
+  final String priorityLevel;
 
   IncidentReportModel({
     required this.isAnonymous,
@@ -14,7 +16,9 @@
     required this.address,
     required this.occurredAt,
     required this.type,
+    required this.subCategory,
     required this.description,
+    required this.priorityLevel,
   });
 
   Map<String, String> toFormFields() {
@@ -25,7 +29,9 @@
       'Address': address,
       'OccurredAt': occurredAt,
       'Type': type,
+      'SubCategory': subCategory,
       'Description': description,
+      'PriorityLevel': priorityLevel,
     };
   }
 }

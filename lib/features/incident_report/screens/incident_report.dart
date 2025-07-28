@@ -122,59 +122,124 @@ class IncidentReportScreen extends StatelessWidget {
 
                   const SizedBox(height: TSizes.spaceBtwItems),
 
-                  /// Loại báo cáo
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      label: RichText(
-                        text: TextSpan(
-                          text: 'Loại báo cáo ',
-                          style: TextStyle(
-                            color: dark ? Colors.white : Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: '*',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
+                  /// Nhóm loại báo cáo
+                  Obx(
+                    () => DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            text: 'Nhóm loại báo cáo ',
+                            style: TextStyle(
+                              color: dark ? Colors.white : Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
+                            children: const [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        prefixIcon: Icon(Iconsax.category),
                       ),
-                      prefixIcon: Icon(Iconsax.activity),
+                      value: reportController.selectedCategory.value,
+                      items: reportController.reportCategories,
+                      onChanged: (value) {
+                        reportController.selectedCategory.value = value;
+                        reportController.updateSubCategories(value);
+                      },
+                      validator: (value) => TValidator.validateDropdown(
+                        "nhóm loại báo cáo",
+                        value,
+                      ),
                     ),
-                    value: reportController.type.value,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'Littering',
-                        child: Text("Xả rác"),
+                  ),
+
+                  const SizedBox(height: TSizes.spaceBtwInputFields),
+
+                  /// Loại báo cáo chi tiết
+                  Obx(
+                    () => DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            text: 'Loại báo cáo chi tiết ',
+                            style: TextStyle(
+                              color: dark ? Colors.white : Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: const [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        prefixIcon: Icon(Iconsax.activity),
                       ),
-                      DropdownMenuItem(
-                        value: 'TrafficJam',
-                        child: Text("Kẹt xe"),
+                      value: reportController.selectedSubCategory.value,
+                      items: reportController.reportSubCategories,
+                      onChanged: reportController.selectedCategory.value == null
+                          ? null
+                          : (value) =>
+                                reportController.selectedSubCategory.value =
+                                    value,
+                      validator: (value) => TValidator.validateDropdown(
+                        "loại báo cáo chi tiết",
+                        value,
                       ),
-                      DropdownMenuItem(
-                        value: 'Accident',
-                        child: Text("Tai nạn"),
+                    ),
+                  ),
+
+                  const SizedBox(height: TSizes.spaceBtwInputFields),
+
+                  /// Mức độ ưu tiên
+                  Obx(
+                    () => DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            text: 'Mức độ ưu tiên ',
+                            style: TextStyle(
+                              color: dark ? Colors.white : Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: const [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        prefixIcon: Icon(Iconsax.warning_2),
                       ),
-                      DropdownMenuItem(value: 'Fighting', child: Text("Ẩu đả")),
-                      DropdownMenuItem(value: 'Theft', child: Text("Trộm cắp")),
-                      DropdownMenuItem(
-                        value: 'PublicDisorder',
-                        child: Text("Gây rối trật tự công cộng"),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Vandalism',
-                        child: Text("Phá hoại tài sản"),
-                      ),
-                      DropdownMenuItem(value: 'Other', child: Text("Khác")),
-                    ],
-                    onChanged: (value) => reportController.type.value = value,
-                    validator: (value) =>
-                        TValidator.validateDropdown("loại báo cáo", value),
+                      value: reportController.selectedPriority.value,
+                      items: reportController.reportPriorities,
+                      onChanged:
+                          (reportController.selectedCategory.value != null &&
+                              reportController.selectedSubCategory.value !=
+                                  null)
+                          ? (value) =>
+                                reportController.selectedPriority.value = value
+                          : null,
+                      validator: (value) =>
+                          TValidator.validateDropdown("mức độ ưu tiên", value),
+                    ),
                   ),
 
                   const SizedBox(height: TSizes.spaceBtwInputFields),

@@ -34,11 +34,14 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
   }
 
   Future<void> selectDate() async {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+
     DateTime? pickedDate = await showDatePicker(
       context: context,
-      firstDate: DateTime(2025),
-      lastDate: DateTime(2050),
-      initialDate: DateTime.now(),
+      initialDate: now,
+      firstDate: yesterday,
+      lastDate: now,
     );
 
     if (pickedDate != null) {

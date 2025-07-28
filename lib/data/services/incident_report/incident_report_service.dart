@@ -108,11 +108,20 @@ class IncidentReportService {
   Future<List<ReportHistoryModel>> fetchReportHistory({
     String? range,
     String? status,
+    String? sort,
+    String? priority,
+    String? communeName,
   }) async {
     final token = await _storage.read(key: 'access_token');
     if (token == null) throw Exception("Token missing");
 
-    final queryParams = {'range': range ?? 'null', 'status': status ?? 'null'};
+    final queryParams = {
+      'range': range ?? '',
+      'status': status ?? '',
+      'sort': sort ?? '',
+      'priorityFilter': priority ?? '',
+      'communeName': communeName ?? '',
+    };
 
     final uri = Uri.parse(
       "${apiConnection}reports/history/citizen/filter",
@@ -129,6 +138,56 @@ class IncidentReportService {
       return reports.map((json) => ReportHistoryModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load report history');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchReportMetadata() async {
+    final token = await _storage.read(key: 'access_token');
+    if (token == null) throw Exception("Token is missing");
+
+    final uri = Uri.parse("${apiConnection}reports/metadata");
+
+    final response = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data;
+    } else {
+      throw Exception("Failed to fetch metadata");
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelReport(String reportId, String message) async {
+    final token = await _storage.read(key: 'access_token');
+    if (token == null) throw Exception("Token missing");
+
+    final uri = Uri.parse("${apiConnection}reports/$reportId/cancel");
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'message': message}),
+    );
+
+    final jsonBody = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'message': jsonBody['message'],
+        'data': jsonBody['data'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': jsonBody['message'] ?? 'Không thể hủy báo cáo',
+      };
     }
   }
 }

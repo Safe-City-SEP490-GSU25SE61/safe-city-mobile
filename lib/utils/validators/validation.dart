@@ -79,4 +79,14 @@ class TValidator {
     }
     return null;
   }
+
+  static String? validateComment(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Bình luận không được để trống';
+    }
+    if (value.length > 100) {
+      return 'Bình luận không được vượt quá 100 ký tự';
+    }
+    return null;
+  }
 }

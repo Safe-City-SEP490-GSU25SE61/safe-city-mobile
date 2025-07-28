@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 class TFormatter {
   static String formatDate(DateTime? date) {
     date ??= DateTime.now();
-    return DateFormat('dd-MMM-yyyy').format(date); // Customize the date format as needed
+    return DateFormat(
+      'dd-MMM-yyyy',
+    ).format(date); // Customize the date format as needed
   }
 
   static String formatCurrency(double amount) {
@@ -12,10 +14,11 @@ class TFormatter {
 
   static String formatPhoneNumber(String phoneNumber) {
     phoneNumber = phoneNumber.replaceAll(RegExp(r'\D+'), '');
-    if (phoneNumber.length == 10) return '(${phoneNumber.substring(0, 4)}) ${phoneNumber.substring(4, 7)}-${phoneNumber.substring(7)}';
+    if (phoneNumber.length == 10) {
+      return '(${phoneNumber.substring(0, 4)}) ${phoneNumber.substring(4, 7)}-${phoneNumber.substring(7)}';
+    }
     return phoneNumber;
   }
-
 
   // Not fully tested.
   static String internationalFormatPhoneNumber(String phoneNumber) {
@@ -49,13 +52,23 @@ class TFormatter {
     return formattedNumber.toString();
   }
 
+  /// Format time based on how long ago it was created
+  static String formatTime(DateTime createdAt) {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
 
-
-
+    if (difference.inMinutes < 1) {
+      return 'Vừa xong';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} phút trước';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} giờ trước';
+    } else if (difference.inDays == 1) {
+      return 'Hôm qua';
+    } else if (difference.inDays <= 30) {
+      return '${difference.inDays} ngày trước';
+    } else {
+      return DateFormat('dd/MM').format(createdAt);
+    }
+  }
 }
-
-
-/*
-*
-*
-* */
