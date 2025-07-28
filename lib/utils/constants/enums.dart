@@ -100,3 +100,52 @@ extension ReportRangeExtension on ReportRange {
     }
   }
 }
+
+enum ReportSort { newest, oldest, urgent }
+
+extension ReportSortExtension on ReportSort {
+  String get value => toString().split('.').last;
+
+  String get label {
+    switch (this) {
+      case ReportSort.newest:
+        return 'Mới nhất';
+      case ReportSort.oldest:
+        return 'Cũ nhất';
+      case ReportSort.urgent:
+        return 'Khẩn cấp';
+    }
+  }
+}
+
+enum ReportPriority { low, medium, high, critical }
+
+extension ReportPriorityExtension on ReportPriority {
+  String get value => toString().split('.').last;
+
+  String get label {
+    switch (this) {
+      case ReportPriority.low:
+        return 'Thấp';
+      case ReportPriority.medium:
+        return 'Trung bình';
+      case ReportPriority.high:
+        return 'Cao';
+      case ReportPriority.critical:
+        return 'Khẩn cấp';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case ReportPriority.low:
+        return Colors.green;
+      case ReportPriority.medium:
+        return Colors.orange;
+      case ReportPriority.high:
+        return Colors.deepOrange;
+      case ReportPriority.critical:
+        return Colors.red;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 
-import '../../../../common/widgets/appbar/appbar.dart';
+import '../appbar/appbar.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final List<String> images;

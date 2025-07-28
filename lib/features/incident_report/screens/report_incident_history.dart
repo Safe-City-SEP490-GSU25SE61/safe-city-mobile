@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:safe_city_mobile/features/incident_report/screens/report_detail_screen.dart';
+import 'package:safe_city_mobile/features/incident_report/screens/widgets/filter_history_modal.dart';
 
 import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/constants/colors.dart';
@@ -34,27 +35,62 @@ class ReportHistoryScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: _buildDropdown<ReportRange>(
-                    label: 'Khoảng thời gian',
-                    value: historyController.selectedRange.value,
-                    items: historyController.rangeOptions,
-                    getLabel: (e) => e.label,
-                    onChanged: (val) =>
-                        historyController.updateFilters(range: val),
+                TextFormField(
+                  controller: historyController.searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Tìm báo cáo...',
+                    hintStyle: const TextStyle(color: Colors.black),
+                    prefixIcon: const Icon(Iconsax.search_normal),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
+                  onFieldSubmitted: (value) {
+                    historyController.updateFilters(communeName: value);
+                    historyController.fetchReportHistory();
+                  },
                 ),
-                const SizedBox(width: TSizes.smallSpace),
-                Expanded(
-                  child: _buildDropdown<ReportStatus>(
-                    label: 'Trạng thái',
-                    value: historyController.selectedStatus.value,
-                    items: historyController.statusOptions,
-                    getLabel: (e) => e.label,
-                    onChanged: (val) =>
-                        historyController.updateFilters(status: val),
+
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.white,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (_) => FilterHistoryModal(
+                        onApply: () => historyController.fetchReportHistory(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          "Lọc báo cáo",
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Icon(Icons.filter_list),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -79,8 +115,8 @@ class ReportHistoryScreen extends StatelessWidget {
                       children: [
                         Image.asset(
                           TImages.emptyBoxImage,
-                          width: 250,
-                          height: 250,
+                          width: 240,
+                          height: 240,
                         ),
                         const Text(
                           "Không có lịch sử đăng ký",
@@ -103,18 +139,39 @@ class ReportHistoryScreen extends StatelessWidget {
                       (e) => e.value == item.status,
                       orElse: () => ReportStatus.pending,
                     );
+                    final normalizedPriority = item.priorityLevel
+                        .trim()
+                        .toLowerCase();
+
+                    final priorityEnum = ReportPriority.values.firstWhere(
+                      (e) => e.value == normalizedPriority,
+                      orElse: () => ReportPriority.low,
+                    );
+
                     return Card(
                       color: dark ? TColors.white : TColors.lightGrey,
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         onTap: () =>
                             Get.to(() => ReportDetailScreen(report: item)),
-                        title: Text(
-                          item.type,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: TColors.primary,
-                          ),
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.type,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: TColors.primary,
+                              ),
+                            ),
+                            Text(
+                              item.subCategory!,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: TColors.primary,
+                              ),
+                            ),
+                          ],
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,6 +185,11 @@ class ReportHistoryScreen extends StatelessWidget {
                               "Trạng thái",
                               statusEnum.label,
                               valueColor: statusEnum.color,
+                            ),
+                            _subtitleRow(
+                              "Mức độ nghiêm trọng",
+                              priorityEnum.label,
+                              valueColor: priorityEnum.color,
                             ),
                           ],
                         ),
@@ -144,29 +206,6 @@ class ReportHistoryScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDropdown<T>({
-    required String label,
-    required List<T> items,
-    required T? value,
-    required String Function(T) getLabel,
-    required void Function(T?) onChanged,
-  }) {
-    return DropdownButtonFormField<T>(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-      value: value,
-      items: [
-        DropdownMenuItem<T>(value: null, child: Text("Tất cả")),
-        ...items.map(
-          (e) => DropdownMenuItem<T>(value: e, child: Text(getLabel(e))),
-        ),
-      ],
-      onChanged: onChanged,
     );
   }
 

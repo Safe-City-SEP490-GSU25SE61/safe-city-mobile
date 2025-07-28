@@ -1,7 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:safe_city_mobile/features/incident_report/screens/widgets/image_fullscreen_widget.dart';
-import 'package:safe_city_mobile/features/incident_report/screens/widgets/video_player_widget.dart';
+import 'package:safe_city_mobile/common/widgets/media/image_fullscreen_widget.dart';
+import 'package:safe_city_mobile/common/widgets/media/video_player_widget.dart';
+import 'package:safe_city_mobile/features/incident_report/screens/widgets/cancel_report_model.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 
 import '../../../common/widgets/appbar/appbar.dart';
@@ -32,6 +33,12 @@ class ReportDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildInfoTile(context, 'Loại sự cố', report.type),
+            _buildInfoTile(context, 'Phân loại chi tiết', report.subCategory!),
+            _buildInfoTileWithWidget(
+              context,
+              'Mức độ nghiêm trọng',
+              buildPriorityLabel(report.priorityLevel),
+            ),
             _buildInfoTile(context, 'Mô tả', report.description),
             _buildInfoTile(context, 'Địa chỉ', report.address),
             _buildInfoTile(
@@ -111,18 +118,25 @@ class ReportDetailScreen extends StatelessWidget {
       bottomNavigationBar: statusEnum == ReportStatus.pending
           ? Padding(
               padding: const EdgeInsets.all(TSizes.md),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    // TODO: Add cancellation logic here
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: TColors.error),
-                    foregroundColor: TColors.error,
-                  ),
-                  child: const Text('Hủy bỏ đơn báo cáo'),
+              child: OutlinedButton(
+                onPressed: () {
+                  showModalBottomSheet(
+                    backgroundColor: Colors.white,
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (_) => CancelReportModal(reportId: report.id),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: TColors.error),
+                  foregroundColor: TColors.error,
                 ),
+                child: const Text('Hủy bỏ đơn báo cáo'),
               ),
             )
           : null,
@@ -181,4 +195,79 @@ class ReportDetailScreen extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget buildPriorityLabel(String priorityLevel) {
+  final priorityEnum = ReportPriority.values.firstWhere(
+    (e) => e.value == priorityLevel.trim().toLowerCase(),
+    orElse: () => ReportPriority.low,
+  );
+
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 10,
+        height: 10,
+        margin: const EdgeInsets.only(right: 6),
+        decoration: BoxDecoration(
+          color: priorityEnum.color,
+          shape: BoxShape.circle,
+        ),
+      ),
+      Text(
+        priorityEnum.label,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: priorityEnum.color,
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildInfoTileWithWidget(
+  BuildContext context,
+  String title,
+  Widget valueWidget,
+) {
+  final dark = THelperFunctions.isDarkMode(context);
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: TSizes.smallSpace),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: dark ? TColors.lightDarkGrey : Colors.black,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: valueWidget,
+              ),
+            ),
+          ],
+        ),
+      ),
+      Divider(
+        color: dark ? Colors.white24 : Colors.grey.shade300,
+        thickness: 1,
+        height: TSizes.mediumSpace,
+      ),
+    ],
+  );
 }

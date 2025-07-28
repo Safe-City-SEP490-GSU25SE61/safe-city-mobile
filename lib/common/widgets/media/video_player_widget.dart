@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../../../utils/helpers/helper_functions.dart';
+import '../effects/shimmer_effect.dart';
 
 class AdvancedVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -77,9 +77,9 @@ class _AdvancedVideoPlayerState extends State<AdvancedVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     if (!_controller.value.isInitialized) {
-      return const AspectRatio(
+      return AspectRatio(
         aspectRatio: 16 / 9,
-        child: Center(child: CircularProgressIndicator()),
+        child: TShimmerEffect(width: double.infinity, height: double.infinity),
       );
     }
 
@@ -120,7 +120,6 @@ class _AdvancedVideoPlayerState extends State<AdvancedVideoPlayer> {
   Widget _buildControlsOverlay() {
     final position = _controller.value.position;
     final duration = _controller.value.duration;
-    final dark = THelperFunctions.isDarkMode(context);
     String formatDuration(Duration duration) {
       String twoDigits(int n) => n.toString().padLeft(2, '0');
       final minutes = twoDigits(duration.inMinutes.remainder(60));
