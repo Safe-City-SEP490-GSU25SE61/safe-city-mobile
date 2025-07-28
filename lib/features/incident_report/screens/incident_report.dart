@@ -1,12 +1,18 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:safe_city_mobile/features/incident_report/screens/report_incident_history.dart';
+import 'package:safe_city_mobile/features/incident_report/screens/widgets/date_time_picker.dart';
+import 'package:safe_city_mobile/features/incident_report/screens/widgets/live_map.dart';
+import 'package:safe_city_mobile/features/incident_report/screens/widgets/popup_modal.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/helpers/helper_functions.dart';
-import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/constants/sizes.dart';
+import '../../../utils/constants/text_strings.dart';
 import '../../../utils/validators/validation.dart';
-import '../../authentication/controllers/login/login_controller.dart';
+import '../controllers/incident_report_controller.dart';
 
 class IncidentReportScreen extends StatelessWidget {
   const IncidentReportScreen({super.key});
@@ -19,37 +25,57 @@ class IncidentReportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
-    final controller = Get.put(
-      LoginController(),
-    ); // Reuse controller for form handling
-
+    final reportController = Get.put(IncidentReportController());
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text(
+          'Báo cáo sự cố',
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+        actions: [
+          InkWell(
+            onTap: () => Get.to(() => ReportHistoryScreen()),
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Iconsax.refresh, color: Colors.black, size: 20),
+                  SizedBox(width: 6),
+                  Text(
+                    'Lịch sử',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: TSizes.mediumSpace),
+        ],
+      ),
+
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         color: TColors.primary,
         child: ListView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(TSizes.mediumSpace),
           children: [
-            // 🔘 Anonymous toggle button here (Switch or Checkbox)
-            const SizedBox(height: TSizes.spaceBtwItems),
-
             Form(
-              key: controller.loginFormKey,
+              key: reportController.incidentReportFormKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TAppBar(
-                    title: Text(
-                      'Báo cáo sự cố',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineMedium!.apply(color: TColors.white),
-                    ),
-                    showBackArrow: false,
-                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Text(
                         "Thông tin người báo cáo",
@@ -58,46 +84,37 @@ class IncidentReportScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: InkWell(
-                          onTap: () {},
-                          borderRadius: BorderRadius.circular(30),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Iconsax.refresh,
-                                  color: Colors.black,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Lịch sử',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                      Row(
+                        children: [
+                          Obx(
+                            () => Checkbox(
+                              value: reportController.isAnonymous.value,
+                              onChanged: (value) {
+                                reportController.isAnonymous.value =
+                                    !reportController.isAnonymous.value;
+                                PopUpModal().showOkOnlyDialog(
+                                  title: 'Chế độ ẩn danh',
+                                  message: reportController.isAnonymous.value
+                                      ? TTexts.anonymousReportOnNotice
+                                      : TTexts.anonymousReportOffNotice,
+                                );
+                              },
                             ),
                           ),
-                        ),
+                          const Text(
+                            'Ẩn danh',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: TColors.accent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: TSizes.spaceBtwItems),
+                  SizedBox(height: TSizes.spaceBtwItems),
                   const Text(
                     "Thông tin vụ việc",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -105,125 +122,460 @@ class IncidentReportScreen extends StatelessWidget {
 
                   const SizedBox(height: TSizes.spaceBtwItems),
 
-                  /// Loại báo cáo
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: "Loại báo cáo *",
-                      prefixIcon: Icon(Iconsax.activity),
+                  /// Nhóm loại báo cáo
+                  Obx(
+                    () => DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            text: 'Nhóm loại báo cáo ',
+                            style: TextStyle(
+                              color: dark ? Colors.white : Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: const [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        prefixIcon: Icon(Iconsax.category),
+                      ),
+                      value: reportController.selectedCategory.value,
+                      items: reportController.reportCategories,
+                      onChanged: (value) {
+                        reportController.selectedCategory.value = value;
+                        reportController.updateSubCategories(value);
+                      },
+                      validator: (value) => TValidator.validateDropdown(
+                        "nhóm loại báo cáo",
+                        value,
+                      ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'type1', child: Text("Loại 1")),
-                      DropdownMenuItem(value: 'type2', child: Text("Loại 2")),
-                    ],
-                    onChanged: (value) {},
-                    validator: (value) =>
-                        value == null ? 'Vui lòng chọn loại báo cáo' : null,
+                  ),
+
+                  const SizedBox(height: TSizes.spaceBtwInputFields),
+
+                  /// Loại báo cáo chi tiết
+                  Obx(
+                    () => DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            text: 'Loại báo cáo chi tiết ',
+                            style: TextStyle(
+                              color: dark ? Colors.white : Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: const [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        prefixIcon: Icon(Iconsax.activity),
+                      ),
+                      value: reportController.selectedSubCategory.value,
+                      items: reportController.reportSubCategories,
+                      onChanged: reportController.selectedCategory.value == null
+                          ? null
+                          : (value) =>
+                                reportController.selectedSubCategory.value =
+                                    value,
+                      validator: (value) => TValidator.validateDropdown(
+                        "loại báo cáo chi tiết",
+                        value,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: TSizes.spaceBtwInputFields),
+
+                  /// Mức độ ưu tiên
+                  Obx(
+                    () => DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            text: 'Mức độ ưu tiên ',
+                            style: TextStyle(
+                              color: dark ? Colors.white : Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: const [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        prefixIcon: Icon(Iconsax.warning_2),
+                      ),
+                      value: reportController.selectedPriority.value,
+                      items: reportController.reportPriorities,
+                      onChanged:
+                          (reportController.selectedCategory.value != null &&
+                              reportController.selectedSubCategory.value !=
+                                  null)
+                          ? (value) =>
+                                reportController.selectedPriority.value = value
+                          : null,
+                      validator: (value) =>
+                          TValidator.validateDropdown("mức độ ưu tiên", value),
+                    ),
                   ),
 
                   const SizedBox(height: TSizes.spaceBtwInputFields),
 
                   /// Địa điểm xảy ra
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: "Địa điểm xảy ra *",
-                      prefixIcon: Icon(Iconsax.location),
-                      suffixIcon: Icon(Iconsax.location_tick),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'location1',
-                        child: Text("Địa điểm 1"),
-                      ),
-                      DropdownMenuItem(
-                        value: 'location2',
-                        child: Text("Địa điểm 2"),
-                      ),
-                    ],
-                    onChanged: (value) {},
+                  TextFormField(
+                    readOnly: true,
+                    controller: reportController.address,
                     validator: (value) =>
-                        value == null ? 'Vui lòng chọn địa điểm' : null,
-                  ),
-
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
-
-                  /// Thời gian xảy ra
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          decoration: const InputDecoration(
-                            labelText: "Chọn ngày *",
-                            prefixIcon: Icon(Iconsax.calendar),
+                        TValidator.validateEmptyText("Địa điểm xảy ra", value),
+                    decoration: InputDecoration(
+                      label: RichText(
+                        text: TextSpan(
+                          text: 'Địa điểm xảy ra ',
+                          style: TextStyle(
+                            color: dark ? Colors.white : Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          readOnly: true,
-                          onTap: () {
-                            // TODO: Show date picker
-                          },
+                          children: [
+                            TextSpan(
+                              text: '*',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          decoration: const InputDecoration(
-                            labelText: "Chọn thời gian",
-                            prefixIcon: Icon(Iconsax.clock),
+                      prefixIcon: const Icon(Iconsax.location),
+                      suffixIcon: IconButton(
+                        onPressed: () async {
+                          await Get.to(() => const LiveMapScreen());
+                        },
+                        icon: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
                           ),
-                          readOnly: true,
-                          onTap: () {
-                            // TODO: Show time picker
-                          },
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(50),
+                            color: dark
+                                ? TColors.white.withValues(alpha: 0.9)
+                                : TColors.softGrey.withValues(alpha: 0.9),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(
+                                Iconsax.gps,
+                                color: TColors.primary,
+                                size: 20,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Chọn',
+                                style: TextStyle(
+                                  color: TColors.primary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-
                   const SizedBox(height: TSizes.spaceBtwInputFields),
-
-                  /// Bằng chứng
-                  Container(
-                    width: double.infinity,
-                    height: 150,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        "📎 Nhấn để tải lên hình ảnh hoặc video liên quan đến vụ việc\nTối đa 3 bức ảnh và 1 video không quá 5 phút",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                    // 🖼️ Replace this with your image/video upload widget later
+                  DateTimePickerField(
+                    onChanged: (selectedDateTime) {
+                      if (selectedDateTime != null) {
+                        reportController.occurredAt.value = selectedDateTime
+                            .toUtc()
+                            .toIso8601String();
+                      }
+                    },
                   ),
-
                   const SizedBox(height: TSizes.spaceBtwInputFields),
 
                   /// Mô tả chi tiết
                   TextFormField(
+                    controller: reportController.description,
                     maxLines: 5,
-                    decoration: const InputDecoration(
-                      labelText: "Mô tả chi tiết",
+                    decoration: InputDecoration(
+                      label: RichText(
+                        text: TextSpan(
+                          text: 'Mô tả chi tiết ',
+                          style: TextStyle(
+                            color: dark ? Colors.white : Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: '*',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      prefixIcon: const Icon(Iconsax.edit),
                       alignLabelWithHint: true,
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) =>
                         TValidator.validateEmptyText("Mô tả", value),
                   ),
+                  const SizedBox(height: TSizes.spaceBtwInputFields),
 
-                  const SizedBox(height: TSizes.spaceBtwItems),
+                  /// Bằng chứng
+                  RichText(
+                    text: TextSpan(
+                      text: 'Bằng chứng ',
+                      style: TextStyle(
+                        color: dark ? Colors.white : Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: TSizes.sm),
+                  GestureDetector(
+                    onTap: reportController.pickMedia,
+                    child: Obx(() {
+                      final hasMedia =
+                          reportController.images.isNotEmpty ||
+                          reportController.video.value != null;
+
+                      return Container(
+                        width: double.infinity,
+                        height: 140,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: hasMedia
+                            ? ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: [
+                                  ...reportController.images
+                                      .asMap()
+                                      .entries
+                                      .map((entry) {
+                                        final index = entry.key;
+                                        final file = entry.value;
+
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                          ),
+                                          child: Stack(
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Image.file(
+                                                  File(file.path!),
+                                                  width: 100,
+                                                  height: 100,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                              Positioned(
+                                                top: 0,
+                                                right: 0,
+                                                child: GestureDetector(
+                                                  onTap: () => reportController
+                                                      .images
+                                                      .removeAt(index),
+                                                  child: const Icon(
+                                                    Iconsax.close_circle,
+                                                    color: Colors.redAccent,
+                                                    size: 22,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                  if (reportController.video.value != null)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          Container(
+                                            width: 100,
+                                            height: 100,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black12,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Iconsax.video,
+                                              size: 40,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: GestureDetector(
+                                              onTap: () =>
+                                                  reportController.video.value =
+                                                      null,
+                                              child: const Icon(
+                                                Iconsax.close_circle,
+                                                color: Colors.redAccent,
+                                                size: 24,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Iconsax.document_upload,
+                                    size: 36,
+                                    color: dark
+                                        ? TColors.lightDarkGrey
+                                        : TColors.darkerGrey,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              "Nhấn để tải lên hình ảnh hoặc video liên quan đến vụ việc.",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: dark
+                                                ? TColors.lightDarkGrey
+                                                : TColors.darkerGrey,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: "Tối đa ",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: dark
+                                                ? TColors.white
+                                                : TColors.darkGrey,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: "3 bức ảnh",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: dark
+                                                ? TColors.lightDarkGrey
+                                                : TColors.darkerGrey,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: " hoặc ",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: dark
+                                                ? TColors.white
+                                                : TColors.darkGrey,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: "1 video không quá 200MB",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: dark
+                                                ? TColors.lightDarkGrey
+                                                : TColors.darkerGrey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: TSizes.spaceBtwInputFields),
 
                   /// Lưu ý
                   Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(top: 16),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(8),
+                      color: TColors.warningContainer,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      "⚠️ Lưu ý\nNếu bạn đang gặp nguy hiểm hoặc tình huống cần sự giúp đỡ thì hãy liên hệ các cơ quan chức năng gần nhất để được giúp đỡ kịp thời.",
-                      style: TextStyle(fontSize: 13),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Iconsax.lamp_on, color: TColors.warning),
+                        const SizedBox(width: TSizes.xs),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                color: TColors.warning,
+                                fontSize: 14,
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text: '${TTexts.emergencyHelpNoticeTitle}\n',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                TextSpan(text: TTexts.emergencyHelpNotice),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -238,7 +590,14 @@ class IncidentReportScreen extends StatelessWidget {
                         backgroundColor: TColors.primary,
                       ),
                       onPressed: () {
-                        // TODO: Validate and submit
+                        PopUpModal().showConfirmCancelDialog(
+                          title: 'Lưu ý khi gửi báo cáo',
+                          message: TTexts.incidentReportNotice,
+                          onConfirm: () {
+                            reportController.submitReport();
+                          },
+                          storageKey: 'hide_incident_report_notice',
+                        );
                       },
                       child: const Text("Gửi báo cáo"),
                     ),

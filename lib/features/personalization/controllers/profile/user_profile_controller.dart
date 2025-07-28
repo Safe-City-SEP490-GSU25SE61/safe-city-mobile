@@ -272,13 +272,13 @@ class UserProfileController extends GetxController {
       if (result['success'] == true) {
         TLoaders.successSnackBar(
           title: 'Thành công',
-          message: result['message'].toString(),
+          message: "Cập nhật thông tin CCCD thành công",
         );
         await fetchUserProfile();
       } else {
         TLoaders.errorSnackBar(
           title: 'Xảy ra lỗi xác thực',
-          message: 'Hình ảnh CCCD chưa chính xác, vui lòng thử lại',
+          message: 'Hình ảnh CCCD chưa chính xác hoặc sai thứ tự, vui lòng thử lại',
         );
       }
     } catch (e) {

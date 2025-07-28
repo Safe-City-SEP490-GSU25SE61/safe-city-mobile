@@ -28,7 +28,7 @@ class UserLoginAndSecurityController extends GetxController {
   }
 
   Future<void> loadBiometricPreference() async {
-    final value = await _secureStorage.read(key: 'isBiometricLoginEnabled');
+    final value = await _secureStorage.read(key: 'is_biometric_login_enabled');
     isBiometricEnabled.value = value == 'true';
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:safe_city_mobile/navigation_dart.dart';
 
 import '../../../../../common/widgets/login_signup/form_divider.dart';
 import '../../../../../utils/constants/sizes.dart';
@@ -9,7 +8,6 @@ import '../../../../../utils/constants/text_strings.dart';
 import '../../../../../utils/validators/validation.dart';
 import '../../../controllers/login/login_controller.dart';
 import '../../password_configuration/forget_password.dart';
-import '../../register/register.dart';
 import '../../register/user_id_front_register.dart';
 
 class TLoginForm extends StatelessWidget {

@@ -84,6 +84,21 @@ class TTexts {
   //Security and Safety Confirmation
   static const String identityDataConfirmation =
       "Hình ảnh và thông tin CCCD sẽ được lưu trữ bảo mật và chỉ được sử dụng nhằm mục đích xác minh danh tính, tuân thủ pháp luật và đảm bảo an toàn cho người dùng.";
-  static const String identityDataIsHidden =
-      'Thông tin cá nhân của bạn đang được ẩn vì lý do bảo mật. Vui lòng sinh trắc học để xem chi tiết.';
+  static const String identityDataIsHidden = 'Thông tin cá nhân của bạn đang được ẩn vì lý do bảo mật. Vui lòng sinh trắc học để xem chi tiết.';
+  static const String anonymousReport = 'Gửi báo cáo sự cố ẩn danh tới cán bộ cộng đồng.';
+  static const String emergencyHelpNotice = 'Nếu bạn đang gặp nguy hiểm hoặc tình huống cần sự giúp đỡ thì hãy liên hệ các cơ quan chức năng gần nhất để được giúp đỡ kịp thời.';
+  static const String emergencyHelpNoticeTitle = 'Lưu ý';
+  static const String anonymousReportOnNotice = "Bạn đã bật chế độ ẩn danh. Thông tin cá nhân của bạn sẽ không hiển thị với Cán bộ cộng đồng, nhưng bạn vẫn sẽ được cộng điểm tích lũy cho báo cáo.";
+  static const String anonymousReportOffNotice = 'Bạn đã tắt chế độ ẩn danh. Thông tin cá nhân của bạn sẽ được hiển thị với Cán bộ cộng đồng. Bạn sẽ được cộng điểm tích lũy cho báo cáo nếu được duyệt.';
+  static const String incidentReportNotice = '''
+• Vui lòng đính kèm bằng chứng để tăng cơ hội được cộng điểm.
+• Báo cáo sai lệch hoặc không liên quan có thể bị trừ uy tín.
+• Người dùng có uy tín dưới 2 không thể gửi báo cáo.
+• Mỗi báo cáo cần thời gian để được xử lý và xác minh.
+''';
+
+
+
+  //Ranking Notice
+  static const String exceedPoints = 'Bạn đã vượt mốc 10.000 điểm. Các điểm thưởng tiếp theo sẽ tiếp tục được tích lũy.';
 }
