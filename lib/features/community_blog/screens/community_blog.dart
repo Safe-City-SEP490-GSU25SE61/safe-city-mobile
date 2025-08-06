@@ -2,12 +2,12 @@
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/features/community_blog/screens/widgets/community_blog_card.dart';
+import 'package:safe_city_mobile/features/community_blog/screens/widgets/create_community_blog.dart';
 import 'package:safe_city_mobile/features/community_blog/screens/widgets/location_filter_button.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/helpers/helper_functions.dart';
 import '../../../utils/constants/sizes.dart';
 import '../controllers/blog_controller.dart';
-import '../controllers/blog_filter_controller.dart';
 
 class CommunityBlogScreen extends StatefulWidget {
   const CommunityBlogScreen({super.key});
@@ -17,36 +17,26 @@ class CommunityBlogScreen extends StatefulWidget {
 }
 
 class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
-  final filterController = Get.put(BlogFilterController());
   final blogController = Get.put(BlogController());
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
-    _initData();
+    _scrollController = ScrollController();
   }
 
-  Future<void> _initData() async {
-    await filterController.fetchProvinces();
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-    final selectedCommune = filterController.selectedCommune.value;
-    final selectedProvince = filterController.selectedProvince.value;
-    final provinceIndex = filterController.provinces.indexOf(selectedProvince);
-
-    if (provinceIndex != -1 && selectedCommune.isNotEmpty) {
-      final communeId = await filterController.service.getCommuneIdByName(
-        selectedCommune,
-        provinceIndex + 1,
-      );
-
-      if (communeId != null) {
-        await blogController.fetchBlogsByCommuneId(communeId);
-      }
-    }
+  void _initData() async {
+    await blogController.fetchInitialDataOnce();
   }
 
   Future<void> _handleRefresh() async {
-    await _initData();
   }
 
   @override
@@ -66,62 +56,122 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         color: TColors.primary,
-        child: Obx(() {
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          hintText: 'Tìm bài blog...',
-                          hintStyle: const TextStyle(color: Colors.black),
-                          prefixIcon: const Icon(Iconsax.search_normal),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: blogController.searchController,
+                      style: const TextStyle(color: Colors.black),
+                      onFieldSubmitted: (value) async {
+                        final selectedCommune = blogController.selectedCommune.value;
+                        final selectedProvince = blogController.selectedProvince.value;
+
+                        if (selectedProvince.isNotEmpty && selectedCommune.isNotEmpty) {
+                          final communeId = blogController.blogService.getCommuneIdByName(
+                            selectedProvince,
+                            selectedCommune,
+                          );
+
+                          if (communeId != null) {
+                            blogController.currentCommuneId = communeId;
+                            await blogController.fetchInitialDataOnce();
+                          }
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Tìm bài blog...',
+                        hintStyle: const TextStyle(color: Colors.black),
+                        prefixIcon: const Icon(Iconsax.search_normal),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    LocationFilterButton(onApply: _initData),
-                  ],
-                ),
-              ),
-
-              // Blog Cards
-              if (blogController.blogs.isEmpty)
-                const Center(
-                  child: Text(
-                    'Không có bài viết',
-                    style: TextStyle(fontSize: 16),
                   ),
-                )
-              else
-                ...blogController.blogs.map(
-                  (blog) => CommunityBlogCard(blogId: blog.id),
-                ),
-            ],
-          );
-        }),
+                  const SizedBox(width: 6),
+                  LocationFilterButton(onApply: _initData),
+                ],
+              ),
+            ),
+
+            // Blog List (Scrollable)
+            Expanded(
+              child: Obx(() {
+                return ListView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  children: [
+                    if (blogController.isLoading.value )
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 80),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: TColors.primary,
+                          ),
+                        ),
+                      ),
+
+                    if (blogController.blogs.isEmpty &&
+                        !blogController.isLoading.value)
+                      const Center(
+                        child: Text(
+                          'Không có bài viết',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+
+                    ...blogController.blogs.map(
+                          (blog) => CommunityBlogCard(blogId: blog.id),
+                    ),
+
+                    if (blogController.isFetchingMore)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                  ],
+                );
+              }),
+            ),
+          ],
+        ),
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Handle button press
-        },
-        backgroundColor: TColors.white,
-        child: const Icon(Icons.add,color: TColors.primary,),
+      // 2 Floating Action Buttons
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'historyBtn',
+            onPressed: () {
+              // TODO: Navigate to HistoryBlogScreen
+              // Example: Get.to(() => HistoryBlogScreen());
+            },
+            backgroundColor: TColors.white,
+            child: const Icon(Iconsax.rotate_left,
+                color: TColors.primary, size: 24),
+          ),
+          const SizedBox(height: TSizes.mediumLargeSpace),
+          FloatingActionButton(
+            heroTag: 'createBtn',
+            onPressed: () => Get.to(() => CreateBlogScreen()),
+            backgroundColor: TColors.white,
+            child:
+            const Icon(Iconsax.add, color: TColors.primary, size: 28),
+          ),
+        ],
       ),
     );
   }
 }
+
