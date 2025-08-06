@@ -564,7 +564,7 @@ class IncidentReportScreen extends StatelessWidget {
                               ),
                               children: [
                                 const TextSpan(
-                                  text: '${TTexts.emergencyHelpNoticeTitle}\n',
+                                  text: '${TTexts.noticeTitle}\n',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,

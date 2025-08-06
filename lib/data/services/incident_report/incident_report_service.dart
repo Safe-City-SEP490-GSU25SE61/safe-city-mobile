@@ -65,7 +65,7 @@ class IncidentReportService {
       }
 
       final response = await request.send().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15),
       );
 
       final responseBody = await response.stream.bytesToString();

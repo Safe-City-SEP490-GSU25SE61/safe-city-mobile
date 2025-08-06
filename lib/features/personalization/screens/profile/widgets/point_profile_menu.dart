@@ -6,22 +6,36 @@ import '../../../../../utils/constants/sizes.dart';
 class TPointDisplay extends StatelessWidget {
   final int totalPoint;
   final String title;
+  final bool isReputationPoint;
 
   const TPointDisplay({
     super.key,
     required this.totalPoint,
     this.title = 'Tổng điểm',
+    this.isReputationPoint = false,
   });
+
+  Color _getPointColor(int point) {
+    if (point >= 3) return TColors.success;
+    if (point >= 1) return TColors.warning;
+    return TColors.error;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final hasPoints = totalPoint > 0;
+    final displayedPoint = isReputationPoint
+        ? (totalPoint > 3 ? 3 : totalPoint)
+        : totalPoint;
+
+    final pointColor = isReputationPoint
+        ? _getPointColor(displayedPoint)
+        : TColors.accent;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: TSizes.spaceBtwItems / 1.5),
       child: Row(
         children: [
-          /// Title - matches TProfileMenu style
+          /// Title
           Expanded(
             flex: 3,
             child: Text(
@@ -31,54 +45,33 @@ class TPointDisplay extends StatelessWidget {
             ),
           ),
 
-          /// Value or fallback
+          /// Value
           Expanded(
             flex: 4,
-            child: hasPoints
-                ? RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '$totalPoint',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: TColors.accent,
-                          ),
-                        ),
-                        TextSpan(
-                          text: ' Điểm',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: TColors.accent),
-                        ),
-                      ],
-                    ),
-                  )
-                : RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '0',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: TColors.accent,
-                          ),
-                        ),
-                        TextSpan(
-                          text: ' Điểm',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: TColors.accent),
-                        ),
-                      ],
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$displayedPoint',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: pointColor,
                     ),
                   ),
+                  TextSpan(
+                    text: ' Điểm',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: pointColor),
+                  ),
+                ],
+              ),
+            ),
           ),
 
-          /// Spacer for icon consistency (same structure as TProfileMenu)
-          const Expanded(
-            child: SizedBox(), // No icon here but keeps alignment clean
-          ),
+          /// Spacer
+          const Expanded(child: SizedBox()),
         ],
       ),
     );

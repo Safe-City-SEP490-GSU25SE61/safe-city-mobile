@@ -1,6 +1,7 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
+import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
@@ -9,9 +10,15 @@ import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
+import '../../../data/services/live_map_incident/live_map_incident_service.dart';
+import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/image_strings.dart';
 import '../../../utils/popups/loaders.dart';
 import '../models/goong_prediction_model.dart';
+import '../models/live_map_report_detail_model.dart';
+import '../screens/widgets/commune_overview_widget.dart';
+import '../screens/widgets/commune_report_detail_widget.dart';
 
 class IncidentLiveMapController extends GetxController {
   MapboxMap? mapboxMap;
@@ -20,7 +27,43 @@ class IncidentLiveMapController extends GetxController {
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY']!;
   final addressConverterKey = dotenv.env['GOONG_MAP_TILES_KEY']!;
   final searchController = TextEditingController();
+  final liveMapService = LiveMapIncidentService();
+  Timer? _debounceTimer;
+  final RxBool isLoading = false.obs;
   final RxList<GoongPredictionModel> predictions = <GoongPredictionModel>[].obs;
+  final RxInt traffic = 0.obs;
+  final RxInt security = 0.obs;
+  final RxInt infrastructure = 0.obs;
+  final RxInt environment = 0.obs;
+  final RxInt other = 0.obs;
+  final RxString selectedRange = 'week'.obs;
+  final RxBool isOverviewLoading = false.obs;
+  String? selectedFilterStatus;
+  String? selectedFilterTime;
+  String get selectedTypeApi => convertStatusToApiValue(selectedFilterStatus);
+  String get selectedRangeApi => convertTimeToApiRange(selectedFilterTime);
+  final isFocusedOnCommune = false.obs;
+  final isExitingCommuneFocus = false.obs;
+  final isCommuneReportFocusLoading = false.obs;
+  Map<String, dynamic>? lastFocusedCommuneFeature;
+  void enableCommuneFocus() => isFocusedOnCommune.value = true;
+  void disableCommuneFocus() => isFocusedOnCommune.value = false;
+  final Map<String, ReportDetailModel> reportMap = {};
+
+
+  @override
+  void onClose() {
+    mapboxMap = null;
+    _customMarkerManager = null;
+    super.onClose();
+  }
+
+  void debounceLoadPolygons({Duration duration = const Duration(milliseconds: 800),}) {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+    _debounceTimer = Timer(duration, () {
+      loadPolygonsFromAPI();
+    });
+  }
 
   Future<void> initMap(MapboxMap controller, bool isDarkMode) async {
     mapboxMap = controller;
@@ -34,11 +77,20 @@ class IncidentLiveMapController extends GetxController {
     );
 
     final darkStyle =
-        "https://tiles.goong.io/assets/goong_map_dark.json?$goongApiKey";
+        "https://tiles.goong.io/assets/goong_light_v2.json?$goongApiKey";
     final lightStyle =
-        "https://tiles.goong.io/assets/goong_map_web.json?$goongApiKey";
+        "https://tiles.goong.io/assets/goong_light_v2.json?$goongApiKey";
 
-    mapboxMap!.loadStyleURI(isDarkMode ? darkStyle : lightStyle);
+    mapboxMap!.loadStyleURI(isDarkMode ? darkStyle : lightStyle).then((
+      _,
+    ) async {
+      await loadPolygonsFromAPI();
+    });
+
+    await mapboxMap!.setBounds(
+      CameraBoundsOptions(minZoom: 13.0, maxZoom: 20.0),
+    );
+
     final bytes = await rootBundle.load(TImages.currentLocationIconPuck);
     final imageData = bytes.buffer.asUint8List();
 
@@ -58,13 +110,18 @@ class IncidentLiveMapController extends GetxController {
   Future<void> searchPlace(String input) async {
     final loc =
         await geo.Geolocator.getLastKnownPosition() ??
-            await geo.Geolocator.getCurrentPosition();
+        await geo.Geolocator.getCurrentPosition();
 
     final userLat = loc.latitude;
     final userLng = loc.longitude;
 
     final acUrl =
-        'https://rsapi.goong.io/v2/place/autocomplete?input=$input&location=$userLat,$userLng&limit=5&has_deprecated_administrative_unit=false&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/place/autocomplete'
+        '?input=$input'
+        '&location=$userLat,$userLng'
+        '&limit=5&api_key=$goongMapTilesKey'
+        '&more_compound=true'
+        '&has_deprecated_administrative_unit=false';
 
     final acRes = await http.get(Uri.parse(acUrl));
     if (acRes.statusCode != 200) return;
@@ -78,10 +135,10 @@ class IncidentLiveMapController extends GetxController {
         try {
           final res = await http
               .get(
-            Uri.parse(
-              'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
-            ),
-          )
+                Uri.parse(
+                  'https://rsapi.goong.io/v2/place/detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
+                ),
+              )
               .timeout(const Duration(seconds: 3));
           if (res.statusCode == 200) {
             final loc = jsonDecode(res.body)['result']['geometry']['location'];
@@ -124,7 +181,7 @@ class IncidentLiveMapController extends GetxController {
 
   Future<void> selectPlace(String placeId) async {
     final url =
-        'https://rsapi.goong.io/Place/Detail?place_id=$placeId&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/place/detail?place_id=$placeId&api_key=$goongMapTilesKey';
     final res = await http.get(Uri.parse(url));
 
     if (res.statusCode == 200) {
@@ -148,7 +205,7 @@ class IncidentLiveMapController extends GetxController {
       mapboxMap!.setCamera(CameraOptions(center: point, zoom: 12.0));
 
       mapboxMap!.flyTo(
-        CameraOptions(center: point, zoom: 15, bearing: 0, pitch: 0),
+        CameraOptions(center: point, zoom: 14, bearing: 0, pitch: 0),
         MapAnimationOptions(duration: 2000, startDelay: 0),
       );
 
@@ -206,7 +263,13 @@ class IncidentLiveMapController extends GetxController {
     _customMarkerManager ??= await mapboxMap!.annotations
         .createPointAnnotationManager();
 
-    await _customMarkerManager!.deleteAll();
+    if (_customMarkerManager != null) {
+      try {
+        await _customMarkerManager!.deleteAll();
+      } catch (e) {
+        debugPrint('⚠️ Failed to delete annotations: $e');
+      }
+    }
 
     await _customMarkerManager!.create(
       PointAnnotationOptions(
@@ -220,5 +283,570 @@ class IncidentLiveMapController extends GetxController {
   Future<Uint8List> getImageFromAsset(String path) async {
     final ByteData bytes = await rootBundle.load(path);
     return bytes.buffer.asUint8List();
+  }
+
+  Future<MbxImage> getImage(String path) async {
+    final ByteData bytes = await rootBundle.load(path);
+    final codec = await instantiateImageCodec(bytes.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    return MbxImage(
+      data: byteData!.buffer.asUint8List(),
+      width: image.width,
+      height: image.height,
+    );
+  }
+
+  Future<void> loadPolygonsFromAPI() async {
+    isLoading.value = true;
+
+    try {
+      final rawDataList = await liveMapService.fetchCommunesPolygon();
+      final markerIcon = await getImage(TImages.communesOverviewIcon);
+
+      final List<Map<String, dynamic>> polygonFeatures = [];
+      final List<Map<String, dynamic>> markerFeatures = [];
+
+      for (var collection in rawDataList) {
+        final features = collection['features'] as List<dynamic>;
+
+        for (var feature in features) {
+          final geometry = feature['geometry'];
+          final type = geometry['type'];
+          final properties = feature['properties'];
+
+          if (type == 'Polygon' || type == 'MultiPolygon') {
+            polygonFeatures.add({
+              "type": "Feature",
+              "geometry": geometry,
+              "properties": properties,
+            });
+          } else if (type == 'Point') {
+            final coords = geometry['coordinates'];
+            final lng = coords[0].toDouble();
+            final lat = coords[1].toDouble();
+
+            markerFeatures.add({
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [lng, lat],
+              },
+              "properties": properties,
+            });
+          } else {
+            if (kDebugMode) {
+              print('❌ Unknown geometry type: $type');
+            }
+          }
+        }
+      }
+
+      final style = mapboxMap!.style;
+
+      final polygonSourceId = "commune-source";
+      final fillLayerId = "commune-fill-layer";
+      final lineLayerId = "commune-outline-layer";
+
+      final markerSourceId = "incident-marker-source";
+      final markerLayerId = "incident-marker-layer";
+
+      try {
+        await style.removeStyleLayer(fillLayerId);
+      } catch (_) {}
+      try {
+        await style.removeStyleLayer(lineLayerId);
+      } catch (_) {}
+      try {
+        await style.removeStyleSource(polygonSourceId);
+      } catch (_) {}
+
+      try {
+        await style.removeStyleLayer(markerLayerId);
+      } catch (_) {}
+      try {
+        await style.removeStyleSource(markerSourceId);
+      } catch (_) {}
+
+      /// Add polygon source and layers
+      await style.addSource(
+        GeoJsonSource(
+          id: polygonSourceId,
+          data: jsonEncode({
+            "type": "FeatureCollection",
+            "features": polygonFeatures,
+          }),
+        ),
+      );
+
+      await style.addLayer(
+        FillLayer(
+          id: fillLayerId,
+          sourceId: polygonSourceId,
+          fillColor: TColors.accent.toARGB32(),
+          fillOpacity: 0.2,
+        ),
+      );
+
+      await style.addLayer(
+        LineLayer(
+          id: lineLayerId,
+          sourceId: polygonSourceId,
+          lineColor: TColors.primary.toARGB32(),
+          lineWidth: 2,
+        ),
+      );
+
+      await mapboxMap!.style.addStyleImage(
+        'incident-marker',
+        0.6,
+        markerIcon,
+        false,
+        [],
+        [],
+        null,
+      );
+
+      await style.addSource(
+        GeoJsonSource(
+          id: markerSourceId,
+          data: jsonEncode({
+            "type": "FeatureCollection",
+            "features": markerFeatures,
+          }),
+        ),
+      );
+
+      await style.addLayer(
+        SymbolLayer(id: markerLayerId, sourceId: markerSourceId)
+          ..iconImage = 'incident-marker'
+          ..iconSize = 0.028
+          ..textField = '{name}'
+          ..textSize = 12
+          ..textColor = Colors.black.toARGB32()
+          ..textHaloColor = Colors.white.toARGB32()
+          ..textHaloWidth = 4.0
+          ..textHaloBlur = 0.5
+          ..textOffset = [0, -2]
+          ..textAnchor = TextAnchor.BOTTOM
+          ..textAllowOverlap = true
+          ..iconAllowOverlap = true
+          ..textFont = ['Roboto Regular'],
+      );
+
+    } catch (e) {
+      debugPrint('❌ Failed to load polygons or markers: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void onMapClick(MapContentGestureContext context) {
+    _handleMapClick(context.touchPosition);
+    _handleIncidentMarkerTap(context.touchPosition);
+  }
+
+  Future<void> _handleMapClick(ScreenCoordinate screenCoordinate) async {
+    try {
+      final features = await mapboxMap!.queryRenderedFeatures(
+        RenderedQueryGeometry.fromScreenCoordinate(screenCoordinate),
+        RenderedQueryOptions(layerIds: ['incident-marker-layer']),
+      );
+
+      if (features.isEmpty) {
+        debugPrint("⚠️ No features found at this coordinate");
+        return;
+      }
+
+      final feature = features.first!.queriedFeature.feature;
+      final rawProps = feature['properties'];
+
+      if (rawProps is Map) {
+        final featureMap = Map<String, dynamic>.from(features.first!.queriedFeature.feature);
+        _showMarkerDetailsModal(Get.context!, featureMap);
+      } else {
+        debugPrint("⚠️ Feature has no valid properties: $rawProps");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("❌ Failed to query features: $e");
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  void _showMarkerDetailsModal(BuildContext context, Map<String, dynamic> properties,) {
+    debugPrint('🧩 Marker properties: $properties');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      builder: (context) => CommuneOverviewWidget(feature: properties),
+    );
+  }
+
+  void fetchCommuneOverviewData(String communeId) async {
+    isOverviewLoading.value = true;
+
+    try {
+      final data = await liveMapService.fetchReportsByType(
+        communeId: communeId,
+        range: selectedRange.value,
+      );
+
+      traffic.value = data['Giao thông'] ?? 0;
+      security.value = data['An ninh'] ?? 0;
+      infrastructure.value = data['Hạ tầng'] ?? 0;
+      environment.value = data['Môi trường'] ?? 0;
+      other.value = data['Khác'] ?? 0;
+    } catch (e) {
+      debugPrint('❌ Error fetching incident data: $e');
+    } finally {
+      isOverviewLoading.value = false;
+    }
+  }
+
+  void updateCommuneOverviewRange(String range, String communeId) async {
+    isOverviewLoading.value = true;
+
+    try {
+      selectedRange.value = range;
+
+      final result = await liveMapService.fetchReportsByType(
+        communeId: communeId,
+        range: range,
+      );
+
+      traffic.value = result['Giao thông'] ?? 0;
+      security.value = result['An ninh'] ?? 0;
+      infrastructure.value = result['Hạ tầng'] ?? 0;
+      environment.value = result['Môi trường'] ?? 0;
+      other.value = result['Khác'] ?? 0;
+    } catch (e) {
+      debugPrint('❌ Error fetching incident data: $e');
+    } finally {
+      isOverviewLoading.value = false;
+    }
+  }
+
+  void initCommuneOverview(String communeId) {
+    updateCommuneOverviewRange('week', communeId);
+  }
+
+  Future<void> loadIncidentIconsToMap() async {
+    final iconMap = {
+      'Giao thông': TImages.trafficMapIcon,
+      'An ninh': TImages.securityMapIcon,
+      'Môi trường': TImages.environmentMapIcon,
+      'Cơ sở hạ tầng': TImages.infrastructureMapIcon,
+      'Khác': TImages.otherMapIcon,
+    };
+
+    for (final entry in iconMap.entries) {
+      try {
+        final iconBytes = await getImage(entry.value);
+        await mapboxMap!.style.addStyleImage(
+          entry.key,
+          0.6,
+          iconBytes,
+          false,
+          [],
+          [],
+          null,
+        );
+      } catch (e) {
+        debugPrint("⚠️ Failed to load icon for ${entry.key}: $e");
+      }
+    }
+  }
+
+  Future<void> focusOnCommune(Map<String, dynamic> feature) async {
+    isCommuneReportFocusLoading.value = true;
+    lastFocusedCommuneFeature = feature;
+    try {
+      final geometry = feature['geometry'];
+      if (geometry == null || geometry['type'] != 'Point') {
+        debugPrint("⚠️ Invalid geometry for focus");
+        return;
+      }
+
+      final coords = geometry['coordinates'] as List<dynamic>;
+      final double lng = coords[0].toDouble();
+      final double lat = coords[1].toDouble();
+      final center = Point(coordinates: Position(lng, lat));
+      const radius = 0.045;
+
+      final bounds = CoordinateBounds(
+        southwest: Point(coordinates: Position(lng - radius, lat - radius)),
+        northeast: Point(coordinates: Position(lng + radius, lat + radius)), infiniteBounds: false,
+      );
+
+      try {
+        await mapboxMap!.style.setStyleLayerProperty(
+          'incident-marker-layer',
+          'visibility',
+          'none',
+        );
+      } catch (_) {}
+
+      await mapboxMap!.flyTo(
+        CameraOptions(center: center, zoom: 14.5),
+        MapAnimationOptions(duration: 1000),
+      );
+
+      await mapboxMap!.setBounds(
+        CameraBoundsOptions(
+          bounds: bounds,
+          minZoom: 10.0,
+          maxZoom: 19.0,
+          maxPitch: 0,
+        ),
+      );
+
+      final communeId = feature['properties']?['id']?.toString();
+      if (communeId == null) {
+        debugPrint('❌ Missing commune id');
+        return;
+      }
+
+      final reports = await liveMapService.fetchReportDetailsByType(
+        communeId: communeId,
+        type: selectedTypeApi,
+        range: selectedRangeApi,
+      );
+
+      await loadIncidentIconsToMap();
+
+      for (final id in ['incident-report-marker-layer', 'incident-report-marker-source']) {
+        try {
+          await mapboxMap!.style.removeStyleLayer(id);
+        } catch (_) {}
+        try {
+          await mapboxMap!.style.removeStyleSource(id);
+        } catch (_) {}
+      }
+
+      final features = reports.map((report) => {
+        "type": "Feature",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [report.lng, report.lat],
+        },
+        "properties": {
+          "icon": report.type,
+          "id": report.id,
+          "type": report.type,
+          "subCategory": report.subCategory,
+          "address": report.address,
+          "lat": report.lat,
+          "lng": report.lng,
+          "occurredAt": report.occurredAt.toIso8601String(),
+          "status": report.status,
+        },
+      }).toList();
+
+      await mapboxMap!.style.addSource(
+        GeoJsonSource(
+          id: "incident-report-marker-source",
+          data: jsonEncode({
+            "type": "FeatureCollection",
+            "features": features,
+          }),
+        ),
+      );
+
+      await mapboxMap!.style.addLayer(
+        SymbolLayer(
+          id: "incident-report-marker-layer",
+          sourceId: "incident-report-marker-source",
+          iconImageExpression: ["get", "icon"],
+          iconSize: 0.036,
+          iconAllowOverlap: true,
+          iconIgnorePlacement: true,
+        ),
+      );
+
+      isFocusedOnCommune.value = true;
+    } catch (e, stackTrace) {
+      debugPrint("❌ focusOnCommune failed: $e");
+      debugPrint("🧱 $stackTrace");
+    }finally{
+      isCommuneReportFocusLoading.value = false;
+    }
+  }
+
+  Future<void> refocusLastCommune() async {
+    if (lastFocusedCommuneFeature != null) {
+      await focusOnCommune(lastFocusedCommuneFeature!);
+    }
+  }
+
+  Future<void> exitCommuneFocus() async {
+    try {
+      isExitingCommuneFocus.value = true;
+      const centerLng = 106.67393252105423;
+      const centerLat = 10.831951418898154;
+      final center = Point(coordinates: Position(centerLng, centerLat));
+
+      for (final id in ['incident-marker-layer', 'incident-marker-source']) {
+        try {
+          await mapboxMap!.style.removeStyleLayer(id);
+        } catch (_) {}
+        try {
+          await mapboxMap!.style.removeStyleSource(id);
+        } catch (_) {}
+      }
+
+      try {
+        final markerIcon = await getImage(TImages.communesOverviewIcon);
+        await mapboxMap!.style.addStyleImage(
+          'incident-marker',
+          0.6,
+          markerIcon,
+          false,
+          [],
+          [],
+          null,
+        );
+      } catch (_) {}
+
+      final rawDataList = await liveMapService.fetchCommunesPolygon();
+      final List<Map<String, dynamic>> markerFeatures = [];
+
+      for (final collection in rawDataList) {
+        final features = collection['features'] as List<dynamic>;
+        for (final feature in features) {
+          final geometry = feature['geometry'];
+          if (geometry['type'] == 'Point') {
+            final coords = geometry['coordinates'];
+            final lng = coords[0].toDouble();
+            final lat = coords[1].toDouble();
+            markerFeatures.add({
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [lng, lat],
+              },
+              "properties": feature['properties'],
+            });
+          }
+        }
+      }
+
+      try {
+        await mapboxMap!.style.setStyleLayerProperty(
+          'incident-report-marker-layer',
+          'visibility',
+          'none',
+        );
+      } catch (_) {}
+
+      await mapboxMap!.style.addSource(
+        GeoJsonSource(
+          id: "incident-marker-source",
+          data: jsonEncode({
+            "type": "FeatureCollection",
+            "features": markerFeatures,
+          }),
+        ),
+      );
+
+      await mapboxMap!.style.addLayer(
+        SymbolLayer(
+          id: "incident-marker-layer",
+          sourceId: "incident-marker-source",
+        )..iconImage = 'incident-marker'
+          ..iconSize = 0.028
+          ..textField = '{name}'
+          ..textSize = 12
+          ..textColor = Colors.black.toARGB32()
+          ..textHaloColor = Colors.white.toARGB32()
+          ..textHaloWidth = 4.0
+          ..textHaloBlur = 0.5
+          ..textOffset = [0, -2]
+          ..textAnchor = TextAnchor.BOTTOM
+          ..textAllowOverlap = true
+          ..iconAllowOverlap = true
+          ..textFont = ['Roboto Regular'],
+      );
+
+      await mapboxMap!.flyTo(
+        CameraOptions(center: center, zoom: 13.5),
+        MapAnimationOptions(duration: 1000),
+      );
+
+      await mapboxMap!.setBounds(
+        CameraBoundsOptions(
+          bounds: CoordinateBounds(
+            southwest: center,
+            northeast: center,
+            infiniteBounds: true,
+          ),
+          minZoom: 13.0,
+          maxZoom: 20.0,
+        ),
+      );
+      isFocusedOnCommune.value = false;
+    } catch (e) {
+      debugPrint("❌ exitCommuneFocus failed: $e");
+    }finally {
+      isExitingCommuneFocus.value = false;
+    }
+  }
+
+  Future<void> _handleIncidentMarkerTap(ScreenCoordinate screenCoordinate) async {
+    try {
+      final features = await mapboxMap!.queryRenderedFeatures(
+        RenderedQueryGeometry.fromScreenCoordinate(screenCoordinate),
+        RenderedQueryOptions(layerIds: ['incident-report-marker-layer']),
+      );
+
+      if (features.isEmpty) {
+        debugPrint("⚠️ No incident markers found at this coordinate");
+        return;
+      }
+
+      final rawFeature = features.first!.queriedFeature.feature;
+
+      final feature = Map<String, dynamic>.from(
+        rawFeature.map(
+              (key, value) => MapEntry(key.toString(), value),
+        ),
+      );
+
+      final rawProps = feature['properties'];
+      if (rawProps == null || rawProps is! Map) {
+        debugPrint("⚠️ Invalid properties in feature: $rawProps");
+        return;
+      }
+
+      final props = Map<String, dynamic>.from(
+        rawProps.map(
+              (key, value) => MapEntry(key.toString(), value),
+        ),
+      );
+
+      final report = ReportDetailModel(
+        id: props['id'],
+        communeId: 0,
+        type: props['type'],
+        subCategory: props['subCategory'],
+        address: props['address'],
+        lat: (props['lat'] as num).toDouble(),
+        lng: (props['lng'] as num).toDouble(),
+        occurredAt: DateTime.parse(props['occurredAt']),
+        status: props['status'],
+      );
+
+      Get.bottomSheet(
+        enableDrag: false,
+        CommuneReportDetailsWidget(report: report),
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+      );
+    } catch (e, stackTrace) {
+      debugPrint("❌ Failed to handle incident marker tap: $e");
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 }

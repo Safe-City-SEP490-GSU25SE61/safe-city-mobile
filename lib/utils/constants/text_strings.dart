@@ -87,15 +87,21 @@ class TTexts {
   static const String identityDataIsHidden = 'Thông tin cá nhân của bạn đang được ẩn vì lý do bảo mật. Vui lòng sinh trắc học để xem chi tiết.';
   static const String anonymousReport = 'Gửi báo cáo sự cố ẩn danh tới cán bộ cộng đồng.';
   static const String emergencyHelpNotice = 'Nếu bạn đang gặp nguy hiểm hoặc tình huống cần sự giúp đỡ thì hãy liên hệ các cơ quan chức năng gần nhất để được giúp đỡ kịp thời.';
-  static const String emergencyHelpNoticeTitle = 'Lưu ý';
+  static const String noticeTitle = 'Lưu ý';
   static const String anonymousReportOnNotice = "Bạn đã bật chế độ ẩn danh. Thông tin cá nhân của bạn sẽ không hiển thị với Cán bộ cộng đồng, nhưng bạn vẫn sẽ được cộng điểm tích lũy cho báo cáo.";
   static const String anonymousReportOffNotice = 'Bạn đã tắt chế độ ẩn danh. Thông tin cá nhân của bạn sẽ được hiển thị với Cán bộ cộng đồng. Bạn sẽ được cộng điểm tích lũy cho báo cáo nếu được duyệt.';
+  //Live Map Incident Text
+  static const String communeDetail = "Chi tiết khu vực";
   static const String incidentReportNotice = '''
 • Vui lòng đính kèm bằng chứng để tăng cơ hội được cộng điểm.
 • Báo cáo sai lệch hoặc không liên quan có thể bị trừ uy tín.
 • Người dùng có uy tín dưới 2 không thể gửi báo cáo.
 • Mỗi báo cáo cần thời gian để được xử lý và xác minh.
 ''';
+  static const String incidentLiveMapNotice = 'Dữ liệu chỉ mang tính tham khảo và mọi sự việc liên quan đã được xử lý theo quy định pháp luật.';
+  static const String disclaimer = 'Tuyên bố từ chối trách nhiệm';
+  static const String createBlogNotice = 'Khi gửi báo cáo sẽ được sĩ quan cộng đồng duyệt bài viết. Nếu thành công bạn sẽ được cộng một số điểm nhất định.';
+
 
 
 
