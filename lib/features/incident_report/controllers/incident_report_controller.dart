@@ -17,7 +17,7 @@ class IncidentReportController extends GetxController {
   final images = <PlatformFile>[].obs;
   final video = Rxn<PlatformFile>();
   final address = TextEditingController();
-  final TextEditingController searchController = TextEditingController();
+  final searchController = TextEditingController();
   final lat = 0.0.obs;
   final lng = 0.0.obs;
   final occurredAt = ''.obs;
@@ -179,10 +179,10 @@ class IncidentReportController extends GetxController {
     ReportPriority? priority,
     String? communeName,
   }) {
-    if (range != null) selectedRange.value = range;
-    if (status != null) selectedStatus.value = status;
-    if (sort != null) selectedFilterSort.value = sort;
-    if (priority != null) selectedFilterPriority.value = priority;
+    selectedRange.value = range;
+    selectedStatus.value = status;
+    selectedFilterSort.value = sort;
+    selectedFilterPriority.value = priority;
     if (communeName != null) searchCommuneName.value = communeName;
   }
 

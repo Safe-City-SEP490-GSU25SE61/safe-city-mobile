@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # Utility Packages
   http: ^1.4.0
@@ -38,6 +40,8 @@ dependencies:
   device_info_plus: ^11.5.0
   webview_flutter: ^4.13.0
   app_links: ^6.4.0
+  infinite_scroll_pagination: ^5.1.0
+  fl_chart: ^1.0.0
 
   #Maps Integration
   mapbox_maps_flutter: ^2.9.0
@@ -53,6 +57,8 @@ dependencies:
 
   #Specific
   readmore: ^3.0.0
+  flutter_quill: ^11.4.2
+  flutter_quill_extensions: ^11.0.0
 
   #Firebase
   #  firebase_core: ^3.5.0
@@ -64,6 +70,7 @@ dependencies:
   image_picker: ^1.1.2
   video_player: ^2.10.0
   file_picker: ^10.2.0
+  path_provider: ^2.1.5
 
   #State Management
   get: ^4.7.2

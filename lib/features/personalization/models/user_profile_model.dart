@@ -12,6 +12,7 @@ class UserProfileModel {
   final String placeOfIssue;
   final String placeOfBirth;
   final int totalPoint;
+  final int reputationPoint;
   final bool isBiometricEnabled;
   final String achievementName;
   final CurrentSubscription currentSubscription;
@@ -30,6 +31,7 @@ class UserProfileModel {
     required this.placeOfIssue,
     required this.placeOfBirth,
     required this.totalPoint,
+    required this.reputationPoint,
     required this.isBiometricEnabled,
     required this.achievementName,
     required this.currentSubscription,
@@ -49,6 +51,7 @@ class UserProfileModel {
     placeOfIssue: '',
     placeOfBirth: '',
     totalPoint: 0,
+    reputationPoint: 0,
     isBiometricEnabled: false,
     achievementName: '',
     currentSubscription: CurrentSubscription.empty(),
@@ -69,6 +72,7 @@ class UserProfileModel {
       placeOfIssue: json['placeOfIssue'] ?? '',
       placeOfBirth: json['placeOfBirth'] ?? '',
       totalPoint: json['totalPoint'] ?? 0,
+      reputationPoint: json['reputationPoint'] ?? 0,
       isBiometricEnabled: json['isBiometricEnabled'] ?? false,
       achievementName: json['achievementName'] ?? '',
       currentSubscription: CurrentSubscription.fromJson(

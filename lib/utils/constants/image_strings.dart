@@ -55,6 +55,12 @@ class TImages {
   //--Map Images
   static const String currentLocationIconPuck = "assets/images/map/pulsing_dot.gif";
   static const String locationIcon = "assets/images/map/location-icon.png";
+  static const String communesOverviewIcon = "assets/images/map/live_map_location_overview.png";
+  static const String trafficMapIcon = "assets/images/map/traffic.png";
+  static const String securityMapIcon = "assets/images/map/security.png";
+  static const String environmentMapIcon = "assets/images/map/environment.png";
+  static const String infrastructureMapIcon = "assets/images/map/infrastructure.png";
+  static const String otherMapIcon = "assets/images/map/other.png";
 
   static const String emptyBoxImage = "assets/images/default_avatar/empty_box.png";
 }

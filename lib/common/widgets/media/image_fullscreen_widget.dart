@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 
+import '../../../utils/helpers/helper_functions.dart';
 import '../appbar/appbar.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
@@ -35,8 +36,9 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = THelperFunctions.isDarkMode(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: dark ? Colors.black : Colors.black,
       appBar: TAppBar(
         title: Text('${_currentIndex + 1} / ${widget.images.length}'),
         showBackArrow: true,

@@ -54,8 +54,8 @@ class LoginController extends GetxController {
       final authenticated = await biometricHelper.authenticateWithBiometrics();
       if (!authenticated) {
         TFullScreenLoader.stopLoading();
-        TLoaders.errorSnackBar(
-          title: 'Xác thực thất bại',
+        TLoaders.warningSnackBar(
+          title: 'Xác thực bị hủy bỏ',
           message: 'Không thể xác thực vân tay',
         );
         return;

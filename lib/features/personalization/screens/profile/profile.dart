@@ -187,6 +187,11 @@ class ProfileScreen extends StatelessWidget {
                     totalPoint: user.totalPoint,
                     title: 'Tổng điểm',
                   ),
+                  TPointDisplay(
+                    totalPoint: userController.user.value.reputationPoint,
+                    title: 'Điểm uy tín',
+                    isReputationPoint: true,
+                  ),
 
                   const Divider(),
                   const SizedBox(height: TSizes.spaceBtwItems),
@@ -231,7 +236,8 @@ class ProfileScreen extends StatelessWidget {
                           title: 'Thông tin cá nhân',
                           showActionButton: true,
                           buttonTitle: 'Cập nhật CCCD',
-                          onPressed: () => Get.to(() => const LoginAndSecurityScreen()),
+                          onPressed: () =>
+                              Get.to(() => const LoginAndSecurityScreen()),
                         ),
                         const SizedBox(height: TSizes.spaceBtwItems),
                         TProfileMenu(

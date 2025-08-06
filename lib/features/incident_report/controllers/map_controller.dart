@@ -106,7 +106,7 @@ class MapController extends GetxController {
           final res = await http
               .get(
                 Uri.parse(
-                  'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
+                  'https://rsapi.goong.io/v2/place/detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
                 ),
               )
               .timeout(const Duration(seconds: 3));

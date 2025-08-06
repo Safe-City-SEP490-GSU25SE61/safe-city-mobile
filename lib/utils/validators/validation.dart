@@ -89,4 +89,16 @@ class TValidator {
     }
     return null;
   }
+
+  static String? validateBlogTitle(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Tiêu đề không được để trống';
+    }
+
+    if (value.trim().length < 5) {
+      return 'Tiêu đề phải có ít nhất 5 ký tự';
+    }
+
+    return null;
+  }
 }

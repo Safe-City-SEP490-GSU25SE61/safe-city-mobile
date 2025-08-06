@@ -1,10 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:safe_city_mobile/common/widgets/effects/shimmer_effect.dart';
+import 'package:safe_city_mobile/utils/constants/sizes.dart';
 
 import '../../../../utils/constants/colors.dart';
+import '../../../../utils/constants/enums.dart';
 import '../../../../utils/helpers/helper_functions.dart';
 import '../../controllers/blog_controller.dart';
-import '../../controllers/blog_filter_controller.dart';
 
 class LocationFilterModal extends StatefulWidget {
   final VoidCallback onApply;
@@ -17,11 +19,16 @@ class LocationFilterModal extends StatefulWidget {
 
 class _LocationFilterModalState extends State<LocationFilterModal> {
   final List<String> tabs = ['Sắp xếp', 'Vị trí'];
-  final controller = Get.put(BlogFilterController());
+  final blogController = Get.put(BlogController());
 
   int selectedIndex = 0;
 
-  final List<String> sortOptions = ['Hoạt động gần đây', 'Bài viết mới'];
+  final List<String> sortPriorityOptions = [
+    'Cảnh báo',
+    'Mẹo vặt',
+    'Sự kiện',
+    'Tin tức',
+  ];
   String? selectedSort;
   String? selectedCity;
   String? selectedDistrict;
@@ -30,28 +37,51 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        selectedCity = controller.selectedProvince.value.isNotEmpty
-            ? controller.selectedProvince.value
-            : null;
-        selectedDistrict = controller.selectedCommune.value.isNotEmpty
-            ? controller.selectedCommune.value
-            : null;
+    selectedSort = blogController.selectedBlogType.value?.viLabel;
+    final defaultProvince = blogController.provinces.isNotEmpty
+        ? blogController.provinces.first.name
+        : null;
+
+    selectedCity = blogController.selectedProvince.value.isNotEmpty
+        ? blogController.selectedProvince.value
+        : defaultProvince;
+
+    if (selectedCity != null) {
+      blogController.selectedProvince.value = selectedCity!;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        blogController.fetchCommunesByProvince(selectedCity!);
       });
-    });
+    }
+
+    selectedDistrict = blogController.selectedCommune.value.isNotEmpty
+        ? blogController.selectedCommune.value
+        : null;
+  }
+
+  void loadInitialCommunes() {
+    final city = blogController.selectedProvince.value;
+    if (city.isNotEmpty) {
+      final province = blogController.provinces.firstWhereOrNull(
+        (p) => p.name == city,
+      );
+
+      if (province != null) {
+        blogController.communes.value = province.communes;
+      }
+    }
   }
 
   Widget _buildTabContent() {
-    final cities = controller.provinces;
-    final districts = controller.communes;
+    final cities = blogController.provinces.map((e) => e.name).toList();
     final dark = THelperFunctions.isDarkMode(context);
+
     if (selectedIndex == 0) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Sắp xếp theo",
+            "Loại bài viết",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -61,14 +91,14 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
           Wrap(
             spacing: 6,
             runSpacing: 0,
-            children: sortOptions
+            children: sortPriorityOptions
                 .map(
                   (option) => Theme(
                     data: Theme.of(context).copyWith(
                       chipTheme: ChipThemeData(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 10,
+                          horizontal: 6,
+                          vertical: 0,
                         ),
                         labelStyle: const TextStyle(fontSize: 10),
                       ),
@@ -78,7 +108,11 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
                       backgroundColor: dark ? Colors.white : Colors.white,
                       selected: selectedSort == option,
                       onSelected: (_) {
-                        setState(() => selectedSort = option);
+                        final type = mapBlogToType(option);
+                        setState(() {
+                          selectedSort = option;
+                          blogController.selectedBlogType.value = type;
+                        });
                       },
                       selectedColor: TColors.primary,
                       labelStyle: TextStyle(
@@ -115,8 +149,8 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
                   data: Theme.of(context).copyWith(
                     chipTheme: ChipThemeData(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 10,
+                        horizontal: 6,
+                        vertical: 6,
                       ),
                       labelStyle: const TextStyle(fontSize: 10),
                     ),
@@ -130,7 +164,7 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
                         selectedCity = city;
                         selectedDistrict = null;
                       });
-                      controller.fetchCommunesByProvince(city);
+                      blogController.fetchCommunesByProvince(city);
                     },
                     selectedColor: TColors.primary,
                     labelStyle: TextStyle(
@@ -142,7 +176,7 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
               .toList(),
         ),
         const SizedBox(height: 16),
-        Text(
+        const Text(
           "Phường/Xã",
           style: TextStyle(
             fontSize: 14,
@@ -150,39 +184,44 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
             color: Colors.black,
           ),
         ),
-        Wrap(
-          spacing: 6,
-          runSpacing: 0,
-          children: districts
-              .map(
-                (district) => Theme(
-                  data: Theme.of(context).copyWith(
-                    chipTheme: ChipThemeData(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 10,
+
+        Obx(() {
+          final isLoading =
+              blogController.status.value == FilterStatus.loadingCommunes;
+          final communeItems = isLoading
+              ? List.generate(
+                  6,
+                  (_) => const TShimmerEffect(width: 80, height: 40),
+                )
+              : blogController.communes.map((commune) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      chipTheme: ChipThemeData(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
+                        labelStyle: const TextStyle(fontSize: 10),
                       ),
-                      labelStyle: const TextStyle(fontSize: 10),
                     ),
-                  ),
-                  child: ChoiceChip(
-                    backgroundColor: dark ? Colors.white : Colors.white,
-                    label: Text(district),
-                    selected: selectedDistrict == district,
-                    onSelected: (_) {
-                      setState(() => selectedDistrict = district);
-                    },
-                    selectedColor: TColors.primary,
-                    labelStyle: TextStyle(
-                      color: selectedDistrict == district
-                          ? Colors.white
-                          : Colors.black,
+                    child: ChoiceChip(
+                      backgroundColor: dark ? Colors.white : Colors.white,
+                      label: Text(commune.name),
+                      selected: selectedDistrict == commune.name,
+                      onSelected: (_) =>
+                          setState(() => selectedDistrict = commune.name),
+                      selectedColor: TColors.primary,
+                      labelStyle: TextStyle(
+                        color: selectedDistrict == commune.name
+                            ? Colors.white
+                            : Colors.black,
+                      ),
                     ),
-                  ),
-                ),
-              )
-              .toList(),
-        ),
+                  );
+                }).toList();
+
+          return Wrap(spacing: 6, runSpacing: 0, children: communeItems);
+        }),
       ],
     );
   }
@@ -190,11 +229,11 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.8,
+      height: MediaQuery.of(context).size.height * 0.6,
       child: Row(
         children: [
           Container(
-            width: 90,
+            width: 85,
             color: Colors.grey.shade100,
             child: ListView.builder(
               itemCount: tabs.length,
@@ -235,13 +274,13 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
 
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(TSizes.mediumSpace),
               child: Column(
                 children: [
                   Expanded(
                     child: SingleChildScrollView(child: _buildTabContent()),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: TSizes.mediumSpace),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -255,6 +294,10 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
                               selectedCity = null;
                               selectedDistrict = null;
                             });
+
+                            blogController.selectedBlogType.value = null;
+                            blogController.selectedProvince.value = '';
+                            blogController.selectedCommune.value = '';
                           },
                           child: const Text(
                             "Thiết lập lại",
@@ -267,30 +310,19 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
                         height: 50,
                         child: ElevatedButton(
                           onPressed: () async {
-                            if (selectedDistrict != null &&
-                                selectedCity != null) {
-                              final provinceIndex = controller.provinces
-                                  .indexOf(selectedCity!);
-                              if (provinceIndex != -1) {
-                                final communeId = await controller.service
-                                    .getCommuneIdByName(
-                                      selectedDistrict!,
-                                      provinceIndex + 1,
-                                    );
+                            final type = selectedSort != null
+                                ? mapBlogToType(selectedSort!)
+                                : null;
 
-                                if (communeId != null) {
-                                  controller.selectedProvince.value =
-                                      selectedCity!;
-                                  controller.selectedCommune.value =
-                                      selectedDistrict!;
-                                  Get.back();
-                                  await BlogController.instance
-                                      .fetchBlogsByCommuneId(communeId);
-                                }
-                              }
-                            }
+                            await blogController.fetchInitialDataOnce(
+                              provinceName: selectedCity,
+                              communeName: selectedDistrict,
+                              type: type,
+                              isFirstRequest: false,
+                            );
 
                             widget.onApply();
+                            Get.back();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: TColors.primary,

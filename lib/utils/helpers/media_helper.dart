@@ -5,7 +5,12 @@ import 'dart:io';
 import '../popups/loaders.dart';
 
 class MediaHelper {
-  static Future<Map<String, dynamic>?> pickMedia() async {
+  static Future<Map<String, dynamic>?> pickMedia({
+    int maxImages = 3,
+    int maxImageSizeMB = 8,
+    int maxVideoSizeMB = 200,
+    int maxVideoDurationMinutes = 30,
+  }) async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.custom,
@@ -18,22 +23,22 @@ class MediaHelper {
     PlatformFile? video;
 
     for (var file in result.files) {
-      final ext = file.extension;
+      final ext = file.extension?.toLowerCase();
       final isImage = ['jpg', 'jpeg', 'png'].contains(ext);
       final isVideo = ext == 'mp4';
 
       if (isImage) {
-        if (images.length >= 3) {
+        if (images.length >= maxImages) {
           TLoaders.warningSnackBar(
             title: "Giới hạn ảnh",
-            message: "Chỉ được chọn tối đa 3 ảnh.",
+            message: "Chỉ được chọn tối đa $maxImages ảnh.",
           );
           return null;
         }
-        if (file.size > 8 * 1024 * 1024) {
+        if (file.size > maxImageSizeMB * 1024 * 1024) {
           TLoaders.warningSnackBar(
             title: "Ảnh quá lớn",
-            message: "${file.name} vượt quá 8MB.",
+            message: "${file.name} vượt quá ${maxImageSizeMB}MB.",
           );
           return null;
         }
@@ -46,10 +51,10 @@ class MediaHelper {
           );
           return null;
         }
-        if (file.size > 200 * 1024 * 1024) {
+        if (file.size > maxVideoSizeMB * 1024 * 1024) {
           TLoaders.warningSnackBar(
             title: "Video quá lớn",
-            message: "${file.name} vượt quá 200MB.",
+            message: "${file.name} vượt quá ${maxVideoSizeMB}MB.",
           );
           return null;
         }
@@ -60,10 +65,10 @@ class MediaHelper {
         final duration = controller.value.duration;
         controller.dispose();
 
-        if (duration.inMinutes > 5) {
+        if (duration.inMinutes > maxVideoDurationMinutes) {
           TLoaders.warningSnackBar(
             title: "Video quá dài",
-            message: "Video dài hơn 5 phút.",
+            message: "Video dài hơn $maxVideoDurationMinutes phút.",
           );
           return null;
         }
