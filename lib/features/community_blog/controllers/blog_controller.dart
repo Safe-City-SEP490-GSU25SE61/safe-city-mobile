@@ -12,6 +12,7 @@ import '../../../utils/helpers/network_manager.dart';
 import '../../../utils/popups/full_screen_loader.dart';
 import '../../../utils/popups/loaders.dart';
 import '../models/blog_comment_model.dart';
+import '../models/blog_history_model.dart';
 import '../models/blog_models.dart';
 import '../models/commune_model.dart';
 import '../models/province_with_commune_model.dart';
@@ -22,15 +23,10 @@ class BlogController extends GetxController {
   final blogService = BlogService();
   final likeDebouncer = Debouncer(delay: Duration(milliseconds: 500));
 
-  // Blog state
   RxList<BlogModel> blogs = <BlogModel>[].obs;
   RxBool isLoading = false.obs;
-  bool isFetchingMore = false;
-  bool hasMore = true;
   int? currentCommuneId;
-  int currentPage = 1;
 
-  // Search & filter
   final searchController = TextEditingController();
   final selectedCategory = Rxn<BlogType>();
   final blogTypeCategories = <DropdownMenuItem<BlogType>>[].obs;
@@ -38,14 +34,12 @@ class BlogController extends GetxController {
   final RxString selectedProvince = ''.obs;
   final RxString selectedCommune = ''.obs;
 
-  // Blog creation form
   final title = TextEditingController();
   final content = TextEditingController();
   final images = <PlatformFile>[].obs;
   final video = Rxn<PlatformFile>();
   final createBlogFormKey = GlobalKey<FormState>();
 
-  // Comments
   RxList<CommentModel> comments = <CommentModel>[].obs;
   RxBool isCommentsLoading = false.obs;
   final comment = TextEditingController();
@@ -55,7 +49,9 @@ class BlogController extends GetxController {
   final RxList<CommuneModel> communes = <CommuneModel>[].obs;
   final Rx<FilterStatus> status = FilterStatus.initial.obs;
 
-
+  var isLoadingUserBlogs = false.obs;
+  final  userBlogs = <BlogHistoryModel>[].obs;
+  var isPremium = true.obs;
 
   @override
   void onInit() {
@@ -63,7 +59,6 @@ class BlogController extends GetxController {
     loadBlogTypeCategories();
     fetchInitialDataOnce(isFirstRequest: true);
   }
-
 
   void loadBlogTypeCategories() {
     blogTypeCategories.value = BlogType.values
@@ -76,68 +71,79 @@ class BlogController extends GetxController {
         .toList();
   }
 
-  Future<void> fetchInitialDataOnce({
-    String? provinceName,
-    String? communeName,
-    BlogType? type,
-    bool isFirstRequest = false,
-  }) async {
+  Future<void> fetchInitialDataOnce({String? provinceName, String? communeName, BlogType? type, bool isFirstRequest = false, String? searchQuery,}) async {
     try {
       isLoading.value = true;
       status.value = FilterStatus.loadingFilters;
       blogs.clear();
 
+      if (!isFirstRequest) {
+        final id = blogService.getCommuneIdByName(
+          provinceName ?? '',
+          communeName ?? '',
+        );
+        if (id != null && id != 0) {
+          isFirstRequest = false;
+        } else {
+          isFirstRequest = true;
+        }
+      }
+
       if (isFirstRequest) {
         final result = await blogService.getBlogsByCommuneId(
           0,
           blogType: type?.name,
-          title: searchController.text,
+          title: searchQuery,
           isFirstRequest: true,
         );
-
-        blogs.addAll(result);
-
+        blogs.addAll(result['blogs'] as List<BlogModel>);
+        isPremium.value = result['isPremium'] ?? true;
         final cachedProvinces = blogService.cachedProvinces;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          provinces.value = cachedProvinces;
-          status.value = FilterStatus.success;
-        });
+        provinces.value = cachedProvinces;
 
+        if (provinces.isNotEmpty && selectedProvince.value.isEmpty) {
+          selectedProvince.value = provinces.first.name;
+        }
+        if (selectedCommune.value.isEmpty) {
+          selectedCommune.value = provinces.first.communes.first.name;
+        }
+
+        status.value = FilterStatus.success;
         return;
       }
 
-      if (provinceName != null && communeName != null) {
-        currentCommuneId = blogService.getCommuneIdByName(provinceName, communeName);
-        if (kDebugMode) {
-          print('[DEBUG] Resolved communeId = $currentCommuneId for $provinceName → $communeName');
-        }
+      provinceName ??= selectedProvince.value;
+      communeName ??= selectedCommune.value;
 
-        if (currentCommuneId == null) {
-          blogs.clear();
-          status.value = FilterStatus.success;
-          return;
-        }
+      currentCommuneId = blogService.getCommuneIdByName(provinceName, communeName);
 
-        final result = await blogService.getBlogsByCommuneId(
-          currentCommuneId!,
-          blogType: type?.name,
-          title: searchController.text,
-          isFirstRequest: false,
-        );
-
-        blogs.addAll(result);
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final selectedProv = provinces.firstWhere(
-                (p) => p.name == provinceName,
-            orElse: () => provinces.first,
-          );
-          communes.value = selectedProv.communes;
-          selectedProvince.value = selectedProv.name;
-          selectedCommune.value = communeName;
-          status.value = FilterStatus.success;
-        });
+      if (kDebugMode) {
+        print('[DEBUG] Resolved communeId = $currentCommuneId for $provinceName → $communeName');
       }
+
+      if (currentCommuneId == null) {
+        blogs.clear();
+        status.value = FilterStatus.success;
+        return;
+      }
+
+      final result = await blogService.getBlogsByCommuneId(
+        currentCommuneId!,
+        blogType: type?.name,
+        title: searchQuery,
+        isFirstRequest: false,
+      );
+      blogs.addAll(result['blogs'] as List<BlogModel>);
+      isPremium.value = result['isPremium'] ?? true;
+
+      final selectedProv = provinces.firstWhere(
+            (p) => p.name == provinceName,
+        orElse: () => provinces.first,
+      );
+      communes.value = selectedProv.communes;
+      selectedProvince.value = selectedProv.name;
+      selectedCommune.value = communeName;
+      status.value = FilterStatus.success;
     } catch (e) {
       if (kDebugMode) print('Failed to fetch filters/blogs: $e');
       status.value = FilterStatus.error;
@@ -163,7 +169,6 @@ class BlogController extends GetxController {
       if (kDebugMode) print('Failed to fetch communes: $e');
     }
   }
-
 
   void toggleBlogLike(BlogModel blog) {
     final index = blogs.indexWhere((b) => b.id == blog.id);
@@ -237,7 +242,7 @@ class BlogController extends GetxController {
     }
   }
 
-  Future<void> submitReport(String content) async {
+  Future<void> createNewBlogPost(String content) async {
     try {
       TFullScreenLoader.openLoadingDialog(
         "Đang tạo blog, vui lòng không đóng trang này...",
@@ -292,5 +297,21 @@ class BlogController extends GetxController {
       );
     }
   }
+
+  Future<void> fetchUserCreatedBlogs() async {
+    try {
+      isLoadingUserBlogs.value = true;
+      final blogs = await blogService.fetchUserCreatedBlogs();
+      userBlogs.assignAll(blogs);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[UserBlogs] Failed to load user blogs: $e');
+      }
+      userBlogs.clear();
+    } finally {
+      isLoadingUserBlogs.value = false;
+    }
+  }
+
 }
 

@@ -10,7 +10,7 @@ import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/formatters/formatter.dart';
 import '../../controllers/blog_controller.dart';
 import 'blog_comment_card.dart';
-import 'community_blog_detail.dart';
+import '../community_blog_detail.dart';
 
 class CommunityBlogCard extends StatelessWidget {
   final int blogId;

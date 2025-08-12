@@ -6,14 +6,14 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/common/widgets/appbar/appbar.dart';
 import 'package:safe_city_mobile/features/incident_report/screens/widgets/popup_modal.dart';
-import '../../../../utils/constants/colors.dart';
-import '../../../../utils/constants/enums.dart';
-import '../../../../utils/constants/sizes.dart';
-import '../../../../utils/constants/text_strings.dart';
-import '../../../../utils/helpers/helper_functions.dart';
-import '../../../../utils/popups/loaders.dart';
-import '../../../../utils/validators/validation.dart';
-import '../../controllers/blog_controller.dart';
+import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/enums.dart';
+import '../../../utils/constants/sizes.dart';
+import '../../../utils/constants/text_strings.dart';
+import '../../../utils/helpers/helper_functions.dart';
+import '../../../utils/popups/loaders.dart';
+import '../../../utils/validators/validation.dart';
+import '../controllers/blog_controller.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class CreateBlogScreen extends StatefulWidget {
@@ -417,7 +417,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                               return;
                             }
                             final deltaJson = jsonEncode(_quillController.document.toDelta().toJson());
-                            blogController.submitReport(deltaJson);
+                            blogController.createNewBlogPost(deltaJson);
                           },
                           storageKey: 'hide_create_blog_notice',
                         );

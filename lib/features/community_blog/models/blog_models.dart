@@ -16,6 +16,7 @@ class BlogModel {
   final int totalLike;
   final int totalComment;
   final bool isLike;
+  final bool isPremium;
 
   BlogModel({
     required this.id,
@@ -32,6 +33,7 @@ class BlogModel {
     required this.totalLike,
     required this.totalComment,
     required this.isLike,
+    required this.isPremium,
   });
 
   factory BlogModel.fromJson(
@@ -55,6 +57,7 @@ class BlogModel {
       totalLike: json['totalLike'],
       totalComment: json['totalComment'],
       isLike: json['isLike'],
+      isPremium: json['isPremium'] ?? true,
     );
   }
 
@@ -73,6 +76,7 @@ class BlogModel {
     int? totalLike,
     int? totalComment,
     bool? isLike,
+    bool? isPremium,
   }) {
     return BlogModel(
       id: id ?? this.id,
@@ -89,6 +93,7 @@ class BlogModel {
       totalLike: totalLike ?? this.totalLike,
       totalComment: totalComment ?? this.totalComment,
       isLike: isLike ?? this.isLike,
+      isPremium: isPremium ?? this.isPremium,
     );
   }
 

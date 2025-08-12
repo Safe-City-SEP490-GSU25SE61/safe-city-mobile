@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
+import 'package:safe_city_mobile/features/community_blog/models/blog_history_model.dart';
 
 import '../../../features/community_blog/models/blog_comment_model.dart';
 import '../../../features/community_blog/models/blog_models.dart';
@@ -23,7 +24,7 @@ class BlogService {
     return await secureStorage.read(key: 'access_token');
   }
 
-  Future<List<BlogModel>> getBlogsByCommuneId(
+  Future<Map<String, dynamic>> getBlogsByCommuneId(
       int communeId, {
         String? title,
         String? blogType,
@@ -38,7 +39,7 @@ class BlogService {
           '&PageNumber=$page&PageSize=$pageSize'
           '${title != null && title.isNotEmpty ? '&Title=$title' : ''}'
           '${blogType != null && blogType.isNotEmpty ? '&Type=$blogType' : ''}'
-          '${isFirstRequest ? '&isFirstRequest=true' : ''}',
+          '&isFirstRequest=$isFirstRequest',
     );
 
     final response = await http.get(
@@ -52,7 +53,6 @@ class BlogService {
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
 
-      /// ⛳️ Save province/commune list on first request
       if (isFirstRequest && decoded['data']?['provinces'] != null) {
         final List provinceList = decoded['data']['provinces'];
         _cachedProvinces = provinceList
@@ -60,12 +60,11 @@ class BlogService {
             .toList();
       }
 
-      /// 🧠 Resolve and convert blog list
-      final List blogList = decoded['data'] is List
-          ? decoded['data']
-          : decoded['data']['blogs'] ?? [];
+      final List blogList = decoded['data']?['blogs'] ?? [];
 
-      return blogList.map<BlogModel>((item) {
+      final bool isPremium = decoded['data']?['isPremium'] ?? true;
+
+      final blogs = blogList.map<BlogModel>((item) {
         final String provinceName = item['provinceName'] ?? '';
         final String communeName = item['communeName'] ?? '';
 
@@ -81,19 +80,38 @@ class BlogService {
 
         return BlogModel.fromJson(item, province: province, commune: commune);
       }).toList();
+
+      return {
+        'blogs': blogs,
+        'isPremium': isPremium,
+      };
     } else {
       throw Exception('Failed to fetch blogs');
     }
   }
 
   int? getCommuneIdByName(String provinceName, String communeName) {
-    final province = cachedProvinces.firstWhereOrNull(
+    final province = _cachedProvinces.firstWhereOrNull(
           (p) => p.name.trim().toLowerCase() == provinceName.trim().toLowerCase(),
     );
 
-    final commune = province?.communes.firstWhereOrNull(
+    if (province == null) {
+      if (kDebugMode) {
+        print('[DEBUG] Province not found: "$provinceName"');
+      }
+      return null;
+    }
+
+    final commune = province.communes.firstWhereOrNull(
           (c) => c.name.trim().toLowerCase() == communeName.trim().toLowerCase(),
     );
+
+    if (commune == null) {
+      if (kDebugMode) {
+        print('[DEBUG] Commune not found: "$communeName" in "${province.name}"');
+        print('[DEBUG] Available communes: ${province.communes.map((c) => c.name).join(', ')}');
+      }
+    }
 
     return commune?.id;
   }
@@ -126,10 +144,7 @@ class BlogService {
     }
   }
 
-  Future<void> postComment({
-    required int blogId,
-    required String content,
-  }) async {
+  Future<void> postComment({required int blogId, required String content,}) async {
     final token = await _getAccessToken();
 
     final response = await http.post(
@@ -148,14 +163,7 @@ class BlogService {
     }
   }
 
-  Future<Map<String, dynamic>> submitBlog({
-    required String title,
-    required String content,
-    required String type,
-    required int communeId,
-    required List<PlatformFile> images,
-    required PlatformFile? video,
-  }) async {
+  Future<Map<String, dynamic>> submitBlog({required String title, required String content, required String type, required int communeId, required List<PlatformFile> images, required PlatformFile? video,}) async {
     final uri = Uri.parse('${apiConnection}blogs');
     final request = http.MultipartRequest('POST', uri);
 
@@ -237,6 +245,31 @@ class BlogService {
         "success": false,
         "message": "Đã xảy ra lỗi không xác định: $e",
       };
+    }
+  }
+
+  Future<List<BlogHistoryModel>> fetchUserCreatedBlogs() async {
+    final token = await _getAccessToken();
+
+    final uri = Uri.parse('${apiConnection}blogs/created-blogs');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': '*/*',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final List blogList = decoded['data'] ?? [];
+
+      return blogList.map<BlogHistoryModel>((item) {
+        return BlogHistoryModel.fromJson(item);
+      }).toList();
+    } else {
+      throw Exception('Failed to fetch user created blogs');
     }
   }
 }
