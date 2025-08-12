@@ -81,7 +81,17 @@ class AuthenticationService {
           "message":
               'Tài khoản này đã được đăng kí với email này, vui lòng kiểm tra lại',
         };
+      } else if (response.statusCode == 500) {
+        if (kDebugMode) {
+          print('Server Error (${response.statusCode}): $responseBody');
+        }
+        final backendMessage = responseData['message'];
+        return {"success": false, "message": backendMessage};
       } else {
+        if (kDebugMode) {
+          print('Unexpected Response Code: ${response.statusCode}');
+          print('Unexpected Response Body: $responseBody');
+        }
         return {
           "success": false,
           "message": 'Đã xảy ra sự cố không xác định, vui lòng thử lại sau',
