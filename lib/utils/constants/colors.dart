@@ -16,15 +16,20 @@ class TColors {
   static const Color textWhite = Colors.white;
 
   // Gradient Colors
-  // static const Gradient linerGradient = LinearGradient(
-  //   begin: Alignment(0.0, 0.0),
-  //   end: Alignment(0.707, -0.707),
-  //   colors: [
-  //     Color(0xffff9a9e),
-  //     Color(0xfffad0c4),
-  //     Color(0xfffad0c4),
-  //   ],
-  // );
+  static const Gradient blueGradient = LinearGradient(
+    colors: [
+      Color(0xFF559DE8),
+      Color(0xFF4C8CFA),
+      Color(0xFF276EF1),
+      Color(0xFF1F54C3),
+      Color(0xFF173A8A),
+    ],
+    stops: [0.0, 0.3, 0.6, 0.85, 1.0],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const Color blueBackground = Color(0xFF173A8A); // deeper but softer navy
 
   static const Color light = Color(0xFFFFFFFF);
   static const Color dark = Color(0xFF272727);
@@ -64,4 +69,11 @@ class TColors {
   static const Color softGrey = Color(0xFFE1E3EA);
   static const Color lightGrey = Color(0xFFEFF1F5);
   static const Color white = Color(0xFFFFFFFF);
+
+  static const Color personalEscortBkg = Color(0xFFF57C00);
+  static const Color groupEscortBkg = Color(0xFF3399FF);
+  static const Color familyEscortBkg = Color(0xFF00BCD4);
+  static const Color personalEscortIcon = Color(0xFFe3a98a);
+  static const Color familyEscortIcon = Color(0xFF55948c);
+  static const Color groupEscortIcon = Color(0xFF3f71ed);
 }

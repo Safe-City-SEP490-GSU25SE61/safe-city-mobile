@@ -7,8 +7,12 @@ import 'package:http/http.dart' as http;
 import '../../../features/incident_live_map/models/live_map_report_detail_model.dart';
 
 class LiveMapIncidentService {
-  static final _storage = const FlutterSecureStorage();
+  static final secureStorage = const FlutterSecureStorage();
   static final String apiConnection = dotenv.env['API_DEPLOYMENT_URL']!;
+
+  Future<String?> getAccessToken() async {
+    return await secureStorage.read(key: 'access_token');
+  }
 
   Future<List<Map<String, dynamic>>> fetchCommunesPolygon() async {
     final response = await http.get(Uri.parse('${apiConnection}map/communes'));
@@ -31,10 +35,7 @@ class LiveMapIncidentService {
     }
   }
 
-  Future<Map<String, int>> fetchReportsByType({
-    required String communeId,
-    required String range,
-  }) async {
+  Future<Map<String, int>> fetchReportsByType({required String communeId, required String range,}) async {
     final url = Uri.parse(
       '${apiConnection}map/reports?CommuneId=$communeId&Range=$range',
     );
@@ -52,21 +53,35 @@ class LiveMapIncidentService {
     }
   }
 
-  Future<List<ReportDetailModel>> fetchReportDetailsByType({
-    required String communeId,
-    required String type,
-    required String range,
-  }) async {
+  Future<Map<String, dynamic>> fetchReportDetailsByType({required String communeId, required String type, required String range}) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
     final url = Uri.parse(
       '${apiConnection}map/reports/details?CommuneId=$communeId&Type=$type&Range=$range',
     );
 
-    final response = await http.get(url);
-
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      if (data is List) {
-        return data.map((item) => ReportDetailModel.fromJson(item)).toList();
+
+      if (data is Map<String, dynamic> && data.containsKey('isPremium')) {
+        return {
+          'isPremium': data['isPremium'],
+          'reports': <ReportDetailModel>[],
+        };
+      } else if (data is List) {
+        return {
+          'isPremium': true,
+          'reports': data.map<ReportDetailModel>((item) => ReportDetailModel.fromJson(item)).toList(),
+        };
       } else {
         throw Exception('Unexpected response format');
       }

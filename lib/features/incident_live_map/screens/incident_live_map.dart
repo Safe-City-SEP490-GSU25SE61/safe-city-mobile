@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:safe_city_mobile/features/incident_live_map/screens/widgets/map_legend_dropdown.dart';
 import 'package:safe_city_mobile/features/incident_live_map/screens/widgets/commune_report_custom_dropdown.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 
@@ -18,10 +19,11 @@ class IncidentLiveMapScreen extends StatefulWidget {
 }
 
 class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
-  final goongApiKey = dotenv.env['GOONG_API_KEY']!;
+  final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY1']!;
   final mapController = Get.put(IncidentLiveMapController());
   String? selectedFilterStatus;
   String? selectedFilterTime;
+  bool _showLegend = false;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,7 @@ class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
           MapWidget(
             key: const ValueKey("map"),
             styleUri:
-                "https://tiles.goong.io/assets/goong_map_web.json?$goongApiKey",
+                "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey",
             onMapCreated: (controller) {
               final isDarkMode = THelperFunctions.isDarkMode(context);
               mapController.initMap(controller, isDarkMode);
@@ -71,17 +73,6 @@ class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
               ),
             ),
           ),
-
-          // // Cover Mapbox logo (usually bottom-left)
-          // Positioned(
-          //   bottom: 80,
-          //   right: 8,
-          //   child: Container(
-          //     width: 100,
-          //     height: 30,
-          //     color: Theme.of(context).scaffoldBackgroundColor,
-          //   ),
-          // ),
           Positioned(
             top: 105,
             left: 14,
@@ -92,31 +83,54 @@ class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withAlpha(13),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: const Text(
-                "Khu vực Hồ Chí Minh",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Khu vực Hồ Chí Minh",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showLegend = !_showLegend;
+                      });
+                    },
+                    child: const Icon(
+                      Icons.help_outline,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
-          CustomDropdownStatus(
-            onFilterChanged: (status, time) {
-              setState(() {
-                selectedFilterStatus = status;
-                selectedFilterTime = time;
-              });
-            },
-          ),
+          MapLegendDropdown(isVisible: _showLegend),
+          Obx(() {
+            return mapController.isFocusedOnCommune.value
+                ? CustomDropdownStatus(
+                    onFilterChanged: (status, time) {
+                      setState(() {
+                        selectedFilterStatus = status;
+                        selectedFilterTime = time;
+                      });
+                    },
+                  )
+                : const SizedBox.shrink();
+          }),
 
           Positioned(
             bottom: 10,
@@ -165,8 +179,8 @@ class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
           Obx(() {
             final isBusy =
                 mapController.isLoading.value ||
-                mapController.isExitingCommuneFocus.value||
-                    mapController.isCommuneReportFocusLoading.value;
+                mapController.isExitingCommuneFocus.value ||
+                mapController.isCommuneReportFocusLoading.value;
             return isBusy
                 ? Positioned.fill(
                     child: AbsorbPointer(

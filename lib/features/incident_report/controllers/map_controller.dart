@@ -16,8 +16,8 @@ import '../models/goong_prediction_model.dart';
 class MapController extends GetxController {
   MapboxMap? mapboxMap;
   PointAnnotationManager? _customMarkerManager;
-  final goongApiKey = dotenv.env['GOONG_API_KEY']!;
-  final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY']!;
+  final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY1']!;
+  final goongApiKey = dotenv.env['GOONG_API_KEY1']!;
   final searchController = TextEditingController();
   final RxList<GoongPredictionModel> predictions = <GoongPredictionModel>[].obs;
   final Rx<GoongPredictionModel?> selectedLocation = Rx<GoongPredictionModel?>(
@@ -36,9 +36,9 @@ class MapController extends GetxController {
     );
 
     final darkStyle =
-        "https://tiles.goong.io/assets/goong_map_dark.json?$goongApiKey";
+        "https://tiles.goong.io/assets/goong_map_dark.json?$goongMapTilesKey";
     final lightStyle =
-        "https://tiles.goong.io/assets/goong_map_web.json?$goongApiKey";
+        "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey";
 
     mapboxMap!.loadStyleURI(isDarkMode ? darkStyle : lightStyle);
     final bytes = await rootBundle.load(TImages.currentLocationIconPuck);
@@ -80,7 +80,7 @@ class MapController extends GetxController {
         'https://rsapi.goong.io/v2/place/autocomplete'
         '?input=$input'
         '&location=$userLat,$userLng'
-        '&limit=5&api_key=$goongMapTilesKey'
+        '&limit=5&api_key=$goongApiKey'
         '&more_compound=true'
         '&has_deprecated_administrative_unit=false';
 
@@ -106,7 +106,7 @@ class MapController extends GetxController {
           final res = await http
               .get(
                 Uri.parse(
-                  'https://rsapi.goong.io/v2/place/detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
+                  'https://rsapi.goong.io/v2/place/detail?place_id=${p.placeId}&api_key=$goongApiKey',
                 ),
               )
               .timeout(const Duration(seconds: 3));
@@ -129,7 +129,7 @@ class MapController extends GetxController {
     final destCoords = coords.map((p) => '${p.lat},${p.lng}').join('|');
 
     final dmUrl =
-        'https://rsapi.goong.io/v2/distancematrix?origins=$userLat,$userLng&destinations=$destCoords&vehicle=car&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/distancematrix?origins=$userLat,$userLng&destinations=$destCoords&vehicle=car&api_key=$goongApiKey';
 
     try {
       final dmRes = await http.get(Uri.parse(dmUrl));
@@ -151,7 +151,7 @@ class MapController extends GetxController {
 
   Future<void> selectPlace(String placeId) async {
     final url =
-        'https://rsapi.goong.io/v2/place/detail?place_id=$placeId&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/place/detail?place_id=$placeId&api_key=$goongApiKey';
     final res = await http.get(Uri.parse(url));
 
     if (res.statusCode == 200) {
@@ -272,7 +272,7 @@ class MapController extends GetxController {
       '?latlng=$lat,$lng'
       '&limit=1'
       '&has_deprecated_administrative_unit=true'
-      '&api_key=$goongMapTilesKey',
+      '&api_key=$goongApiKey',
     );
 
     try {

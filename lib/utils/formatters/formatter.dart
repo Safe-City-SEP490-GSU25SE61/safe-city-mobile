@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class TFormatter {
@@ -70,5 +71,14 @@ class TFormatter {
     } else {
       return DateFormat('dd/MM').format(createdAt);
     }
+  }
+
+  static TextInputFormatter upperCaseFormatter() {
+    return TextInputFormatter.withFunction(
+          (oldValue, newValue) => TextEditingValue(
+        text: newValue.text.toUpperCase(),
+        selection: newValue.selection,
+      ),
+    );
   }
 }

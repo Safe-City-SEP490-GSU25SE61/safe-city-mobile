@@ -84,7 +84,7 @@ extension ReportStatusExtension on ReportStatus {
   }
 }
 
-enum ReportRange { day,week, month, year }
+enum ReportRange { day, week, month, year }
 
 extension ReportRangeExtension on ReportRange {
   String get value => toString().split('.').last;
@@ -151,7 +151,6 @@ extension ReportPriorityExtension on ReportPriority {
     }
   }
 }
-
 
 BlogType? mapBlogToType(String? input) {
   switch (input) {
@@ -220,7 +219,8 @@ enum FilterStatus {
   loadingProvinces,
   loadingCommunes,
   success,
-  error, ready,
+  error,
+  ready,
 }
 
 String convertTimeToApiRange(String? time) {
@@ -253,4 +253,35 @@ String convertStatusToApiValue(String? status) {
   }
 }
 
+enum VehicleType { car, bike, truck, taxi, hd }
 
+VehicleType selectedVehicle = VehicleType.bike;
+
+String vehicleToString(VehicleType vehicle) {
+  switch (vehicle) {
+    case VehicleType.car:
+      return 'car';
+    case VehicleType.bike:
+      return 'bike';
+    case VehicleType.truck:
+      return 'truck';
+    case VehicleType.taxi:
+      return 'taxi';
+    case VehicleType.hd:
+      return 'hd';
+  }
+}
+String vehicleToVietnamese(VehicleType vehicle) {
+  switch (vehicle) {
+    case VehicleType.car:
+      return 'Ô tô';
+    case VehicleType.bike:
+      return 'Xe máy';
+    case VehicleType.truck:
+      return 'Xe tải';
+    case VehicleType.taxi:
+      return 'Taxi';
+    case VehicleType.hd:
+      return 'Xe đầu kéo';
+  }
+}

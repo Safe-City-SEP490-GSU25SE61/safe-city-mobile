@@ -19,7 +19,7 @@ class LiveMapScreen extends StatefulWidget {
 }
 
 class _LiveMapScreenState extends State<LiveMapScreen> {
-  final goongApiKey = dotenv.env['GOONG_API_KEY']!;
+  final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY1']!;
   final mapController = Get.put(MapController());
 
   @override
@@ -32,7 +32,7 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
           MapWidget(
             key: const ValueKey("map"),
             styleUri:
-                "https://tiles.goong.io/assets/goong_map_web.json?$goongApiKey",
+                "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey",
             onMapCreated: (controller) {
               final isDarkMode = THelperFunctions.isDarkMode(context);
               mapController.initMap(controller, isDarkMode);

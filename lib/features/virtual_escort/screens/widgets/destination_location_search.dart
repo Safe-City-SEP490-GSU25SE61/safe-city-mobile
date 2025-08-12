@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../utils/constants/sizes.dart';
-import '../../controllers/map_controller.dart';
+import '../../controllers/virtual_escort_map_controller.dart';
 
 class LocationSearchScreen extends StatefulWidget {
   const LocationSearchScreen({super.key});
@@ -14,7 +14,7 @@ class LocationSearchScreen extends StatefulWidget {
 }
 
 class _LocationSearchScreenState extends State<LocationSearchScreen> {
-  final mapController = Get.put(MapController());
+  final mapController = Get.put(VirtualEscortMapController());
   late VoidCallback _listener;
 
   @override
@@ -42,7 +42,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
         showBackArrow: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(TSizes.mediumSpace),
+        padding: const EdgeInsets.all(TSizes.smallSpace),
         child: Column(
           children: [
             TextFormField(
@@ -96,7 +96,10 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       onTap: () {
-                        Get.back(result: prediction.placeId);
+                        Get.back(result: {
+                          'placeId': prediction.placeId,
+                          'description': prediction.description,
+                        });
                       },
                     );
                   },

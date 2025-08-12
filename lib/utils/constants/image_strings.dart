@@ -61,6 +61,12 @@ class TImages {
   static const String environmentMapIcon = "assets/images/map/environment.png";
   static const String infrastructureMapIcon = "assets/images/map/infrastructure.png";
   static const String otherMapIcon = "assets/images/map/other.png";
+  static const String directionLocationIcon = "assets/images/map/location_direction_dot.png";
+  static const String navigationRouteIcon = "assets/images/map/route_navigation_marker.png";
+  static const String stepArrowIcon = "assets/images/map/step_arrow.png";
+
+  //--Virtual Escort Images
+  static const String virtualEscortBkg = "assets/images/virtual_escort/virtual-escort-tracking.json";
 
   static const String emptyBoxImage = "assets/images/default_avatar/empty_box.png";
 }
