@@ -40,6 +40,32 @@ class VirtualEscortMapController extends GetxController {
   PointAnnotation? _userMarker;
 
   Future<void> initMap(MapboxMap controller, bool isDarkMode) async {
+    bool serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return TLoaders.warningSnackBar(
+        title: 'Lỗi',
+        message: 'Vui lòng bật định vị GPS',
+      );
+    }
+
+    geo.LocationPermission permission = await geo.Geolocator.checkPermission();
+    if (permission == geo.LocationPermission.denied) {
+      permission = await geo.Geolocator.requestPermission();
+      if (permission == geo.LocationPermission.denied) {
+        return TLoaders.warningSnackBar(
+          title: 'Lỗi',
+          message: 'Ứng dụng cần quyền truy cập vị trí',
+        );
+      }
+    }
+
+    if (permission == geo.LocationPermission.deniedForever) {
+      return TLoaders.warningSnackBar(
+        title: 'Lỗi',
+        message: 'Vị trí đã bị từ chối vĩnh viễn. Vui lòng bật quyền trong cài đặt.',
+      );
+    }
+
     mapboxMap = controller;
     mapboxMap!.setCamera(
       CameraOptions(
@@ -326,13 +352,18 @@ class VirtualEscortMapController extends GetxController {
           }
         }
       }
-
     } catch (e) {
       debugPrint('❌ Error removing route layers/sources: $e');
     }
   }
 
-  Future<List<Position>> mapDirectionRoute({required double originLat, required double originLng, required double destLat, required double destLng, String vehicleType = 'bike',}) async {
+  Future<List<Position>> mapDirectionRoute({
+    required double originLat,
+    required double originLng,
+    required double destLat,
+    required double destLng,
+    String vehicleType = 'bike',
+  }) async {
     try {
       if (mapboxMap == null) return [];
       await _removeRouteLayersAndSource();
@@ -386,8 +417,10 @@ class VirtualEscortMapController extends GetxController {
         };
       }).toList();
 
-      await secureStorage.write(key: 'escort_steps', value: jsonEncode(navigationSteps));
-
+      await secureStorage.write(
+        key: 'escort_steps',
+        value: jsonEncode(navigationSteps),
+      );
 
       routeDistanceText.value = routeInfo['distance']['text'] ?? '';
       routeDurationText.value = routeInfo['duration']['text'] ?? '';
@@ -600,7 +633,10 @@ class VirtualEscortMapController extends GetxController {
     }
   }
 
-  Future<void> virtualEscortStartInitMap(MapboxMap controller, bool isDarkMode,) async {
+  Future<void> virtualEscortStartInitMap(
+    MapboxMap controller,
+    bool isDarkMode,
+  ) async {
     mapboxMap = controller;
     mapboxMap!.setCamera(
       CameraOptions(
@@ -637,6 +673,33 @@ class VirtualEscortMapController extends GetxController {
 
   Future<void> startVirtualEscort() async {
     try {
+      bool serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return TLoaders.warningSnackBar(
+          title: 'Lỗi',
+          message: 'Vui lòng bật định vị GPS để bắt đầu hành trình.',
+        );
+      }
+
+      geo.LocationPermission permission =
+          await geo.Geolocator.checkPermission();
+      if (permission == geo.LocationPermission.denied) {
+        permission = await geo.Geolocator.requestPermission();
+        if (permission == geo.LocationPermission.denied) {
+          return TLoaders.warningSnackBar(
+            title: 'Lỗi',
+            message: 'Ứng dụng cần quyền truy cập vị trí.',
+          );
+        }
+      }
+      if (permission == geo.LocationPermission.deniedForever) {
+        return TLoaders.warningSnackBar(
+          title: 'Lỗi',
+          message:
+              'Vị trí đã bị từ chối vĩnh viễn. Vui lòng vào cài đặt để điều chỉnh.',
+        );
+      }
+
       final storage = const FlutterSecureStorage();
       final polyline = await storage.read(key: 'escort_polyline');
       if (polyline == null) {
@@ -658,10 +721,7 @@ class VirtualEscortMapController extends GetxController {
             "type": "Point",
             "coordinates": [positions[i].lng, positions[i].lat],
           },
-          "properties": {
-            "icon": "step_arrow_icon",
-            "bearing": bearing,
-          },
+          "properties": {"icon": "step_arrow_icon", "bearing": bearing},
         });
       }
 
@@ -690,7 +750,10 @@ class VirtualEscortMapController extends GetxController {
 
       if (!sources.any((s) => s?.id == 'route_source')) {
         await mapboxMap!.style.addSource(
-          GeoJsonSource(id: 'route_source', data: jsonEncode(featureCollection)),
+          GeoJsonSource(
+            id: 'route_source',
+            data: jsonEncode(featureCollection),
+          ),
         );
       }
 
@@ -769,7 +832,10 @@ class VirtualEscortMapController extends GetxController {
 
       if (!sources.any((s) => s?.id == 'route_arrows')) {
         await mapboxMap!.style.addSource(
-          GeoJsonSource(id: 'route_arrows', data: jsonEncode(arrowFeatureCollection)),
+          GeoJsonSource(
+            id: 'route_arrows',
+            data: jsonEncode(arrowFeatureCollection),
+          ),
         );
       }
 
@@ -819,45 +885,66 @@ class VirtualEscortMapController extends GetxController {
 
   void startUserTrackingAlongRoute(List<Position> routePositions) {
     double? lastBearing;
-    locationUpdateTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-      final gpsPosition = await geo.Geolocator.getCurrentPosition();
-      final snappedPosition = snapToRoute(
-        Position.named(lat: gpsPosition.latitude, lng: gpsPosition.longitude),
-        routePositions,
-      );
-      final nextIndex = routePositions.indexOf(snappedPosition) + 1;
-      final bearing = (nextIndex < routePositions.length)
-          ? calculateBearing(snappedPosition, routePositions[nextIndex])
-          : (lastBearing ?? 0.0);
+    Position? lastSnappedPosition;
 
-      final smoothBearing = lastBearing == null
-          ? bearing
-          : (bearing + lastBearing!) / 2;
+    locationUpdateTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      try {
+        bool serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          locationUpdateTimer?.cancel();
+          return TLoaders.warningSnackBar(
+            title: 'Lỗi',
+            message: 'Vui lòng bật định vị GPS để tiếp tục hành trình.',
+          );
+        }
 
-      lastBearing = smoothBearing;
+        final gpsPosition = await geo.Geolocator.getCurrentPosition();
 
-      await mapboxMap!.easeTo(
-        CameraOptions(
-          center: Point(
-            coordinates: Position.named(
-              lat: snappedPosition.lat,
-              lng: snappedPosition.lng,
-            ),
-          ),
-          zoom: 18,
-          bearing: smoothBearing,
-          pitch: 50,
-          padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
-        ),
-        MapAnimationOptions(duration: 1000),
-      );
-      if (_userMarker != null) {
-        _userMarker!.geometry = Point(
-          coordinates: Position(snappedPosition.lng, snappedPosition.lat),
+        final snappedPosition = snapToRoute(
+          Position.named(lat: gpsPosition.latitude, lng: gpsPosition.longitude),
+          routePositions,
         );
-        await _pointAnnotationManager.update(_userMarker!);
+
+        final nextIndex = routePositions.indexOf(snappedPosition) + 1;
+        final targetBearing = (nextIndex < routePositions.length)
+            ? calculateBearing(snappedPosition, routePositions[nextIndex])
+            : (lastBearing ?? 0.0);
+
+        final smoothBearing = lastBearing == null
+            ? targetBearing
+            : (lastBearing! * 0.8 + targetBearing * 0.2);
+        lastBearing = smoothBearing;
+
+        final interpolatedPosition = lastSnappedPosition == null
+            ? snappedPosition
+            : Position.named(
+          lat: lastSnappedPosition!.lat * 0.6 + snappedPosition.lat * 0.4,
+          lng: lastSnappedPosition!.lng * 0.6 + snappedPosition.lng * 0.4,
+        );
+        lastSnappedPosition = interpolatedPosition;
+
+        await mapboxMap!.easeTo(
+          CameraOptions(
+            center: Point(coordinates: interpolatedPosition),
+            zoom: 18,
+            bearing: smoothBearing,
+            pitch: 50,
+            padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
+          ),
+          MapAnimationOptions(duration: 1500),
+        );
+
+        if (_userMarker != null) {
+          _userMarker!.geometry = Point(
+            coordinates: Position(interpolatedPosition.lng, interpolatedPosition.lat),
+          );
+          await _pointAnnotationManager.update(_userMarker!);
+        }
+      } catch (e) {
+        debugPrint('⚠️ Tracking error: $e');
       }
     });
+
     // List<Position> testPositions = [
     //   Position.named(lat: 10.845696149299554, lng: 106.68034845575994),
     //   Position.named(lat: 10.845686929256455, lng: 106.68025524900244),
@@ -977,8 +1064,8 @@ class VirtualEscortMapController extends GetxController {
     final bytes = await rootBundle.load(TImages.navigationRouteIcon);
     final imageData = bytes.buffer.asUint8List();
 
-    _pointAnnotationManager =
-    await mapboxMap!.annotations.createPointAnnotationManager();
+    _pointAnnotationManager = await mapboxMap!.annotations
+        .createPointAnnotationManager();
 
     final cameraState = await mapboxMap!.getCameraState();
     final bearing = cameraState.bearing;
