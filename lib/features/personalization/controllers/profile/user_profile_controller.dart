@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,12 +14,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../data/services/personalization/user_profile_service.dart';
 import '../../../../utils/helpers/network_manager.dart';
 
+import '../../models/achivement_model.dart';
 import '../../models/user_profile_model.dart';
 import '../../screens/profile/profile.dart';
 
 class UserProfileController extends GetxController {
   static UserProfileController get instance => Get.find();
   Rx<UserProfileModel> user = UserProfileModel.empty().obs;
+  var achievements = <AchievementModel>[].obs;
   final userProfileService = Get.put(UserProfileService());
   final email = TextEditingController();
   final phone = TextEditingController();
@@ -38,6 +41,7 @@ class UserProfileController extends GetxController {
   void onInit() {
     super.onInit();
     fetchUserProfile();
+    fetchAchievements();
   }
 
   Future<void> fetchUserProfile() async {
@@ -284,6 +288,18 @@ class UserProfileController extends GetxController {
     } catch (e) {
       TFullScreenLoader.stopLoading();
       TLoaders.errorSnackBar(title: 'Lỗi hệ thống', message: e.toString());
+    }
+  }
+
+  Future<void> fetchAchievements() async {
+    try {
+      final token = await secureStorage.read(key: 'access_token');
+      if (token == null) return;
+
+      final list = await userProfileService.fetchAchievements(token);
+      achievements.assignAll(list);
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch achievements: $e');
     }
   }
 }
