@@ -285,36 +285,50 @@ class VirtualEscortMapController extends GetxController {
   }
 
   Future<void> _removeRouteLayersAndSource() async {
-    try {
-      final layers = await mapboxMap!.style.getStyleLayers();
-
-      if (layers.any((l) => l?.id == 'route_layer')) {
-        await mapboxMap!.style.removeStyleLayer('route_layer');
-      }
-
-      if (layers.any((l) => l?.id == 'route_outline_layer')) {
-        await mapboxMap!.style.removeStyleLayer('route_outline_layer');
-      }
-
-      if (layers.any((l) => l?.id == 'route_markers_layer')) {
-        await mapboxMap!.style.removeStyleLayer('route_markers_layer');
-      }
-    } catch (e) {
-      debugPrint('Error removing route layers: $e');
-    }
+    if (mapboxMap == null) return;
 
     try {
-      final sources = await mapboxMap!.style.getStyleSources();
+      final style = mapboxMap!.style;
 
-      if (sources.any((s) => s?.id == 'route_source')) {
-        await mapboxMap!.style.removeStyleSource('route_source');
+      final existingLayers = await style.getStyleLayers();
+      final layerIdsToRemove = [
+        'route_layer',
+        'route_outline_layer',
+        'route_markers_layer',
+        'route_arrows_layer',
+      ];
+
+      for (final id in layerIdsToRemove) {
+        if (existingLayers.any((l) => l?.id == id)) {
+          try {
+            await style.removeStyleLayer(id);
+            debugPrint('✅ Removed layer $id');
+          } catch (e) {
+            debugPrint('⚠️ Failed to remove layer $id: $e');
+          }
+        }
       }
 
-      if (sources.any((s) => s?.id == 'route_markers')) {
-        await mapboxMap!.style.removeStyleSource('route_markers');
+      final existingSources = await style.getStyleSources();
+      final sourceIdsToRemove = [
+        'route_source',
+        'route_markers',
+        'route_arrows',
+      ];
+
+      for (final id in sourceIdsToRemove) {
+        if (existingSources.any((s) => s?.id == id)) {
+          try {
+            await style.removeStyleSource(id);
+            debugPrint('✅ Removed source $id');
+          } catch (e) {
+            debugPrint('⚠️ Failed to remove source $id: $e');
+          }
+        }
       }
+
     } catch (e) {
-      debugPrint('Error removing route sources: $e');
+      debugPrint('❌ Error removing route layers/sources: $e');
     }
   }
 
@@ -380,22 +394,6 @@ class VirtualEscortMapController extends GetxController {
       routeVehicleType.value = vehicleType;
 
       showRouteInfoPopup.value = true;
-
-      try {
-        final layers = await mapboxMap!.style.getStyleLayers();
-        final hasRouteLayer = layers.any((l) => l?.id == 'route_layer');
-        if (hasRouteLayer) {
-          await mapboxMap!.style.removeStyleLayer('route_layer');
-        }
-      } catch (_) {}
-
-      try {
-        final sources = await mapboxMap!.style.getStyleSources();
-        final hasRouteSource = sources.any((s) => s?.id == 'route_source');
-        if (hasRouteSource) {
-          await mapboxMap!.style.removeStyleSource('route_source');
-        }
-      } catch (_) {}
 
       await mapboxMap!.style.addSource(
         GeoJsonSource(id: 'route_source', data: jsonEncode(featureCollection)),
@@ -463,7 +461,7 @@ class VirtualEscortMapController extends GetxController {
           iconAllowOverlap: false,
           iconIgnorePlacement: false,
         ),
-        LayerPosition(below: 'mapbox-location-indicator-layer'),
+        LayerPosition(below: 'highway-name-minor'),
       );
 
       await mapboxMap!.flyTo(
@@ -765,7 +763,7 @@ class VirtualEscortMapController extends GetxController {
             iconAllowOverlap: false,
             iconIgnorePlacement: false,
           ),
-          LayerPosition(below: 'mapbox-location-indicator-layer'),
+          LayerPosition(below: 'highway-name-minor'),
         );
       }
 

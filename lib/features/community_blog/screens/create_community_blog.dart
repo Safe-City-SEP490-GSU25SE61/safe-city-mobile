@@ -422,7 +422,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                           storageKey: 'hide_create_blog_notice',
                         );
                       },
-                      child: const Text("Gửi báo cáo"),
+                      child: const Text("Tạo blog mới"),
                     ),
                   ),
                 ],
