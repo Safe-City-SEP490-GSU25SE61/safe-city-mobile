@@ -23,28 +23,28 @@ import '../screens/widgets/commune_report_detail_widget.dart';
 class IncidentLiveMapController extends GetxController {
   MapboxMap? mapboxMap;
   PointAnnotationManager? _customMarkerManager;
-  final goongApiKey = dotenv.env['GOONG_API_KEY']!;
-  final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY']!;
-  final addressConverterKey = dotenv.env['GOONG_MAP_TILES_KEY']!;
+  MbxImage? _cachedOverviewIcon;
+  final goongMapTilesKey= dotenv.env['GOONG_MAP_TILES_KEY1']!;
+  final goongApiKey = dotenv.env['GOONG_API_KEY1']!;
   final searchController = TextEditingController();
   final liveMapService = LiveMapIncidentService();
-  Timer? _debounceTimer;
   final RxBool isLoading = false.obs;
+  final RxBool isOverviewLoading = false.obs;
+  final RxBool isFocusedOnCommune = false.obs;
+  final RxBool isExitingCommuneFocus = false.obs;
+  final RxBool isCommuneReportFocusLoading = false.obs;
+  Timer? _debounceTimer;
   final RxList<GoongPredictionModel> predictions = <GoongPredictionModel>[].obs;
   final RxInt traffic = 0.obs;
   final RxInt security = 0.obs;
   final RxInt infrastructure = 0.obs;
   final RxInt environment = 0.obs;
   final RxInt other = 0.obs;
-  final RxString selectedRange = 'week'.obs;
-  final RxBool isOverviewLoading = false.obs;
   String? selectedFilterStatus;
   String? selectedFilterTime;
   String get selectedTypeApi => convertStatusToApiValue(selectedFilterStatus);
   String get selectedRangeApi => convertTimeToApiRange(selectedFilterTime);
-  final isFocusedOnCommune = false.obs;
-  final isExitingCommuneFocus = false.obs;
-  final isCommuneReportFocusLoading = false.obs;
+  final RxString selectedRange = 'week'.obs;
   Map<String, dynamic>? lastFocusedCommuneFeature;
   void enableCommuneFocus() => isFocusedOnCommune.value = true;
   void disableCommuneFocus() => isFocusedOnCommune.value = false;
@@ -77,9 +77,9 @@ class IncidentLiveMapController extends GetxController {
     );
 
     final darkStyle =
-        "https://tiles.goong.io/assets/goong_light_v2.json?$goongApiKey";
+        "https://tiles.goong.io/assets/goong_light_v2.json?$goongMapTilesKey";
     final lightStyle =
-        "https://tiles.goong.io/assets/goong_light_v2.json?$goongApiKey";
+        "https://tiles.goong.io/assets/goong_light_v2.json?$goongMapTilesKey";
 
     mapboxMap!.loadStyleURI(isDarkMode ? darkStyle : lightStyle).then((
       _,
@@ -119,7 +119,7 @@ class IncidentLiveMapController extends GetxController {
         'https://rsapi.goong.io/v2/place/autocomplete'
         '?input=$input'
         '&location=$userLat,$userLng'
-        '&limit=5&api_key=$goongMapTilesKey'
+        '&limit=5&api_key=$goongApiKey'
         '&more_compound=true'
         '&has_deprecated_administrative_unit=false';
 
@@ -136,7 +136,7 @@ class IncidentLiveMapController extends GetxController {
           final res = await http
               .get(
                 Uri.parse(
-                  'https://rsapi.goong.io/v2/place/detail?place_id=${p.placeId}&api_key=$goongMapTilesKey',
+                  'https://rsapi.goong.io/v2/place/detail?place_id=${p.placeId}&api_key=$goongApiKey',
                 ),
               )
               .timeout(const Duration(seconds: 3));
@@ -159,7 +159,7 @@ class IncidentLiveMapController extends GetxController {
     final destCoords = coords.map((p) => '${p.lat},${p.lng}').join('|');
 
     final dmUrl =
-        'https://rsapi.goong.io/v2/distancematrix?origins=$userLat,$userLng&destinations=$destCoords&vehicle=car&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/distancematrix?origins=$userLat,$userLng&destinations=$destCoords&vehicle=car&api_key=$goongApiKey';
 
     try {
       final dmRes = await http.get(Uri.parse(dmUrl));
@@ -181,7 +181,7 @@ class IncidentLiveMapController extends GetxController {
 
   Future<void> selectPlace(String placeId) async {
     final url =
-        'https://rsapi.goong.io/v2/place/detail?place_id=$placeId&api_key=$goongMapTilesKey';
+        'https://rsapi.goong.io/v2/place/detail?place_id=$placeId&api_key=$goongApiKey';
     final res = await http.get(Uri.parse(url));
 
     if (res.statusCode == 200) {
@@ -285,14 +285,29 @@ class IncidentLiveMapController extends GetxController {
     return bytes.buffer.asUint8List();
   }
 
+  Future<MbxImage> getOverviewIcon() async {
+    if (_cachedOverviewIcon != null) return _cachedOverviewIcon!;
+    _cachedOverviewIcon = await getImage(TImages.communesOverviewIcon);
+    return _cachedOverviewIcon!;
+  }
+
   Future<MbxImage> getImage(String path) async {
     final ByteData bytes = await rootBundle.load(path);
-    final codec = await instantiateImageCodec(bytes.buffer.asUint8List());
+    return await _decodeImage(bytes.buffer.asUint8List());
+  }
+
+  Future<MbxImage> _decodeImage(Uint8List bytes) async {
+    final codec = await instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
     final image = frame.image;
     final byteData = await image.toByteData(format: ImageByteFormat.png);
+
+    if (byteData == null) {
+      throw Exception("Failed to convert image to byte data");
+    }
+
     return MbxImage(
-      data: byteData!.buffer.asUint8List(),
+      data: byteData.buffer.asUint8List(),
       width: image.width,
       height: image.height,
     );
@@ -303,7 +318,7 @@ class IncidentLiveMapController extends GetxController {
 
     try {
       final rawDataList = await liveMapService.fetchCommunesPolygon();
-      final markerIcon = await getImage(TImages.communesOverviewIcon);
+      final markerIcon = await getOverviewIcon();
 
       final List<Map<String, dynamic>> polygonFeatures = [];
       final List<Map<String, dynamic>> markerFeatures = [];
@@ -496,7 +511,7 @@ class IncidentLiveMapController extends GetxController {
 
       traffic.value = data['Giao thông'] ?? 0;
       security.value = data['An ninh'] ?? 0;
-      infrastructure.value = data['Hạ tầng'] ?? 0;
+      infrastructure.value = data['Cơ sở hạ tầng'] ?? 0;
       environment.value = data['Môi trường'] ?? 0;
       other.value = data['Khác'] ?? 0;
     } catch (e) {
@@ -519,7 +534,7 @@ class IncidentLiveMapController extends GetxController {
 
       traffic.value = result['Giao thông'] ?? 0;
       security.value = result['An ninh'] ?? 0;
-      infrastructure.value = result['Hạ tầng'] ?? 0;
+      infrastructure.value = result['Cơ sở hạ tầng'] ?? 0;
       environment.value = result['Môi trường'] ?? 0;
       other.value = result['Khác'] ?? 0;
     } catch (e) {
@@ -563,6 +578,7 @@ class IncidentLiveMapController extends GetxController {
   Future<void> focusOnCommune(Map<String, dynamic> feature) async {
     isCommuneReportFocusLoading.value = true;
     lastFocusedCommuneFeature = feature;
+
     try {
       final geometry = feature['geometry'];
       if (geometry == null || geometry['type'] != 'Point') {
@@ -578,7 +594,8 @@ class IncidentLiveMapController extends GetxController {
 
       final bounds = CoordinateBounds(
         southwest: Point(coordinates: Position(lng - radius, lat - radius)),
-        northeast: Point(coordinates: Position(lng + radius, lat + radius)), infiniteBounds: false,
+        northeast: Point(coordinates: Position(lng + radius, lat + radius)),
+        infiniteBounds: false,
       );
 
       try {
@@ -609,11 +626,26 @@ class IncidentLiveMapController extends GetxController {
         return;
       }
 
-      final reports = await liveMapService.fetchReportDetailsByType(
+      final result = await liveMapService.fetchReportDetailsByType(
         communeId: communeId,
         type: selectedTypeApi,
         range: selectedRangeApi,
       );
+
+      final bool isPremium = result['isPremium'] ?? true;
+
+      if (!isPremium) {
+        exitCommuneFocus();
+        disableCommuneFocus();
+        TLoaders.warningSnackBar(
+          title: "Thông báo",
+          message: "Bạn phải đăng ký gói để sử dụng chức năng này",
+        );
+        isCommuneReportFocusLoading.value = false;
+        return;
+      }
+
+      final List<ReportDetailModel> reports = result['reports'];
 
       await loadIncidentIconsToMap();
 
@@ -670,7 +702,7 @@ class IncidentLiveMapController extends GetxController {
     } catch (e, stackTrace) {
       debugPrint("❌ focusOnCommune failed: $e");
       debugPrint("🧱 $stackTrace");
-    }finally{
+    } finally {
       isCommuneReportFocusLoading.value = false;
     }
   }

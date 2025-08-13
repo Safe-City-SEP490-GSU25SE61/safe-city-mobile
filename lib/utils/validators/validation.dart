@@ -101,4 +101,32 @@ class TValidator {
 
     return null;
   }
+
+  static String? validateVirtualEscortNameField(String? fieldName, String? value) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName bắt buộc';
+    }
+    if (value.length < 3) {
+      return '$fieldName phải có ít nhất 3 ký tự';
+    }
+    if (value.length > 100) {
+      return '$fieldName không được vượt quá 100 ký tự';
+    }
+    return null;
+  }
+
+  static String? validateGroupCode(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Mã nhóm là bắt buộc';
+    }
+
+    final code = value.toUpperCase();
+
+    final codeRegExp = RegExp(r'^[A-Z0-9]{6}$');
+    if (!codeRegExp.hasMatch(code)) {
+      return 'Mã nhóm phải gồm 6 ký tự chữ hoặc số';
+    }
+
+    return null;
+  }
 }

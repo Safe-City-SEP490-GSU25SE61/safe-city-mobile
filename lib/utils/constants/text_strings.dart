@@ -99,11 +99,9 @@ class TTexts {
 • Mỗi báo cáo cần thời gian để được xử lý và xác minh.
 ''';
   static const String incidentLiveMapNotice = 'Dữ liệu chỉ mang tính tham khảo và mọi sự việc liên quan đã được xử lý theo quy định pháp luật.';
-  static const String disclaimer = 'Tuyên bố từ chối trách nhiệm';
+  static const String disclaimer = 'Lưu ý';
   static const String createBlogNotice = 'Khi gửi báo cáo sẽ được sĩ quan cộng đồng duyệt bài viết. Nếu thành công bạn sẽ được cộng một số điểm nhất định.';
-
-
-
+  static const String sharingLocationPolicy = 'Tôi đồng ý với việc chia sẻ vị trí cho các thành viên trong Giám sát an toàn của tôi.';
 
   //Ranking Notice
   static const String exceedPoints = 'Bạn đã vượt mốc 10.000 điểm. Các điểm thưởng tiếp theo sẽ tiếp tục được tích lũy.';

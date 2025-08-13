@@ -114,7 +114,7 @@ class _FilterHistoryModalState extends State<FilterHistoryModal> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
-                      vertical: 16,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.white : Colors.grey.shade100,
@@ -159,12 +159,20 @@ class _FilterHistoryModalState extends State<FilterHistoryModal> {
                         height: 50,
                         child: OutlinedButton(
                           onPressed: () {
-                            setState(() {
-                              selectedRange = null;
-                              selectedStatus = null;
-                              selectedSort = null;
-                              selectedPriority = null;
-                            });
+                              setState(() {
+                                selectedRange = null;
+                                selectedStatus = null;
+                                selectedSort = null;
+                                selectedPriority = null;
+                              });
+
+                              controller.updateFilters(
+                                range: null,
+                                status: null,
+                                sort: null,
+                                priority: null,
+                                communeName: '',
+                              );
                           },
                           child: const Text(
                             "Thiết lập lại",

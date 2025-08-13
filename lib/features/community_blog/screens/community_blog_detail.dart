@@ -1,16 +1,19 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../common/widgets/appbar/appbar.dart';
-import '../../../../common/widgets/media/image_fullscreen_widget.dart';
-import '../../../../common/widgets/media/video_player_widget.dart';
-import '../../../../utils/constants/colors.dart';
-import '../../../../utils/constants/sizes.dart';
-import '../../../../utils/formatters/formatter.dart';
-import '../../../../utils/helpers/helper_functions.dart';
-import '../../controllers/blog_controller.dart';
-import 'blog_comment_card.dart';
+import '../../../common/widgets/appbar/appbar.dart';
+import '../../../common/widgets/media/image_fullscreen_widget.dart';
+import '../../../common/widgets/media/video_player_widget.dart';
+import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/sizes.dart';
+import '../../../utils/formatters/formatter.dart';
+import '../../../utils/helpers/helper_functions.dart';
+import '../controllers/blog_controller.dart';
+import 'widgets/blog_comment_card.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class BlogDetailScreen extends StatelessWidget {
   final int blogId;
@@ -80,12 +83,34 @@ class BlogDetailScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               /// Blog content
-              Text(
-                blog.content,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: dark ? Colors.white : Colors.black,
-                  height: 1.5,
+              SizedBox(
+                child: quill.QuillEditor(
+                  controller: quill.QuillController(
+                    document: quill.Document.fromJson(jsonDecode(blog.content)),
+                    selection: const TextSelection.collapsed(offset: 0),
+                  ),
+                  focusNode: FocusNode(),
+                  scrollController: ScrollController(),
+                  config: quill.QuillEditorConfig(
+                    scrollable: true,
+                    expands: false,
+                    scrollPhysics: const NeverScrollableScrollPhysics(),
+                    showCursor: false,
+                    enableInteractiveSelection: false,
+                    padding: EdgeInsets.zero,
+                    customStyles: quill.DefaultStyles(
+                      paragraph: quill.DefaultTextBlockStyle(
+                        TextStyle(
+                          fontSize: 14,
+                          color: dark ? Colors.white : Colors.black,
+                        ),
+                        const quill.HorizontalSpacing(0, 0),
+                        const quill.VerticalSpacing(0, 0),
+                        const quill.VerticalSpacing(0, 0),
+                        null,
+                      ),
+                    ),
+                  ),
                 ),
               ),
 

@@ -79,9 +79,9 @@ class SubscriptionScreen extends StatelessWidget {
                 final firstWord = package.name.split(' ').first;
                 final darkerColor = baseColor.darken(0.25);
                 final user = userController.user.value;
-                final isCurrentPackage =
-                    user.currentSubscription.packageName == package.name;
-                final shouldDisableButton = user.currentSubscription.isActive;
+                final isCurrentPackage = user.currentSubscription.packageName == package.name;
+                final isExpired = user.currentSubscription.remainingTime == '0d 0h 0m';
+                final shouldDisableButton = !isExpired;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
@@ -139,23 +139,20 @@ class SubscriptionScreen extends StatelessWidget {
                             : TColors.white,
                         borderRadius: BorderRadius.circular(24),
                         child: AbsorbPointer(
-                          absorbing: shouldDisableButton || isCurrentPackage,
+                          absorbing: shouldDisableButton,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(24),
-                            onTap: () => subscriptionController
-                                .subscribeToPackage(package.id),
+                            onTap: () => subscriptionController.subscribeToPackage(package.id),
                             child: Container(
                               height: 50,
                               alignment: Alignment.center,
                               width: double.infinity,
                               child: Text(
                                 isCurrentPackage
-                                    ? user
-                                          .currentSubscription
-                                          .localizedRemainingTime
+                                    ? user.currentSubscription.localizedRemainingTime
                                     : 'Lấy $firstWord',
                                 style: TextStyle(
-                                  color: shouldDisableButton || isCurrentPackage
+                                  color: shouldDisableButton
                                       ? Colors.grey
                                       : Colors.black,
                                   fontWeight: FontWeight.bold,

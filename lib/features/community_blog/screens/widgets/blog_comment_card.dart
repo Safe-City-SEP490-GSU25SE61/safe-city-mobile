@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
-import '../../../../common/widgets/effects/shimmer_effect.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/formatters/formatter.dart';
@@ -30,76 +29,80 @@ class _BlogCommentCardState extends State<BlogCommentCard> {
     blogController.fetchCommentsByBlogId(widget.blogId);
   }
 
+  Future<void> _handleRefresh() async {
+    await blogController.fetchCommentsByBlogId(widget.blogId);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final blogController = Get.find<BlogController>();
     final dark = THelperFunctions.isDarkMode(context);
     return Scaffold(
       appBar: TAppBar(title: const Text('Bình luận'), showBackArrow: true),
       body: Column(
         children: [
           Expanded(
-            child: FutureBuilder(
-              future: blogController.fetchCommentsByBlogId(widget.blogId),
-              builder: (context, snapshot) {
-                return Obx(() {
-                  if (blogController.isCommentsLoading.value) {
-                    return ListView.separated(
-                      padding: const EdgeInsets.all(TSizes.md),
-                      itemCount: blogController.comments.isNotEmpty
-                          ? blogController.comments.length
-                          : 1,
-                      separatorBuilder: (_, _) => const Divider(),
-                      itemBuilder: (context, index) {
-                        return const TShimmerEffect(width: 300, height: 80);
-                      },
-                    );
-                  }
-
-                  final comments = blogController.comments;
-
-                  if (comments.isEmpty) {
-                    return const Center(child: Text('Chưa có bình luận nào.'));
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(TSizes.md),
-                    itemCount: comments.length,
-                    separatorBuilder: (_, _) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final comment = comments[index];
-                      return ListTile(
-                        title: Text(
-                          comment.authorName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: dark ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              comment.content,
-                              style: TextStyle(
-                                color: dark ? Colors.white : Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              TFormatter.formatTime(comment.createdAt),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+            child: RefreshIndicator(
+              onRefresh: _handleRefresh,
+              color: TColors.primary,
+              child: Obx(() {
+                if (blogController.isCommentsLoading.value) {
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 80),
+                    child: Center(
+                      child: CircularProgressIndicator(color: TColors.primary),
+                    ),
                   );
-                });
-              },
+                }
+
+                final comments = blogController.comments;
+
+                if (comments.isEmpty) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 200),
+                      Center(child: Text('Chưa có bình luận nào.')),
+                    ],
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.all(TSizes.md),
+                  itemCount: comments.length,
+                  separatorBuilder: (_, _) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final comment = comments[index];
+                    return ListTile(
+                      title: Text(
+                        comment.authorName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: dark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            comment.content,
+                            style: TextStyle(
+                              color: dark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            TFormatter.formatTime(comment.createdAt),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }),
             ),
           ),
 

@@ -1,4 +1,7 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
@@ -7,7 +10,7 @@ import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/formatters/formatter.dart';
 import '../../controllers/blog_controller.dart';
 import 'blog_comment_card.dart';
-import 'community_blog_detail.dart';
+import '../community_blog_detail.dart';
 
 class CommunityBlogCard extends StatelessWidget {
   final int blogId;
@@ -19,7 +22,8 @@ class CommunityBlogCard extends StatelessWidget {
     final controller = Get.find<BlogController>();
     return Obx(() {
       final blog = controller.blogs.firstWhere((b) => b.id == blogId);
-
+      final quillDoc = quill.Document.fromJson(jsonDecode(blog.content));
+      final plainText = quillDoc.toPlainText().trim();
       return GestureDetector(
         onTap: () => Get.to(() => BlogDetailScreen(blogId: blog.id)),
         child: Card(
@@ -71,12 +75,24 @@ class CommunityBlogCard extends StatelessWidget {
                 const SizedBox(height: TSizes.smallSpace),
 
                 /// Blog description
-                Text(
-                  blog.content,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: plainText.length > 160
+                            ? '${plainText.substring(0, 160)}...'
+                            : plainText,
+                        style: const TextStyle(fontSize: 14, color: Colors.black),
+                      ),
+                      if (plainText.length > 160)
+                        const TextSpan(
+                          text: ' Đọc thêm',
+                          style: TextStyle(fontSize: 14, color: TColors.primary),
+                        ),
+                    ],
+                  ),
                 ),
+
 
                 const SizedBox(height: TSizes.smallSpace),
                 Row(
@@ -85,7 +101,7 @@ class CommunityBlogCard extends StatelessWidget {
                     Text(
                       blog.typeInVietnamese,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         color: Colors.black,
                         fontWeight: FontWeight.w500,
                       ),
@@ -104,7 +120,9 @@ class CommunityBlogCard extends StatelessWidget {
                       icon: Icon(
                         blog.isLike ? Iconsax.like_15 : Iconsax.like_1,
                         size: 22,
-                        color: blog.isLike ? TColors.buttonLike : TColors.darkGrey,
+                        color: blog.isLike
+                            ? TColors.buttonLike
+                            : TColors.darkGrey,
                       ),
                       label: Text(
                         "${blog.totalLike} Thích",

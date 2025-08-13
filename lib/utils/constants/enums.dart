@@ -84,7 +84,7 @@ extension ReportStatusExtension on ReportStatus {
   }
 }
 
-enum ReportRange { day, month, year }
+enum ReportRange { day, week, month, year }
 
 extension ReportRangeExtension on ReportRange {
   String get value => toString().split('.').last;
@@ -93,6 +93,8 @@ extension ReportRangeExtension on ReportRange {
     switch (this) {
       case ReportRange.day:
         return 'Hôm nay';
+      case ReportRange.week:
+        return 'Tuần này';
       case ReportRange.month:
         return 'Tháng này';
       case ReportRange.year:
@@ -147,5 +149,139 @@ extension ReportPriorityExtension on ReportPriority {
       case ReportPriority.critical:
         return Colors.red;
     }
+  }
+}
+
+BlogType? mapBlogToType(String? input) {
+  switch (input) {
+    case 'Cảnh báo':
+      return BlogType.alert;
+    case 'Mẹo vặt':
+      return BlogType.tip;
+    case 'Sự kiện':
+      return BlogType.event;
+    case 'Tin tức':
+      return BlogType.news;
+    default:
+      return null;
+  }
+}
+
+enum BlogType { alert, tip, event, news }
+
+extension BlogTypeExtension on BlogType {
+  String get viLabel {
+    switch (this) {
+      case BlogType.alert:
+        return 'Cảnh báo';
+      case BlogType.tip:
+        return 'Mẹo vặt';
+      case BlogType.event:
+        return 'Sự kiện';
+      case BlogType.news:
+        return 'Tin tức';
+    }
+  }
+
+  String get apiValue {
+    switch (this) {
+      case BlogType.alert:
+        return 'Alert';
+      case BlogType.tip:
+        return 'Tip';
+      case BlogType.event:
+        return 'Event';
+      case BlogType.news:
+        return 'News';
+    }
+  }
+
+  static BlogType? fromViLabel(String? label) {
+    switch (label) {
+      case 'Cảnh báo':
+        return BlogType.alert;
+      case 'Mẹo vặt':
+        return BlogType.tip;
+      case 'Sự kiện':
+        return BlogType.event;
+      case 'Tin tức':
+        return BlogType.news;
+      default:
+        return null;
+    }
+  }
+}
+
+enum FilterStatus {
+  initial,
+  idle,
+  loadingFilters,
+  loadingProvinces,
+  loadingCommunes,
+  success,
+  error,
+  ready,
+}
+
+String convertTimeToApiRange(String? time) {
+  switch (time) {
+    case "Tuần":
+      return "week";
+    case "Tháng":
+      return "month";
+    case "Quý":
+      return "quarter";
+    default:
+      return "quarter";
+  }
+}
+
+String convertStatusToApiValue(String? status) {
+  switch (status) {
+    case "Giao thông":
+      return "Traffic";
+    case "An ninh":
+      return "Security";
+    case "Hạ tầng":
+      return "Infrastructure";
+    case "Môi trường":
+      return "Environment";
+    case "Khác":
+      return "Other";
+    default:
+      return "";
+  }
+}
+
+enum VehicleType { car, bike, truck, taxi, hd }
+
+VehicleType selectedVehicle = VehicleType.bike;
+
+String vehicleToString(VehicleType vehicle) {
+  switch (vehicle) {
+    case VehicleType.car:
+      return 'car';
+    case VehicleType.bike:
+      return 'bike';
+    case VehicleType.truck:
+      return 'truck';
+    case VehicleType.taxi:
+      return 'taxi';
+    case VehicleType.hd:
+      return 'hd';
+  }
+}
+String vehicleToVietnamese(VehicleType vehicle) {
+  switch (vehicle) {
+    case VehicleType.car:
+      return 'Ô tô';
+    case VehicleType.bike:
+      return 'Xe máy';
+    case VehicleType.truck:
+      return 'Xe tải';
+    case VehicleType.taxi:
+      return 'Taxi';
+    case VehicleType.hd:
+      return 'Xe đầu kéo';
   }
 }

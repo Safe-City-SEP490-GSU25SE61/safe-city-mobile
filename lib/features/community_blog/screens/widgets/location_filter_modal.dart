@@ -46,14 +46,12 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
         ? blogController.selectedProvince.value
         : defaultProvince;
 
-    if (selectedCity != null) {
-      blogController.selectedProvince.value = selectedCity!;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        blogController.fetchCommunesByProvince(selectedCity!);
-      });
-    }
-
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (selectedCity != null && blogController.communes.isEmpty) {
+        blogController.selectedProvince.value = selectedCity!;
+        await blogController.fetchCommunesByProvince(selectedCity!);
+      }
+    });
     selectedDistrict = blogController.selectedCommune.value.isNotEmpty
         ? blogController.selectedCommune.value
         : null;
@@ -73,7 +71,7 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
   }
 
   Widget _buildTabContent() {
-    final cities = blogController.provinces.map((e) => e.name).toList();
+    final cities = blogController.provinces.map((e) => e.name).toSet().toList();
     final dark = THelperFunctions.isDarkMode(context);
 
     if (selectedIndex == 0) {
@@ -288,16 +286,20 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
                         width: 120,
                         height: 50,
                         child: OutlinedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             setState(() {
                               selectedSort = null;
                               selectedCity = null;
                               selectedDistrict = null;
                             });
-
                             blogController.selectedBlogType.value = null;
                             blogController.selectedProvince.value = '';
                             blogController.selectedCommune.value = '';
+                            await blogController.fetchInitialDataOnce(
+                              isFirstRequest: true,
+                            );
+                            widget.onApply();
+                            Get.back();
                           },
                           child: const Text(
                             "Thiết lập lại",
@@ -313,13 +315,31 @@ class _LocationFilterModalState extends State<LocationFilterModal> {
                             final type = selectedSort != null
                                 ? mapBlogToType(selectedSort!)
                                 : null;
+                            final province = selectedCity ?? '';
+                            final commune = selectedDistrict ?? '';
+                            final communeId = blogController.blogService
+                                .getCommuneIdByName(province, commune);
+                            final bool isFirstRequest =
+                                (communeId == null || communeId == 0);
 
                             await blogController.fetchInitialDataOnce(
-                              provinceName: selectedCity,
-                              communeName: selectedDistrict,
+                              provinceName: province.isEmpty ? null : province,
+                              communeName: commune.isEmpty ? null : commune,
                               type: type,
-                              isFirstRequest: false,
+                              isFirstRequest: isFirstRequest,
+                              searchQuery: blogController.searchController.text
+                                  .trim(),
                             );
+
+                            blogController.selectedProvince.value = province;
+                            blogController.selectedCommune.value = commune;
+                            blogController.selectedBlogType.value = type;
+
+                            if (province.isNotEmpty) {
+                              await blogController.fetchCommunesByProvince(
+                                province,
+                              );
+                            }
 
                             widget.onApply();
                             Get.back();

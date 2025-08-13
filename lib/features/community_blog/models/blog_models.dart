@@ -1,16 +1,22 @@
-﻿class BlogModel {
+﻿import 'package:safe_city_mobile/features/community_blog/models/province_with_commune_model.dart';
+import 'commune_model.dart';
+
+class BlogModel {
   final int id;
   final String title;
   final String content;
   final String type;
   final String authorName;
+  final String avatarUrl;
   final DateTime createdAt;
   final bool pinned;
-  final String communeName;
+  final CommuneModel commune;
+  final ProvinceWithCommunesModel province;
   final List<String> mediaUrls;
   final int totalLike;
   final int totalComment;
   final bool isLike;
+  final bool isPremium;
 
   BlogModel({
     required this.id,
@@ -18,29 +24,40 @@
     required this.content,
     required this.type,
     required this.authorName,
+    required this.avatarUrl,
     required this.createdAt,
     required this.pinned,
-    required this.communeName,
+    required this.commune,
+    required this.province,
     required this.mediaUrls,
     required this.totalLike,
     required this.totalComment,
     required this.isLike,
+    required this.isPremium,
   });
 
-  factory BlogModel.fromJson(Map<String, dynamic> json) {
+  factory BlogModel.fromJson(
+    Map<String, dynamic> json, {
+    required ProvinceWithCommunesModel province,
+    required CommuneModel commune,
+  }) {
     return BlogModel(
       id: json['id'],
       title: json['title'],
       content: json['content'],
       type: json['type'],
       authorName: json['authorName'],
+      avatarUrl: json['avaterUrl'] ?? '',
       createdAt: DateTime.parse(json['createdAt']),
       pinned: json['pinned'],
-      communeName: json['communeName'],
-      mediaUrls: List<String>.from(json['mediaUrls']),
+      commune: commune,
+      province: province,
+      mediaUrls:
+          (json['mediaUrls'] as List?)?.map((e) => e.toString()).toList() ?? [],
       totalLike: json['totalLike'],
       totalComment: json['totalComment'],
       isLike: json['isLike'],
+      isPremium: json['isPremium'] ?? true,
     );
   }
 
@@ -50,13 +67,16 @@
     String? content,
     String? type,
     String? authorName,
+    String? avatarUrl,
     DateTime? createdAt,
     bool? pinned,
-    String? communeName,
+    CommuneModel? commune,
+    ProvinceWithCommunesModel? province,
     List<String>? mediaUrls,
     int? totalLike,
     int? totalComment,
     bool? isLike,
+    bool? isPremium,
   }) {
     return BlogModel(
       id: id ?? this.id,
@@ -64,13 +84,16 @@
       content: content ?? this.content,
       type: type ?? this.type,
       authorName: authorName ?? this.authorName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
       pinned: pinned ?? this.pinned,
-      communeName: communeName ?? this.communeName,
+      commune: commune ?? this.commune,
+      province: province ?? this.province,
       mediaUrls: mediaUrls ?? this.mediaUrls,
       totalLike: totalLike ?? this.totalLike,
       totalComment: totalComment ?? this.totalComment,
       isLike: isLike ?? this.isLike,
+      isPremium: isPremium ?? this.isPremium,
     );
   }
 
@@ -82,6 +105,8 @@
         return 'Sự kiện';
       case 'news':
         return 'Tin tức';
+      case 'alert':
+        return 'Cảnh báo';
       default:
         return 'Khác';
     }

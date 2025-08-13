@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import '../../../../data/services/authentication/authentication_service.dart';
@@ -95,6 +96,9 @@ class SignupController extends GetxController {
         );
       }
     } catch (e) {
+      if (kDebugMode) {
+        print("ERROR REGISTER+ $e");
+      }
       TFullScreenLoader.stopLoading();
       TLoaders.errorSnackBar(
         title: 'Xảy ra lỗi rồi!',

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import '../../../features/personalization/models/achivement_model.dart';
 import '../../../features/personalization/models/user_profile_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -224,6 +225,27 @@ class UserProfileService {
         print("Error updating profile: $e");
       }
       return {"success": false, "message": "Exception occurred: $e"};
+    }
+  }
+
+  Future<List<AchievementModel>> fetchAchievements(String accessToken) async {
+    final uri = Uri.parse('${apiConnection}achievement/config');
+
+    final response = await client.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Accept': '*/*',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final List data = decoded['data'] ?? [];
+
+      return data.map((json) => AchievementModel.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load achievements');
     }
   }
 }

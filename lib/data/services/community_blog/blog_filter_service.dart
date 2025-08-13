@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../features/community_blog/models/commune_model.dart';
+
 class BlogFilterService {
   final String? apiConnection = dotenv.env['API_DEPLOYMENT_URL'];
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
@@ -26,7 +28,7 @@ class BlogFilterService {
     }
   }
 
-  Future<List<String>> getCommunesByProvinceId(int provinceId) async {
+  Future<List<CommuneModel>> getCommunesByProvinceId(int provinceId) async {
     final token = await _getAccessToken();
     final response = await http.get(
       Uri.parse('${apiConnection}communes/province/$provinceId'),
@@ -36,7 +38,7 @@ class BlogFilterService {
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       final List data = decoded['data'];
-      return data.map<String>((item) => item['name'].toString()).toList();
+      return data.map((item) => CommuneModel.fromJson(item)).toList();
     } else {
       throw Exception('Failed to fetch communes');
     }

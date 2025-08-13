@@ -28,16 +28,12 @@ class MembershipTierScreen extends StatelessWidget {
       ),
       body: Obx(() {
         final user = userController.user.value;
-        final rank = getUserRankFromString(user.achievementName);
-        final rankText = getRankText(rank);
-        final rankImage = getRankImage(rank);
         final hasPoints = user.totalPoint > 0;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(TSizes.md),
           child: Column(
             children: [
-              /// Card with rank info
               SizedBox(
                 width: double.infinity,
                 child: Card(
@@ -50,69 +46,69 @@ class MembershipTierScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(TSizes.md),
                     child: Column(
                       children: [
-                        Image.asset(rankImage, width: 100, height: 100),
+                        Image.asset(TImages.bronze, width: 100, height: 100),
                         const SizedBox(height: TSizes.mediumSpace),
                         Text(
                           user.fullName,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          rankText,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: TColors.primary,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        // Text(
+                        //   rankText,
+                        //   style: const TextStyle(
+                        //     fontSize: 16,
+                        //     fontWeight: FontWeight.w600,
+                        //     color: TColors.primary,
+                        //   ),
+                        // ),
                         const SizedBox(height: 8),
                         hasPoints
                             ? RichText(
-                                text: TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: '${user.totalPoint}',
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: TColors.accent,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: ' Điểm',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: TColors.accent),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : RichText(
-                                text: TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: '0',
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: TColors.accent,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: ' Điểm',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: TColors.accent),
-                                    ),
-                                  ],
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${user.totalPoint}',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: TColors.accent,
                                 ),
                               ),
+                              TextSpan(
+                                text: ' Điểm',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: TColors.accent),
+                              ),
+                            ],
+                          ),
+                        )
+                            : RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '0',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: TColors.accent,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' Điểm',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: TColors.accent),
+                              ),
+                            ],
+                          ),
+                        ),
                         if (hasPoints && user.totalPoint > 10000)
                           Container(
                             width: double.infinity,
@@ -158,10 +154,7 @@ class MembershipTierScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: TSizes.spaceBtwItems),
-
-              /// Rank Progress & Benefits
               TSectionHeading(
                 title: 'Quyền lợi theo cấp bậc',
                 showActionButton: false,
@@ -169,71 +162,14 @@ class MembershipTierScreen extends StatelessWidget {
 
               const SizedBox(height: TSizes.spaceBtwItems),
 
-              _buildRankBenefitTile(
-                imagePath: TImages.bronze,
-                rank: 'Hạng Đồng',
-                benefits: [
-                  'Ưu tiên xử lý báo cáo sự cố mức cơ bản',
-                  'Bài viết Blog được duyệt nhanh hơn',
-                ],
-                dark: dark,
-                requiredPoints: 1000,
-              ),
-
-              _buildRankBenefitTile(
-                imagePath: TImages.silver,
-                rank: 'Hạng Bạc',
-                benefits: [
-                  'Ưu tiên xử lý báo cáo cao hơn',
-                  'Blog được duyệt ưu tiên',
-                  'Tạo tối đa 7 nhóm hộ tống ảo',
-                  'Giảm 15% phí dịch vụ trong app',
-                ],
-                dark: dark,
-                requiredPoints: 3000,
-              ),
-
-              _buildRankBenefitTile(
-                imagePath: TImages.gold,
-                rank: 'Hạng Vàng',
-                benefits: [
-                  'Báo cáo được ưu tiên xử lý sớm nhất',
-                  'Blog xuất hiện sớm trên trang cộng đồng',
-                  'Tạo tối đa 10 nhóm hộ tống ảo',
-                  'Mỗi nhóm tăng tối đa thành viên từ 5 lên 10 người',
-                  'Giảm 15% phí dịch vụ trong app',
-                ],
-                dark: dark,
-                requiredPoints: 5000,
-              ),
-
-              _buildRankBenefitTile(
-                imagePath: TImages.platinum,
-                rank: 'Hạng Bạch Kim',
-                benefits: [
-                  'Xử lý tức thời các báo cáo khẩn cấp',
-                  'Blog được ghim nổi bật nếu có chất lượng',
-                  'Tạo tối đa 10 nhóm hộ tống ảo',
-                  'Mỗi nhóm tăng thành viên tối đa lên 15 người',
-                  'Giảm 15% phí dịch vụ trong app',
-                  'Tham gia sự kiện đặc biệt từ hệ thống',
-                ],
-                dark: dark,
-                requiredPoints: 7000,
-              ),
-
-              _buildRankBenefitTile(
-                imagePath: TImages.protector,
-                rank: 'Người bảo vệ',
-                benefits: [
-                  'Sở hữu tất cả quyền lợi từ các cấp bậc trước',
-                  'Huy hiệu danh dự trong hồ sơ & bình luận',
-                  'Được mời vào nhóm phản ứng nhanh địa phương',
-                  'Ưu tiên tiếp cận tính năng mới của ứng dụng',
-                  'Tham gia ban quản lý cộng đồng (xét duyệt bài viết, hỗ trợ thành viên)',
-                ],
-                dark: dark,
-                requiredPoints: 10000,
+              ...userController.achievements.map(
+                    (achievement) => _buildRankBenefitTile(
+                  rank: achievement.name,
+                  benefits: achievement.benefit.split('. ').where((e) => e.isNotEmpty).toList(),
+                  description: achievement.description,
+                  requiredPoints: achievement.minPoint,
+                  dark: dark,
+                ),
               ),
             ],
           ),
@@ -243,11 +179,11 @@ class MembershipTierScreen extends StatelessWidget {
   }
 
   Widget _buildRankBenefitTile({
-    required String imagePath,
     required String rank,
     required List<String> benefits,
+    required String description,
     required bool dark,
-    required int requiredPoints, // NEW PARAM
+    required int requiredPoints,
   }) {
     return Card(
       color: dark ? TColors.lightGrey : TColors.lightGrey,
@@ -261,34 +197,37 @@ class MembershipTierScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Image.asset(imagePath, width: 40, height: 40),
-                    const SizedBox(width: 12),
-                    Text(
-                      rank,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
+                Text(
+                  rank,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
                 Text(
                   '$requiredPoints điểm',
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     color: TColors.primary,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+                color: TColors.darkerGrey,
+              ),
+            ),
             const SizedBox(height: 8),
 
             ...benefits.map(
-              (b) => Padding(
+                  (b) => Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 4),
                 child: Row(
                   children: [
@@ -317,3 +256,4 @@ class MembershipTierScreen extends StatelessWidget {
     );
   }
 }
+

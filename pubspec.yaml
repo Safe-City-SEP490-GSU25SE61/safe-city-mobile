@@ -118,6 +118,7 @@ flutter:
     - assets/images/default_avatar/
     - assets/images/status/
     - assets/images/map/
+    - assets/images/virtual_escort/
 
   # Local fonts:
   fonts:
