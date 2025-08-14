@@ -55,7 +55,10 @@ class VirtualEscortScreen extends StatelessWidget {
                         children: [
                           Text(
                             'Giám sát an toàn',
-                            style: Theme.of(context).textTheme.headlineMedium,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           InkWell(
                             onTap: () {
@@ -104,7 +107,7 @@ class VirtualEscortScreen extends StatelessWidget {
             if (controller.groups.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     'Giám sát an toàn của tôi',
                     style: TextStyle(
@@ -115,7 +118,7 @@ class VirtualEscortScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              SliverToBoxAdapter(child: SizedBox(height: TSizes.spaceBtwItems)),
+              SliverToBoxAdapter(child: SizedBox(height: TSizes.mediumSpace)),
             ],
 
             Obx(() {
@@ -151,18 +154,20 @@ class VirtualEscortScreen extends StatelessWidget {
               }
             }),
 
-            SliverToBoxAdapter(child: SizedBox(height: TSizes.spaceBtwItems)),
+            SliverToBoxAdapter(child: SizedBox(height: TSizes.mediumSpace)),
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Các gợi ý tạo giám sát',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: dark ? Colors.white : Colors.black,
                       ),
                     ),
                     ElevatedButton(
@@ -189,7 +194,7 @@ class VirtualEscortScreen extends StatelessWidget {
             ),
 
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(10),
               sliver: SliverList(
                 delegate: SliverChildListDelegate.fixed([
                   const SizedBox(height: 12),
@@ -243,11 +248,11 @@ class VirtualEscortScreen extends StatelessWidget {
   void showJoinGroupDialog(BuildContext context) {
     final controller = VirtualEscortGroupController.instance;
     final codeController = TextEditingController();
-
+    final dark = THelperFunctions.isDarkMode(context);
     Get.defaultDialog(
       backgroundColor: Colors.white,
       title: 'Tham gia nhóm',
-      titleStyle: TextStyle(color: Colors.black),
+      titleStyle: TextStyle(color: dark ? Colors.black : Colors.black),
       contentPadding: const EdgeInsets.all(TSizes.sm),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -264,10 +269,10 @@ class VirtualEscortScreen extends StatelessWidget {
               maxLength: 6,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 4,
-                color: Colors.black,
+                color: TColors.primary,
               ),
               inputFormatters: [
                 LengthLimitingTextInputFormatter(6),

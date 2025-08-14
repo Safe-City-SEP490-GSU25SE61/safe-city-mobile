@@ -22,10 +22,10 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
     final controller = VirtualEscortGroupController.instance;
     final dark = THelperFunctions.isDarkMode(context);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchGroupDetail(groupId);
-      controller.fetchPendingRequests(groupId);
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   controller.fetchGroupDetail(groupId);
+    //   controller.fetchPendingRequests(groupId);
+    // });
 
     return Scaffold(
       backgroundColor: dark ? TColors.black : TColors.lightGrey,
@@ -48,7 +48,7 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(12),
               child: Card(
-                color: dark ? TColors.white : TColors.white,
+                color: TColors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -56,48 +56,68 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        group.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.black,fontSize: 16,fontWeight: FontWeight.bold,),
-                      ),
-
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                "Mã nhóm:",
-                                style: TextStyle(color: Colors.black,fontSize: 14),
-                              ),
-                              const SizedBox(width: 32),
-                              Text(
-                                group.groupCode,
-                                style: Theme.of(context).textTheme.headlineLarge
-                                    ?.copyWith(
-                                      color: TColors.accent,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                    ),
-                              ),
-                            ],
+                          Text(
+                            "Mã mời thành viên",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
                           ),
-                          const Spacer(),
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            icon: const Icon(Iconsax.copy, color: TColors.darkerGrey),
-                            onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(text: group.groupCode),
-                              );
-                            },
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message:
+                                "Đây là mã mời thành viên vào nhóm của bạn",
+                            child: Icon(
+                              Icons.help_outline,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: TColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              group.groupCode,
+                              style: TextStyle(
+                                color: TColors.primary,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2.0,
+                                fontSize: 32,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: Icon(Iconsax.copy, color: TColors.primary),
+                              onPressed: () {
+                                Clipboard.setData(
+                                  ClipboardData(text: group.groupCode),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -129,7 +149,10 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                       child: ListTile(
                         title: Text(
                           req.accountName,
-                          style: const TextStyle(color: Colors.black,fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         subtitle: Text(
                           "Ngày yêu cầu: ${DateFormat('dd/MM/yyyy HH:mm').format(req.requestedAt)}",
@@ -146,7 +169,10 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                                   approve: true,
                                 );
                               },
-                              icon: const Icon(Icons.check, color: Colors.white),
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                              ),
                               style: IconButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 shape: const CircleBorder(),
@@ -162,7 +188,10 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                                   approve: false,
                                 );
                               },
-                              icon: const Icon(Icons.close, color: Colors.white),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                              ),
                               style: IconButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 shape: const CircleBorder(),

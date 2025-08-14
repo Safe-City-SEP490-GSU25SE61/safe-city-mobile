@@ -59,10 +59,7 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
       backgroundColor: dark ? TColors.black : TColors.lightGrey,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          'Blog cộng đồng',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
+        title: Text('Blog cộng đồng', style: TextStyle(fontSize: 20)),
         actions: [
           InkWell(
             onTap: () => Get.to(() => BlogHistoryScreen()),
@@ -104,7 +101,7 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
                   return IgnorePointer(
                     ignoring: loading,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(10, 16, 10, 8),
                       child: Row(
                         children: [
                           Expanded(
@@ -114,14 +111,18 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
                               onFieldSubmitted: (value) async {
                                 if (loading) return;
                                 final searchText = value.trim();
-                                final selectedCommune = blogController.selectedCommune.value;
-                                final selectedProvince = blogController.selectedProvince.value;
+                                final selectedCommune =
+                                    blogController.selectedCommune.value;
+                                final selectedProvince =
+                                    blogController.selectedProvince.value;
 
-                                if (selectedProvince.isNotEmpty && selectedCommune.isNotEmpty) {
-                                  final communeId = blogController.blogService.getCommuneIdByName(
-                                    selectedProvince,
-                                    selectedCommune,
-                                  );
+                                if (selectedProvince.isNotEmpty &&
+                                    selectedCommune.isNotEmpty) {
+                                  final communeId = blogController.blogService
+                                      .getCommuneIdByName(
+                                        selectedProvince,
+                                        selectedCommune,
+                                      );
 
                                   if (communeId != null) {
                                     blogController.currentCommuneId = communeId;
@@ -179,7 +180,7 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
                     }
                     return ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
                       itemCount: blogController.blogs.length,
                       itemBuilder: (context, index) {
                         final blog = blogController.blogs[index];

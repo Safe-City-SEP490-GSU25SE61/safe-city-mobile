@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/image_strings.dart';
+import '../../../utils/helpers/helper_functions.dart';
 import '../../../utils/popups/loaders.dart';
 import '../models/goong_prediction_model.dart';
 
@@ -36,8 +37,23 @@ class VirtualEscortMapController extends GetxController {
   final RxBool showRouteInfoPopup = false.obs;
   final secureStorage = const FlutterSecureStorage();
   Timer? locationUpdateTimer;
-  late PointAnnotationManager _pointAnnotationManager;
+  late final PointAnnotationManager _pointAnnotationManager;
   PointAnnotation? _userMarker;
+  final RxList<String> durationOptions = <String>[].obs;
+  final RxString estimatedTime = ''.obs;
+  PointAnnotationManager? _markerManager;
+
+  @override
+  void onClose() {
+    try {
+      _markerManager?.deleteAll();
+    } catch (_) {}
+
+    _markerManager = null;
+    mapboxMap = null;
+
+    super.onClose();
+  }
 
   Future<void> initMap(MapboxMap controller, bool isDarkMode) async {
     bool serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
@@ -62,7 +78,8 @@ class VirtualEscortMapController extends GetxController {
     if (permission == geo.LocationPermission.deniedForever) {
       return TLoaders.warningSnackBar(
         title: 'Lỗi',
-        message: 'Vị trí đã bị từ chối vĩnh viễn. Vui lòng bật quyền trong cài đặt.',
+        message:
+            'Vị trí đã bị từ chối vĩnh viễn. Vui lòng bật quyền trong cài đặt.',
       );
     }
 
@@ -272,21 +289,66 @@ class VirtualEscortMapController extends GetxController {
     );
   }
 
+  Future<void> _recreateMarkerManager() async {
+    if (mapboxMap == null) return;
+    try {
+      try {
+        _customMarkerManager?.deleteAll();
+      } catch (_) {}
+      _markerManager = await mapboxMap!.annotations
+          .createPointAnnotationManager();
+    } catch (e) {
+      debugPrint('❌ Failed to create PointAnnotationManager: $e');
+      _markerManager = null;
+    }
+  }
+
+  Future<void> _ensureMarkerManager() async {
+    if (mapboxMap == null) return;
+    if (_markerManager == null) {
+      await _recreateMarkerManager();
+      return;
+    }
+    try {
+      await _markerManager!.deleteAll();
+    } catch (_) {
+      await _recreateMarkerManager();
+    }
+  }
+
+  Future<void> clearRouteAndMarker() async {
+    try {
+      await _markerManager?.deleteAll();
+    } catch (_) {}
+    try {
+      _customMarkerManager?.deleteAll();
+    } catch (_) {}
+    _markerManager = null;
+    await _removeRouteLayersAndSource();
+    showRouteInfoPopup.value = false;
+  }
+
   Future<void> _addCustomMarker(Point point) async {
+    if (mapboxMap == null) {
+      debugPrint('⚠️ mapboxMap is null, cannot add marker');
+      return;
+    }
     final imageBytes = await getImageFromAsset(TImages.locationIcon);
+    await _ensureMarkerManager();
+    if (_markerManager == null) return;
 
-    _customMarkerManager ??= await mapboxMap!.annotations
-        .createPointAnnotationManager();
-
-    await _customMarkerManager!.deleteAll();
-
-    await _customMarkerManager!.create(
-      PointAnnotationOptions(
-        geometry: point,
-        image: imageBytes,
-        iconSize: 0.11,
-      ),
-    );
+    try {
+      await _markerManager!.deleteAll();
+      await _markerManager!.create(
+        PointAnnotationOptions(
+          geometry: point,
+          image: imageBytes,
+          iconSize: 0.11,
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ Failed to add marker: $e');
+    }
   }
 
   Future<Uint8List> getImageFromAsset(String path) async {
@@ -357,13 +419,7 @@ class VirtualEscortMapController extends GetxController {
     }
   }
 
-  Future<List<Position>> mapDirectionRoute({
-    required double originLat,
-    required double originLng,
-    required double destLat,
-    required double destLng,
-    String vehicleType = 'bike',
-  }) async {
+  Future<List<Position>> mapDirectionRoute({required double originLat, required double originLng, required double destLat, required double destLng, String vehicleType = 'bike',}) async {
     try {
       if (mapboxMap == null) return [];
       await _removeRouteLayersAndSource();
@@ -406,6 +462,36 @@ class VirtualEscortMapController extends GetxController {
       };
 
       final routeInfo = data['routes'][0]['legs'][0];
+      routeDurationText.value = routeInfo['duration']['text'] ?? '';
+
+      routeDistanceText.value = routeInfo['distance']['text'] ?? '';
+      routeDurationText.value = routeInfo['duration']['text'] ?? '';
+      routeVehicleType.value = vehicleType;
+
+      String durationText = routeInfo['duration']['text'] ?? '0 phút';
+      int baseMinutes = 0;
+
+      final regexHours = RegExp(r'(\d+)\s*giờ');
+      final regexMinutes = RegExp(r'(\d+)\s*phút');
+
+      final hourMatch = regexHours.firstMatch(durationText);
+      final minuteMatch = regexMinutes.firstMatch(durationText);
+
+      if (hourMatch != null) {
+        baseMinutes += int.parse(hourMatch.group(1)!) * 60;
+      }
+      if (minuteMatch != null) {
+        baseMinutes += int.parse(minuteMatch.group(1)!);
+      }
+
+      List<String> newOptions = [
+        THelperFunctions.formatDurationInMinutes(baseMinutes),
+        THelperFunctions.formatDurationInMinutes(baseMinutes + 5),
+        THelperFunctions.formatDurationInMinutes(baseMinutes + 10),
+      ];
+
+      durationOptions.assignAll(newOptions);
+      estimatedTime.value = newOptions.first;
 
       final steps = routeInfo['steps'] as List;
       final List<Map<String, dynamic>> navigationSteps = steps.map((step) {
@@ -502,7 +588,7 @@ class VirtualEscortMapController extends GetxController {
           center: Point(
             coordinates: Position(positions.first.lng, positions.first.lat),
           ),
-          zoom: 19,
+          zoom: 15,
         ),
         MapAnimationOptions(duration: 1500),
       );
@@ -633,10 +719,7 @@ class VirtualEscortMapController extends GetxController {
     }
   }
 
-  Future<void> virtualEscortStartInitMap(
-    MapboxMap controller,
-    bool isDarkMode,
-  ) async {
+  Future<void> virtualEscortStartInitMap(MapboxMap controller, bool isDarkMode,) async {
     mapboxMap = controller;
     mapboxMap!.setCamera(
       CameraOptions(
@@ -918,9 +1001,9 @@ class VirtualEscortMapController extends GetxController {
         final interpolatedPosition = lastSnappedPosition == null
             ? snappedPosition
             : Position.named(
-          lat: lastSnappedPosition!.lat * 0.6 + snappedPosition.lat * 0.4,
-          lng: lastSnappedPosition!.lng * 0.6 + snappedPosition.lng * 0.4,
-        );
+                lat: lastSnappedPosition!.lat * 0.6 + snappedPosition.lat * 0.4,
+                lng: lastSnappedPosition!.lng * 0.6 + snappedPosition.lng * 0.4,
+              );
         lastSnappedPosition = interpolatedPosition;
 
         await mapboxMap!.easeTo(
@@ -936,7 +1019,10 @@ class VirtualEscortMapController extends GetxController {
 
         if (_userMarker != null) {
           _userMarker!.geometry = Point(
-            coordinates: Position(interpolatedPosition.lng, interpolatedPosition.lat),
+            coordinates: Position(
+              interpolatedPosition.lng,
+              interpolatedPosition.lat,
+            ),
           );
           await _pointAnnotationManager.update(_userMarker!);
         }
@@ -944,101 +1030,6 @@ class VirtualEscortMapController extends GetxController {
         debugPrint('⚠️ Tracking error: $e');
       }
     });
-
-    // List<Position> testPositions = [
-    //   Position.named(lat: 10.845696149299554, lng: 106.68034845575994),
-    //   Position.named(lat: 10.845686929256455, lng: 106.68025524900244),
-    //   Position.named(lat: 10.845685612107415, lng: 106.6802203802874),
-    //   Position.named(lat: 10.845690222129015, lng: 106.68020026372103),
-    //   Position.named(lat: 10.845744225233922, lng: 106.68015868948387),
-    //   Position.named(lat: 10.84582391272455, lng: 106.68013186739537),
-    //   Position.named(lat: 10.845878574379409, lng: 106.68009901033697),
-    //   Position.named(lat: 10.845943773207678, lng: 106.68007554100956),
-    //   Position.named(lat: 10.84598394621599, lng: 106.68004737781662),
-    //   Position.named(lat: 10.846037290697192, lng: 106.6800098268889),
-    //   Position.named(lat: 10.846065609366898, lng: 106.67998233424821),
-    //   Position.named(lat: 10.846078780840259, lng: 106.67997361706945),
-    //   Position.named(lat: 10.846085366576727, lng: 106.67995819436857),
-    //   Position.named(lat: 10.846067585087939, lng: 106.67993472504115),
-    //   Position.named(lat: 10.846037949270936, lng: 106.67990320908717),
-    //   Position.named(lat: 10.846010947746224, lng: 106.67984956491017),
-    //   Position.named(lat: 10.84592467456224, lng: 106.6797483115088),
-    //   Position.named(lat: 10.845851572840065, lng: 106.67968125628757),
-    //   Position.named(lat: 10.845817985556316, lng: 106.67963565873715),
-    //   Position.named(lat: 10.845764641039096, lng: 106.67949551332478),
-    //   Position.named(lat: 10.845727102295964, lng: 106.67940632985807),
-    //   Position.named(lat: 10.845694832147231, lng: 106.67934061574127),
-    //   Position.named(lat: 10.845596045956029, lng: 106.67914213228643),
-    //   Position.named(lat: 10.845519055783306, lng: 106.67896936737557),
-    //   Position.named(lat: 10.845490078486895, lng: 106.67885403239507),
-    //   Position.named(lat: 10.845345191962762, lng: 106.678588493719),
-    //   Position.named(lat: 10.845326751854659, lng: 106.6785294851243),
-    //   Position.named(lat: 10.845210842577663, lng: 106.67849998082697),
-    //   Position.named(lat: 10.844992195397356, lng: 106.67842487894059),
-    //   Position.named(lat: 10.844676078727957, lng: 106.67836318813706),
-    //   Position.named(lat: 10.844428453770222, lng: 106.6782719930362),
-    //   Position.named(lat: 10.844046478682301, lng: 106.67818616231781),
-    //   Position.named(lat: 10.843798853203301, lng: 106.67806814512846),
-    //   Position.named(lat: 10.843656600175862, lng: 106.67800377211609),
-    //   Position.named(lat: 10.84327989275787, lng: 106.67779992424356),
-    //   Position.named(lat: 10.843042803909183, lng: 106.67768727143154),
-    //   Position.named(lat: 10.842766200039025, lng: 106.67745660147051),
-    //   Position.named(lat: 10.842616043545256, lng: 106.67737613520502),
-    //   Position.named(lat: 10.842397394480939, lng: 106.67722593150948),
-    //   Position.named(lat: 10.842168207940782, lng: 106.67713205419976),
-    //   Position.named(lat: 10.841875797272566, lng: 106.67698989713075),
-    //   Position.named(lat: 10.84177013935299, lng: 106.67694037572836),
-    //   Position.named(lat: 10.841755650523549, lng: 106.67691623584872),
-    //   Position.named(lat: 10.84177409085181, lng: 106.67685052173191),
-    //   Position.named(lat: 10.841812288671012, lng: 106.67679955976378),
-    //   Position.named(lat: 10.84187024397361, lng: 106.67671909349829),
-    //   Position.named(lat: 10.84191766194009, lng: 106.6766372861284),
-    //   Position.named(lat: 10.841967714224777, lng: 106.67656084314135),
-    //   Position.named(lat: 10.841832046156647, lng: 106.67650719896437),
-    //   Position.named(lat: 10.84169110935291, lng: 106.67646294250582),
-    //   Position.named(lat: 10.841378940698972, lng: 106.67636772409168),
-    // ];
-    // int testIndex = 0;
-    // locationUpdateTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-    //   // Instead of real GPS:
-    //   final gpsPosition = testPositions[testIndex];
-    //   testIndex = (testIndex + 1) % testPositions.length; // loop through
-    //
-    //   final snappedPosition = snapToRoute(gpsPosition, routePositions);
-    //   final nextIndex = routePositions.indexOf(snappedPosition) + 1;
-    //
-    //   final bearing = (nextIndex < routePositions.length)
-    //       ? calculateBearing(snappedPosition, routePositions[nextIndex])
-    //       : (lastBearing ?? 0.0);
-    //
-    //   final smoothBearing = lastBearing == null
-    //       ? bearing
-    //       : (bearing + lastBearing!) / 2;
-    //
-    //   lastBearing = smoothBearing;
-    //
-    //   await mapboxMap!.easeTo(
-    //     CameraOptions(
-    //       center: Point(
-    //         coordinates: Position.named(
-    //           lat: snappedPosition.lat,
-    //           lng: snappedPosition.lng,
-    //         ),
-    //       ),
-    //       zoom: 18,
-    //       bearing: smoothBearing,
-    //       pitch: 60,
-    //     ),
-    //     MapAnimationOptions(duration: 1200),
-    //   );
-    //
-    //   if (_userMarker != null) {
-    //     _userMarker!.geometry = Point(
-    //       coordinates: Position(snappedPosition.lng, snappedPosition.lat),
-    //     );
-    //     await _pointAnnotationManager.update(_userMarker!);
-    //   }
-    // });
   }
 
   Position snapToRoute(Position gpsPosition, List<Position> route) {

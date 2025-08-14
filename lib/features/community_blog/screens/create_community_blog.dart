@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/common/widgets/appbar/appbar.dart';
-import 'package:safe_city_mobile/features/incident_report/screens/widgets/popup_modal.dart';
+import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/sizes.dart';
@@ -48,6 +48,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final popUpModal = PopUpModal.instance;
     final dark = THelperFunctions.isDarkMode(context);
     final blogController = Get.put(BlogController());
     return Scaffold(
@@ -404,7 +405,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                         backgroundColor: TColors.primary,
                       ),
                       onPressed: () {
-                        PopUpModal().showConfirmCancelDialog(
+                        popUpModal.showConfirmCancelDialog(
                           title: 'Lưu ý khi gửi blog',
                           message: TTexts.createBlogNotice,
                           onConfirm: () {

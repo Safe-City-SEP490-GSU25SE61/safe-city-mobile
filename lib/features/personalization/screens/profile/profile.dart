@@ -106,10 +106,7 @@ class ProfileScreen extends StatelessWidget {
                                   ),
                                 ),
 
-                                if (userController
-                                    .user
-                                    .value
-                                    .isBiometricEnabled)
+                                if (userController.user.value.isBiometricEnabled)
                                   Positioned(
                                     bottom: 0,
                                     right: 3,
@@ -145,14 +142,14 @@ class ProfileScreen extends StatelessWidget {
                   ///Details
                   const SizedBox(height: TSizes.spaceBtwItems / 2),
                   const Divider(),
-                  const SizedBox(height: TSizes.spaceBtwItems),
+                  const SizedBox(height: TSizes.mediumSpace),
                   TSectionHeading(
                     title: 'Hồ sơ của tôi',
                     showActionButton: true,
                     buttonTitle: 'Cập nhật thông tin',
                     onPressed: () => Get.to(() => ChangeEmailAndPhoneScreen()),
                   ),
-                  const SizedBox(height: TSizes.spaceBtwItems),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   TProfileMenu(
                     onPressed: () {},
@@ -206,7 +203,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           const Text(
                             TTexts.identityDataIsHidden,
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: Colors.grey,fontSize: 12),
                           ),
                           const SizedBox(height: TSizes.spaceBtwItems),
                           SizedBox(

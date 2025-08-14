@@ -18,7 +18,7 @@ class VirtualEscortGroupCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+        margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
@@ -38,7 +38,7 @@ class VirtualEscortGroupCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  gradient: TColors.blueGradient,
+                  gradient: TColors.purpleBlueGradient,
                 ),
                 child:Row(
                   children: [
@@ -49,7 +49,7 @@ class VirtualEscortGroupCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: TColors.successContainer,
+                          color: TColors.successContainer.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -61,6 +61,7 @@ class VirtualEscortGroupCard extends StatelessWidget {
                               style: TextStyle(
                                 color: TColors.success,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 12
                               ),
                             ),
                           ],
@@ -73,7 +74,7 @@ class VirtualEscortGroupCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: TColors.infoContainer,
+                          color: TColors.infoContainer.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
@@ -94,7 +95,9 @@ class VirtualEscortGroupCard extends StatelessWidget {
                   horizontal: 12,
                   vertical: 8,
                 ),
-                color: TColors.blueBackground,
+                decoration: BoxDecoration(
+                  gradient: TColors.purpleBlueGradient,
+                ),
                 child: Text(
                   group.name,
                   maxLines: 2,
@@ -123,8 +126,9 @@ class VirtualEscortGroupCard extends StatelessWidget {
                       return Text(
                         "${group.memberCount}/${group.maxMemberNumber} thành viên",
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           color: Colors.black,
+                          fontSize: 12
                         ),
                       );
                     }),

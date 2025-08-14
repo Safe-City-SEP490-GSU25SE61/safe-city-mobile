@@ -114,7 +114,7 @@ class CurrentSubscription {
   /// Localized time display based on remaining time granularity
   String get localizedRemainingTime {
     final d = parsedDuration;
-    if (d == Duration.zero) return "Chưa có gói";
+    if (d == Duration.zero) return "Chưa có";
 
     if (d.inDays >= 1) {
       return "${d.inDays} ngày";

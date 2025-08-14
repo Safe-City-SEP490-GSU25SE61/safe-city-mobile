@@ -4,7 +4,10 @@ import 'package:get/get.dart';
 import 'package:safe_city_mobile/utils/constants/sizes.dart';
 
 class PopUpModal {
-  final secureStorage = const FlutterSecureStorage();
+  PopUpModal._internal();
+  static final PopUpModal instance = PopUpModal._internal();
+
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   void showOkOnlyDialog({
     required String title,
@@ -58,7 +61,7 @@ class PopUpModal {
               style: const TextStyle(fontSize: 14, height: 1.4),
             ),
             Obx(
-              () => Row(
+                  () => Row(
                 children: [
                   Checkbox(
                     value: doNotShowAgain.value,
@@ -69,7 +72,7 @@ class PopUpModal {
                   const Expanded(
                     child: Text(
                       "Không hiển thị lại nội dung này",
-                      style: TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
@@ -110,3 +113,5 @@ class PopUpModal {
     );
   }
 }
+
+

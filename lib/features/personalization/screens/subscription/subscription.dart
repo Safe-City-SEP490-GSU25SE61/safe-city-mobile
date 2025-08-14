@@ -76,8 +76,7 @@ class SubscriptionScreen extends StatelessWidget {
                 final baseColor = package.color.isNotEmpty
                     ? HexColor.fromHex(package.color)
                     : TColors.primary;
-                final firstWord = package.name.split(' ').first;
-                final darkerColor = baseColor.darken(0.25);
+                final darkerColor = baseColor.darken(0.35);
                 final user = userController.user.value;
                 final isCurrentPackage = user.currentSubscription.packageName == package.name;
                 final isExpired = user.currentSubscription.remainingTime == '0d 0h 0m';
@@ -85,10 +84,13 @@ class SubscriptionScreen extends StatelessWidget {
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [darkerColor, baseColor],
+                      colors: [
+                        baseColor,
+                        darkerColor,
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -101,9 +103,8 @@ class SubscriptionScreen extends StatelessWidget {
                         package.name,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -111,25 +112,50 @@ class SubscriptionScreen extends StatelessWidget {
                         text: TextSpan(
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 16,
                           ),
                           children: [
                             TextSpan(
-                              text:
-                                  '${NumberFormat("#,###", "vi_VN").format(package.price)} ₫',
+                              text: '${NumberFormat("#,###", "vi_VN").format(package.price)} ₫',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                fontSize: 22,
                               ),
                             ),
-                            TextSpan(text: ' / ${package.durationDays} ngày'),
+                            TextSpan(
+                              text: ' / ${package.durationDays} ngày',
+                              style: const TextStyle(
+                                fontSize: 16,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        package.description,
-                        style: const TextStyle(color: Colors.white),
+                        "Gói này gồm",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
                       ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          package.description,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+
                       const SizedBox(height: 16),
                       Material(
                         color: isCurrentPackage
@@ -150,7 +176,7 @@ class SubscriptionScreen extends StatelessWidget {
                               child: Text(
                                 isCurrentPackage
                                     ? user.currentSubscription.localizedRemainingTime
-                                    : 'Lấy $firstWord',
+                                    : 'Lấy ${package.name}',
                                 style: TextStyle(
                                   color: shouldDisableButton
                                       ? Colors.grey

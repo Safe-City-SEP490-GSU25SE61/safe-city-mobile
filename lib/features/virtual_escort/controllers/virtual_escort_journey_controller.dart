@@ -7,7 +7,7 @@ class VirtualEscortJourneyController extends GetxController {
   final destination = TextEditingController();
   final origin = TextEditingController();
   final estimatedTime = '15 minutes'.obs;
-  final transportMode = 'Walking'.obs;
+  final transportMode = 'Xe máy'.obs;
   final shareLocation = true.obs;
   final currentTab = 0.obs;
 

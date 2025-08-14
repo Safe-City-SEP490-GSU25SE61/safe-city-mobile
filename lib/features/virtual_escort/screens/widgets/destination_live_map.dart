@@ -22,7 +22,6 @@ class DestinationMapScreen extends StatefulWidget {
 class _DestinationMapScreenState extends State<DestinationMapScreen> {
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY2']!;
   final mapController = Get.put(VirtualEscortMapController());
-
   String? originAddress;
   String? destinationAddress;
 
@@ -168,17 +167,17 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
             if (!mapController.showRouteInfoPopup.value) return const SizedBox.shrink();
 
             return Positioned(
-              bottom: 26,
+              bottom: 30,
               left: 20,
               right: 80,
               child: AnimatedOpacity(
                 opacity: mapController.showRouteInfoPopup.value ? 1 : 0,
                 duration: const Duration(milliseconds: 300),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.2),
@@ -200,14 +199,14 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                                     ? Icons.pedal_bike
                                     : Icons.directions_car,
                                 color: TColors.accent,
-                                size: 28,
+                                size: 30,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 8),
                               Text(
                                 vehicleToVietnamese(mapController.selectedVehicle.value),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                                  fontSize: 22,
                                   color: Colors.black,
                                 ),
                               ),
@@ -215,14 +214,16 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                           ),
                           ElevatedButton(
                             onPressed: () {
+                              mapController.clearRouteAndMarker();
                               Get.back(result: {
                                 'origin': originAddress ?? '',
                                 'destination': destinationAddress ?? '',
+                                'vehicle': vehicleToVietnamese(mapController.selectedVehicle.value),
                               });
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: TColors.primary,
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
 
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -235,17 +236,17 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                           ),
                         ],
                       ),
-
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Text(
                             mapController.routeDurationText.value,
-                            style: const TextStyle(fontSize: 14, color: TColors.darkerGrey),
+                            style: const TextStyle(fontSize: 16, color: TColors.black,fontWeight: FontWeight.w600),
                           ),
+                          const SizedBox(width: 8),
                           Text(
-                            mapController.routeDistanceText.value,
-                            style: const TextStyle(fontSize: 14, color: Colors.black,fontWeight: FontWeight.w500),
+                            "(${mapController.routeDistanceText.value})",
+                            style: const TextStyle(fontSize: 16, color: Colors.grey,fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),

@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../utils/constants/colors.dart';
 import '../../../../utils/helpers/helper_functions.dart';
 import '../../../../utils/validators/validation.dart';
 
@@ -93,9 +94,9 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
                 text: TextSpan(
                   text: 'Chọn ngày ',
                   style: TextStyle(
-                    color: dark ? Colors.white : Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    color: dark ? Colors.white : TColors.darkerGrey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                   children: const [
                     TextSpan(
@@ -124,9 +125,9 @@ class _DateTimePickerFieldState extends State<DateTimePickerField> {
                 text: TextSpan(
                   text: 'Chọn thời gian ',
                   style: TextStyle(
-                    color: dark ? Colors.white : Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    color: dark ? Colors.white : TColors.darkerGrey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                   children: const [
                     TextSpan(

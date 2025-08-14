@@ -45,8 +45,8 @@ class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
 
           Positioned(
             top: 40,
-            left: 14,
-            right: 14,
+            left: 15,
+            right: 15,
             child: GestureDetector(
               onTap: () async {
                 final placeId = await Get.to(
@@ -64,6 +64,7 @@ class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
                     prefixIcon: const Icon(Iconsax.search_normal),
                     filled: true,
                     fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -74,8 +75,8 @@ class _IncidentLiveMapScreenState extends State<IncidentLiveMapScreen> {
             ),
           ),
           Positioned(
-            top: 105,
-            left: 14,
+            top: 100,
+            left: 15,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(

@@ -123,7 +123,7 @@ class VirtualEscortService {
           'Authorization': 'Bearer $token',
           'Accept': '*/*',
         },
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 20));
 
       if (kDebugMode) {
         print("Get Escort Group Detail: ${response.statusCode} -> ${response.body}");

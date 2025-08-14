@@ -208,7 +208,7 @@ class BlogService {
         request.headers['Authorization'] = 'Bearer $accessToken';
       }
 
-      final response = await request.send().timeout(const Duration(seconds: 30));
+      final response = await request.send().timeout(const Duration(minutes: 5));
       final responseBody = await response.stream.bytesToString();
 
       if (kDebugMode) {

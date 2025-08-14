@@ -17,8 +17,7 @@ class TImages {
       "assets/images/password_reset/forget-password.png";
 
   //--Icons
-  static const String frogIceCream = "assets/icons/frog-icecream.png";
-  static const String frogSkater = "assets/icons/9360-skater-frog.png";
+  static const String premiumIcon = "assets/icons/premium.png";
 
   //--Loading Images
   static const String loadingCircle =
@@ -67,6 +66,8 @@ class TImages {
 
   //--Virtual Escort Images
   static const String virtualEscortBkg = "assets/images/virtual_escort/virtual-escort-tracking.json";
-
   static const String emptyBoxImage = "assets/images/default_avatar/empty_box.png";
+
+  //--Dotted Grid Fade
+  static const String dottedGridFade = "assets/icons/dotted-grid-fade.png";
 }

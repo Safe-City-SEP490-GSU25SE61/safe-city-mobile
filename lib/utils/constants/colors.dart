@@ -15,21 +15,20 @@ class TColors {
   static const Color textSecondary = Color(0xFF6C757D);
   static const Color textWhite = Colors.white;
 
-  // Gradient Colors
-  static const Gradient blueGradient = LinearGradient(
+  static const Gradient purpleBlueGradient = LinearGradient(
     colors: [
-      Color(0xFF559DE8),
-      Color(0xFF4C8CFA),
-      Color(0xFF276EF1),
-      Color(0xFF1F54C3),
-      Color(0xFF173A8A),
+      Color(0xFFFF33FF),
+      Color(0xFF8E2BFF),
+      Color(0xFF3B3BFF),
+      Color(0xFF2B4FF2),
+      Color(0xFF0841E2),
     ],
-    stops: [0.0, 0.3, 0.6, 0.85, 1.0],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+    stops: [0.0, 0.2, 0.45, 0.7, 1.0],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
   );
 
-  static const Color blueBackground = Color(0xFF173A8A); // deeper but softer navy
+  static const Color blueBackground = Color(0xFF1A2B80);
 
   static const Color light = Color(0xFFFFFFFF);
   static const Color dark = Color(0xFF272727);
