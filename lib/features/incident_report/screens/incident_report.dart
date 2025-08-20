@@ -31,16 +31,13 @@ class IncidentReportScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          'Báo cáo sự cố',
-          style: TextStyle(fontSize: 20),
-        ),
+        title: Text('Báo cáo sự cố', style: TextStyle(fontSize: 20)),
         actions: [
           InkWell(
             onTap: () => Get.to(() => ReportHistoryScreen()),
             borderRadius: BorderRadius.circular(30),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(30),
@@ -54,7 +51,7 @@ class IncidentReportScreen extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w500,
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                   ),
                 ],

@@ -119,10 +119,14 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
                   destinationAddress?.isNotEmpty == true
-                      ? Row(children: [Expanded(child: VehicleSelector())])
-                      : SizedBox.shrink(),
+                      ? Column(
+                          children: [
+                            const SizedBox(height: 8),
+                            Row(children: [Expanded(child: VehicleSelector())]),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
                 ],
               ),
             ),
@@ -132,7 +136,10 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
             right: 10,
             child: FloatingActionButton(
               heroTag: 'back_button',
-              onPressed: () => Get.back(),
+              onPressed: () {
+                mapController.clearRouteAndMarker();
+                Get.back();
+              },
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(50),
@@ -164,7 +171,9 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
           ),
 
           Obx(() {
-            if (!mapController.showRouteInfoPopup.value) return const SizedBox.shrink();
+            if (!mapController.showRouteInfoPopup.value) {
+              return const SizedBox.shrink();
+            }
 
             return Positioned(
               bottom: 30,
@@ -195,7 +204,8 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                           Row(
                             children: [
                               Icon(
-                                mapController.selectedVehicle.value == VehicleType.bike
+                                mapController.selectedVehicle.value ==
+                                        VehicleType.bike
                                     ? Icons.pedal_bike
                                     : Icons.directions_car,
                                 color: TColors.accent,
@@ -203,7 +213,9 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                vehicleToVietnamese(mapController.selectedVehicle.value),
+                                vehicleToVietnamese(
+                                  mapController.selectedVehicle.value,
+                                ),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 22,
@@ -214,16 +226,27 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                           ),
                           ElevatedButton(
                             onPressed: () {
+                              Get.back(
+                                result: {
+                                  'origin': originAddress ?? '',
+                                  'originLat': mapController.originPosition.value?.lat.toDouble(),
+                                  'originLng': mapController.originPosition.value?.lng.toDouble(),
+                                  'destination': destinationAddress ?? '',
+                                  'destinationLat': mapController.destinationPosition.value?.lat.toDouble(),
+                                  'destinationLng': mapController.destinationPosition.value?.lng.toDouble(),
+                                  'vehicle': vehicleToVietnamese(
+                                    mapController.selectedVehicle.value,
+                                  ),
+                                },
+                              );
                               mapController.clearRouteAndMarker();
-                              Get.back(result: {
-                                'origin': originAddress ?? '',
-                                'destination': destinationAddress ?? '',
-                                'vehicle': vehicleToVietnamese(mapController.selectedVehicle.value),
-                              });
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: TColors.primary,
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
 
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -231,7 +254,10 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                             ),
                             child: const Text(
                               "Áp dụng",
-                              style: TextStyle(fontSize: 14, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ],
@@ -241,12 +267,20 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                         children: [
                           Text(
                             mapController.routeDurationText.value,
-                            style: const TextStyle(fontSize: 16, color: TColors.black,fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: TColors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             "(${mapController.routeDistanceText.value})",
-                            style: const TextStyle(fontSize: 16, color: Colors.grey,fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -275,8 +309,8 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
           destinationAddress = description;
         }
       });
-
-      mapController.selectPlace(placeId, isOrigin: isOrigin);
+      mapController.clearRouteAndMarker();
+      await mapController.selectPlace(placeId, isOrigin: isOrigin);
       if (mapController.originPosition.value != null &&
           mapController.destinationPosition.value != null) {
         await mapController.mapDirectionRoute(

@@ -42,6 +42,9 @@ dependencies:
   app_links: ^6.4.0
   infinite_scroll_pagination: ^5.1.0
   fl_chart: ^1.0.0
+  slide_to_act: ^2.0.2
+  percent_indicator: ^4.2.5
+  signalr_netcore: ^1.4.3
 
   #Maps Integration
   mapbox_maps_flutter: ^2.9.0

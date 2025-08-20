@@ -9,7 +9,6 @@ import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/image_strings.dart';
-import '../../../utils/constants/sizes.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../controllers/incident_report_controller.dart';
 

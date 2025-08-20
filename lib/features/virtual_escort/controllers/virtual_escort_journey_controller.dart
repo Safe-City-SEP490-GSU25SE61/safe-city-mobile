@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../data/services/virtual_escort/virtual_escort_service.dart';
+
 class VirtualEscortJourneyController extends GetxController {
+  static VirtualEscortJourneyController get instance => Get.find();
   final virtualEscortJourneyFormKey = GlobalKey<FormState>();
   final destination = TextEditingController();
   final origin = TextEditingController();
@@ -10,6 +13,7 @@ class VirtualEscortJourneyController extends GetxController {
   final transportMode = 'Xe máy'.obs;
   final shareLocation = true.obs;
   final currentTab = 0.obs;
+  final escortService = VirtualEscortService();
 
   void setTab(int index) => currentTab.value = index;
 
@@ -20,6 +24,10 @@ class VirtualEscortJourneyController extends GetxController {
       debugPrint('Mode: ${transportMode.value}');
       debugPrint('Share Location: ${shareLocation.value}');
     }
+  }
+
+  Future<void> initConnection({required bool isLeader}) async {
+    await escortService.initSignalR(isLeader: isLeader);
   }
 
   void cancel() {

@@ -20,9 +20,9 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = VirtualEscortGroupController.instance;
 
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   controller.fetchGroupDetail(groupId);
-    // });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchGroupDetail(groupId);
+    });
 
     return Scaffold(
       appBar: const TAppBar(

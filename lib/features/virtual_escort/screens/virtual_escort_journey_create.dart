@@ -5,10 +5,13 @@ import 'package:iconsax/iconsax.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_journey_start.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/destination_live_map.dart';
+import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/group_members_selector.dart';
 
 import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
+import '../../../utils/constants/text_strings.dart';
+import '../controllers/virtual_escort_group_controller.dart';
 import '../controllers/virtual_escort_journey_controller.dart';
 import '../controllers/virtual_escort_map_controller.dart';
 
@@ -18,6 +21,7 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(VirtualEscortJourneyController());
+    final groupController = Get.put(VirtualEscortGroupController());
     final mapController = Get.put(VirtualEscortMapController());
     return Scaffold(
       appBar: TAppBar(
@@ -156,11 +160,69 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: TSizes.mediumSpace),
+                Card(
+                  color: TColors.lightGrey,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide.none,
+                  ),
+                  child: SizedBox(
+                    height: 120,
+                    width: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14.0),
+                      child: GroupMembersWidget(
+                        group: groupController.groupDetail.value,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: TSizes.mediumSpace),
+
+                /// Lưu ý
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: TColors.warningContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Iconsax.lamp_on, color: TColors.warning),
+                      const SizedBox(width: TSizes.xs),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              color: TColors.warning,
+                              fontSize: 13,
+                            ),
+                            children: [
+                              const TextSpan(
+                                text: '${TTexts.importantNotice}\n',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              TextSpan(text: TTexts.importantSafetyInformation),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: TSizes.mediumSpace),
 
                 /// Start Virtual Escort Button
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 55,
                   child: ElevatedButton(
                     onPressed: () {
                       final originPos = mapController.originPosition.value;
@@ -175,8 +237,10 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                             destinationLat: destPos.lat.toDouble(),
                             destinationLng: destPos.lng.toDouble(),
                             vehicle: vehicle,
+                            estimatedTime: mapController.estimatedTime.value,
                           ),
                         );
+                        controller.initConnection(isLeader: true);
                       } else {
                         Get.snackbar(
                           'Error',
@@ -192,7 +256,7 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 55,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: TColors.error),

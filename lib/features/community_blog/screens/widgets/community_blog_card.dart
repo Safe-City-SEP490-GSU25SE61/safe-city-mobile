@@ -34,6 +34,25 @@ class CommunityBlogCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                /// Inside Column(children: [...])
+                if (blog.pinned) ...[
+                  Row(
+                    children: [
+                      Icon(Iconsax.star1, size: 16, color: TColors.primary),
+                      SizedBox(width: 4),
+                      Text(
+                        'Bài viết được ghim',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: TColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                ],
+
                 /// Author & CreatedAt
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,17 +101,22 @@ class CommunityBlogCard extends StatelessWidget {
                         text: plainText.length > 160
                             ? '${plainText.substring(0, 160)}...'
                             : plainText,
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
                       ),
                       if (plainText.length > 160)
                         const TextSpan(
                           text: ' Đọc thêm',
-                          style: TextStyle(fontSize: 14, color: TColors.primary),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: TColors.primary,
+                          ),
                         ),
                     ],
                   ),
                 ),
-
 
                 const SizedBox(height: TSizes.smallSpace),
                 Row(

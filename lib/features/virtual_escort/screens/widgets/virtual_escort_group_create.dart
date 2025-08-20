@@ -32,7 +32,7 @@ class CreateVirtualEscortGroupDialog extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: dark?Colors.black:Colors.white
+                    color: Colors.black,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -42,7 +42,7 @@ class CreateVirtualEscortGroupDialog extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(),
+            Divider(color: Colors.black.withValues(alpha: 0.5)),
 
             const SizedBox(height: 8),
             Form(
@@ -52,7 +52,8 @@ class CreateVirtualEscortGroupDialog extends StatelessWidget {
                 children: [
                   TextFormField(
                     controller: controller.nameController,
-                    validator: (value) =>TValidator.validateVirtualEscortNameField("Tên", value),
+                    validator: (value) =>
+                        TValidator.validateVirtualEscortNameField("Tên", value),
                     style: const TextStyle(color: Colors.black),
                     decoration: InputDecoration(
                       label: RichText(
@@ -76,14 +77,20 @@ class CreateVirtualEscortGroupDialog extends StatelessWidget {
                       ),
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.grey),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -112,7 +119,7 @@ class CreateVirtualEscortGroupDialog extends StatelessWidget {
                       child: const Text(
                         "Tạo Giám sát",
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -121,7 +128,7 @@ class CreateVirtualEscortGroupDialog extends StatelessWidget {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

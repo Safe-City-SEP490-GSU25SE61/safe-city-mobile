@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
+import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../data/services/live_map_incident/live_map_incident_service.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
@@ -49,7 +50,7 @@ class IncidentLiveMapController extends GetxController {
   void enableCommuneFocus() => isFocusedOnCommune.value = true;
   void disableCommuneFocus() => isFocusedOnCommune.value = false;
   final Map<String, ReportDetailModel> reportMap = {};
-
+  final popUpModal = PopUpModal.instance;
 
   @override
   void onClose() {
@@ -72,7 +73,7 @@ class IncidentLiveMapController extends GetxController {
         center: Point(
           coordinates: Position(106.67393252105423, 10.831951418898154),
         ),
-        zoom: 14.0,
+        zoom: 13.0,
       ),
     );
 
@@ -637,9 +638,9 @@ class IncidentLiveMapController extends GetxController {
       if (!isPremium) {
         exitCommuneFocus();
         disableCommuneFocus();
-        TLoaders.warningSnackBar(
-          title: "Thông báo",
-          message: "Bạn phải đăng ký gói để sử dụng chức năng này",
+        popUpModal.showContentEmptyDialog(
+          title: 'Thông báo',
+          message: 'Bạn phải đăng ký gói để sử dụng chức năng này',
         );
         isCommuneReportFocusLoading.value = false;
         return;

@@ -30,7 +30,7 @@ class LocationSharingCheckbox extends StatelessWidget {
         const Expanded(
           child: Text(
             TTexts.sharingLocationPolicy,
-            style: TextStyle(fontSize: 14,color: Colors.black),
+            style: TextStyle(fontSize: 12,color: Colors.black),
           ),
         ),
       ],

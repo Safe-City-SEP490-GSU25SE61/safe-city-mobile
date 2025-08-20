@@ -1,4 +1,3 @@
-import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/sizes.dart';
 import 'package:flutter/material.dart';
 

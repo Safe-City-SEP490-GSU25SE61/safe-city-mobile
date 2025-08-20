@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_sos.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_create.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_card.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/sugesstion_title.dart';
@@ -67,7 +68,7 @@ class VirtualEscortScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(30),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                                horizontal: 10,
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
@@ -87,7 +88,7 @@ class VirtualEscortScreen extends StatelessWidget {
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 14,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
@@ -207,6 +208,7 @@ class VirtualEscortScreen extends StatelessWidget {
                       CreateVirtualEscortGroupDialog(),
                       barrierDismissible: false,
                     ),
+                    // onTap: () => Get.to(() =>VirtualEscortSosScreen()),
                     bkgColor: TColors.personalEscortBkg,
                     iconColor: TColors.personalEscortIcon,
                   ),

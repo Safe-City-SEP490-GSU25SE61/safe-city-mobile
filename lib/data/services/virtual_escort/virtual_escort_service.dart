@@ -4,17 +4,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:signalr_netcore/http_connection_options.dart';
+import 'package:signalr_netcore/hub_connection.dart';
+import 'package:signalr_netcore/hub_connection_builder.dart';
 
 import '../../../features/virtual_escort/models/virtual_escort_group_detail.dart';
 import '../../../features/virtual_escort/models/virtual_escort_pending_request.dart';
 
 class VirtualEscortService {
   var client = http.Client();
+  HubConnection? hubConnection;
   final String? apiConnection = dotenv.env['API_DEPLOYMENT_URL'];
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   Future<String?> getAccessToken() async {
     return await secureStorage.read(key: 'access_token');
+  }
+
+  Future<String?> getMemberId() async {
+    return await secureStorage.read(key: 'member_id');
   }
 
   Future<Map<String, dynamic>> createEscortGroup(String name) async {
@@ -336,5 +344,55 @@ class VirtualEscortService {
       }
       return {"success": false, "message": "Exception occurred: $e"};
     }
+  }
+
+  Future<void> initSignalR({required bool isLeader}) async {
+    try {
+      final token = await getAccessToken();
+      final memberId = await getMemberId();
+
+      if (token == null ) {
+        debugPrint("❌ Cannot init SignalR: Missing token or memberId");
+        return;
+      }
+    // || memberId == null
+
+      final role = isLeader ? "leader" : "follower";
+      // final hubUrl = "${apiConnection}hub?role=$role&memberId=$memberId";
+      final hubUrl = "https://safe-city-back-end.onrender.com/journey-hub?role=$role&memberId=28";
+
+      debugPrint("🔌 Connecting to: $hubUrl");
+
+      hubConnection = HubConnectionBuilder()
+          .withUrl(
+        hubUrl,
+        options: HttpConnectionOptions(
+          accessTokenFactory: () async => token,
+        ),
+      ).build();
+      hubConnection?.on("ReceiveLocationUpdate", (args) {
+        if (args == null || args.length < 2) return;
+        final lat = args[0] as double;
+        final lng = args[1] as double;
+        debugPrint("📡 Received location update: $lat, $lng");
+      });
+
+      await hubConnection?.start();
+      debugPrint("✅ SignalR connected as $role with memberId=$memberId");
+    } catch (e) {
+      debugPrint("❌ SignalR init failed: $e");
+    }
+  }
+
+  Future<void> joinGroupSignalR(String groupId) async {
+    await hubConnection?.invoke("JoinGroup", args: [groupId]);
+  }
+
+  Future<void> updateLocationSignalR(double lat, double lng) async {
+    await hubConnection?.invoke("UpdateLocation", args: [lat, lng]);
+  }
+
+  Future<void> stopSignalR() async {
+    await hubConnection?.stop();
   }
 }
