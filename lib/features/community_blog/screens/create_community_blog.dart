@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/common/widgets/appbar/appbar.dart';
-import 'package:safe_city_mobile/features/incident_report/screens/widgets/popup_modal.dart';
+import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/sizes.dart';
@@ -48,6 +48,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final popUpModal = PopUpModal.instance;
     final dark = THelperFunctions.isDarkMode(context);
     final blogController = Get.put(BlogController());
     return Scaffold(
@@ -55,7 +56,6 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
         showBackArrow: true,
         title: Text(
           'Tạo bài blog mới',
-          style: Theme.of(context).textTheme.headlineMedium,
         ),
       ),
 
@@ -78,8 +78,8 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                           text: TextSpan(
                             text: 'Nhóm loại blog ',
                             style: TextStyle(
-                              color: dark ? Colors.white : Colors.black,
-                              fontSize: 16,
+                              color: dark ? Colors.white : TColors.darkerGrey,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                             children: const [
@@ -115,8 +115,8 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                         text: TextSpan(
                           text: 'Tiêu đề ',
                           style: TextStyle(
-                            color: dark ? Colors.white : Colors.black,
-                            fontSize: 16,
+                            color: dark ? Colors.white : TColors.darkerGrey,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                           children: [
@@ -150,7 +150,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                             style: TextStyle(
                               color: dark ? Colors.white : Colors.black,
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                             ),
                             children: const [
                               TextSpan(
@@ -214,7 +214,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                       style: TextStyle(
                         color: dark ? Colors.white : Colors.black,
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -338,7 +338,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                                     text:
                                     "Nhấn để tải lên hình ảnh hoặc video cho blog.",
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       color: dark
                                           ? TColors.lightDarkGrey
@@ -348,7 +348,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                                   TextSpan(
                                     text: "Tối đa ",
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 12,
                                       color: dark
                                           ? TColors.white
                                           : TColors.darkGrey,
@@ -357,7 +357,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                                   TextSpan(
                                     text: "10 bức ảnh",
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       color: dark
                                           ? TColors.lightDarkGrey
@@ -367,7 +367,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                                   TextSpan(
                                     text: " hoặc ",
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 12,
                                       color: dark
                                           ? TColors.white
                                           : TColors.darkGrey,
@@ -376,7 +376,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                                   TextSpan(
                                     text: "1 video không quá 400MB",
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       color: dark
                                           ? TColors.lightDarkGrey
@@ -404,7 +404,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                         backgroundColor: TColors.primary,
                       ),
                       onPressed: () {
-                        PopUpModal().showConfirmCancelDialog(
+                        popUpModal.showConfirmCancelDialog(
                           title: 'Lưu ý khi gửi blog',
                           message: TTexts.createBlogNotice,
                           onConfirm: () {
@@ -422,7 +422,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                           storageKey: 'hide_create_blog_notice',
                         );
                       },
-                      child: const Text("Gửi báo cáo"),
+                      child: const Text("Tạo blog mới"),
                     ),
                   ),
                 ],

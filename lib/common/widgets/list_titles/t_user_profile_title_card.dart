@@ -1,9 +1,9 @@
-import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/sizes.dart';
 import 'package:flutter/material.dart';
 
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
+import '../../../utils/constants/image_strings.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../effects/shimmer_effect.dart';
 
@@ -113,14 +113,14 @@ class TUserProfileCard extends StatelessWidget {
                             children: [
                               Image.asset(
                                 getRankImage(rank),
-                                width: 30,
-                                height: 30,
+                                width: 34,
+                                height: 34,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 getRankText(rank),
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: dark ? TColors.white : TColors.black,
                                 ),
@@ -144,25 +144,23 @@ class TUserProfileCard extends StatelessWidget {
                               ? const TShimmerEffect(width: 100, height: 14)
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Iconsax.calendar_2,
-                                      color: Colors.pink,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      remainingTime!,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: dark
-                                            ? TColors.white
-                                            : TColors.black,
-                                      ),
-                                    ),
-                                  ],
+                            children: [
+                              Image.asset(
+                                TImages.premiumIcon,
+                                width: 26,
+                                height: 26,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "$remainingTime premium",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: dark ? TColors.white : TColors.black,
                                 ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

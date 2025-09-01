@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -14,17 +13,23 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
+import '../../../data/services/virtual_escort/virtual_escort_service.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/image_strings.dart';
+import '../../../utils/helpers/helper_functions.dart';
 import '../../../utils/popups/loaders.dart';
 import '../models/goong_prediction_model.dart';
+import '../models/route_step_model.dart';
+import '../screens/virtual_escort_journey_start.dart';
+import '../screens/virtual_escort_sos.dart';
 
 class VirtualEscortMapController extends GetxController {
   static VirtualEscortMapController get instance => Get.find();
+  final escortService = VirtualEscortService();
   MapboxMap? mapboxMap;
   PointAnnotationManager? _customMarkerManager;
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY2']!;
-  final goongApiKey = dotenv.env['GOONG_API_KEY3']!;
+  final goongApiKey = dotenv.env['GOONG_API_KEY2']!;
   final searchController = TextEditingController();
   final RxList<GoongPredictionModel> predictions = <GoongPredictionModel>[].obs;
   final originPosition = Rxn<Position>();
@@ -35,11 +40,74 @@ class VirtualEscortMapController extends GetxController {
   final RxString routeVehicleType = ''.obs;
   final RxBool showRouteInfoPopup = false.obs;
   final secureStorage = const FlutterSecureStorage();
-  Timer? locationUpdateTimer;
-  late PointAnnotationManager _pointAnnotationManager;
-  PointAnnotation? _userMarker;
+  final RxList<String> durationOptions = <String>[].obs;
+  final RxString estimatedTime = ''.obs;
+  PointAnnotationManager? _markerManager;
+  var currentInstruction = ''.obs;
+  var distanceToNext = ''.obs;
+  final speedLimit = '--'.obs;
+  double? smoothedBearing;
+  Position? lastGpsPosition;
+  Position? nextGpsPosition;
+  Position? currentInterpolated;
+  DateTime? lastGpsTime;
+  Timer? trackingTimer;
+  StreamSubscription<geo.Position>? positionStream;
+  double? expectedTravelTime;
+  final List<Position> gpsHistory = [];
+  bool isUserOffRoute = false;
+  final double _earthRadius = 6371000.0;
+  double latestSpeed = 0.0;
+  DateTime? _lastStepUpdateTime;
+  Position? _lastMarkerPosition;
+   double gpsUpdateThreshold = 3.0;
+   double markerMoveThreshold = 1.5;
+  var hasArrived = false.obs;
+  final rawRouteData = {}.obs;
+  PointAnnotation? _observerMarker;
+
+  @override
+  void onClose() {
+    try {
+      if (_markerManager != null && mapboxMap != null) {
+        _markerManager?.deleteAll();
+      }
+    } catch (e) {
+      debugPrint("MarkerManager cleanup skipped: $e");
+    }
+    _markerManager = null;
+    mapboxMap = null;
+    super.onClose();
+  }
 
   Future<void> initMap(MapboxMap controller, bool isDarkMode) async {
+    bool serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return TLoaders.warningSnackBar(
+        title: 'Lỗi',
+        message: 'Vui lòng bật định vị GPS',
+      );
+    }
+
+    geo.LocationPermission permission = await geo.Geolocator.checkPermission();
+    if (permission == geo.LocationPermission.denied) {
+      permission = await geo.Geolocator.requestPermission();
+      if (permission == geo.LocationPermission.denied) {
+        return TLoaders.warningSnackBar(
+          title: 'Lỗi',
+          message: 'Ứng dụng cần quyền truy cập vị trí',
+        );
+      }
+    }
+
+    if (permission == geo.LocationPermission.deniedForever) {
+      return TLoaders.warningSnackBar(
+        title: 'Lỗi',
+        message:
+        'Vị trí đã bị từ chối vĩnh viễn. Vui lòng bật quyền trong cài đặt.',
+      );
+    }
+
     mapboxMap = controller;
     mapboxMap!.setCamera(
       CameraOptions(
@@ -84,7 +152,7 @@ class VirtualEscortMapController extends GetxController {
   Future<void> searchPlace(String input) async {
     final loc =
         await geo.Geolocator.getLastKnownPosition() ??
-        await geo.Geolocator.getCurrentPosition();
+            await geo.Geolocator.getCurrentPosition();
 
     final userLat = loc.latitude;
     final userLng = loc.longitude;
@@ -104,10 +172,10 @@ class VirtualEscortMapController extends GetxController {
         try {
           final res = await http
               .get(
-                Uri.parse(
-                  'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongApiKey',
-                ),
-              )
+            Uri.parse(
+              'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongApiKey',
+            ),
+          )
               .timeout(const Duration(seconds: 3));
           if (res.statusCode == 200) {
             final loc = jsonDecode(res.body)['result']['geometry']['location'];
@@ -200,7 +268,7 @@ class VirtualEscortMapController extends GetxController {
       if (kDebugMode) {
         debugPrint(
           "❌ Failed to fetch location detail "
-          "(HTTP ${res.statusCode}): ${res.body}",
+              "(HTTP ${res.statusCode}): ${res.body}",
         );
       }
     }
@@ -246,21 +314,66 @@ class VirtualEscortMapController extends GetxController {
     );
   }
 
+  Future<void> _recreateMarkerManager() async {
+    if (mapboxMap == null) return;
+    try {
+      try {
+        _customMarkerManager?.deleteAll();
+      } catch (_) {}
+      _markerManager = await mapboxMap!.annotations
+          .createPointAnnotationManager();
+    } catch (e) {
+      debugPrint('❌ Failed to create PointAnnotationManager: $e');
+      _markerManager = null;
+    }
+  }
+
+  Future<void> _ensureMarkerManager() async {
+    if (mapboxMap == null) return;
+    if (_markerManager == null) {
+      await _recreateMarkerManager();
+      return;
+    }
+    try {
+      await _markerManager!.deleteAll();
+    } catch (_) {
+      await _recreateMarkerManager();
+    }
+  }
+
+  Future<void> clearRouteAndMarker() async {
+    try {
+      await _markerManager?.deleteAll();
+    } catch (_) {}
+    try {
+      _customMarkerManager?.deleteAll();
+    } catch (_) {}
+    _markerManager = null;
+    await _removeRouteLayersAndSource();
+    showRouteInfoPopup.value = false;
+  }
+
   Future<void> _addCustomMarker(Point point) async {
+    if (mapboxMap == null) {
+      debugPrint('⚠️ mapboxMap is null, cannot add marker');
+      return;
+    }
     final imageBytes = await getImageFromAsset(TImages.locationIcon);
+    await _ensureMarkerManager();
+    if (_markerManager == null) return;
 
-    _customMarkerManager ??= await mapboxMap!.annotations
-        .createPointAnnotationManager();
-
-    await _customMarkerManager!.deleteAll();
-
-    await _customMarkerManager!.create(
-      PointAnnotationOptions(
-        geometry: point,
-        image: imageBytes,
-        iconSize: 0.11,
-      ),
-    );
+    try {
+      await _markerManager!.deleteAll();
+      await _markerManager!.create(
+        PointAnnotationOptions(
+          geometry: point,
+          image: imageBytes,
+          iconSize: 0.11,
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ Failed to add marker: $e');
+    }
   }
 
   Future<Uint8List> getImageFromAsset(String path) async {
@@ -285,51 +398,69 @@ class VirtualEscortMapController extends GetxController {
   }
 
   Future<void> _removeRouteLayersAndSource() async {
-    try {
-      final layers = await mapboxMap!.style.getStyleLayers();
-
-      if (layers.any((l) => l?.id == 'route_layer')) {
-        await mapboxMap!.style.removeStyleLayer('route_layer');
-      }
-
-      if (layers.any((l) => l?.id == 'route_outline_layer')) {
-        await mapboxMap!.style.removeStyleLayer('route_outline_layer');
-      }
-
-      if (layers.any((l) => l?.id == 'route_markers_layer')) {
-        await mapboxMap!.style.removeStyleLayer('route_markers_layer');
-      }
-    } catch (e) {
-      debugPrint('Error removing route layers: $e');
-    }
+    if (mapboxMap == null) return;
 
     try {
-      final sources = await mapboxMap!.style.getStyleSources();
+      final style = mapboxMap!.style;
 
-      if (sources.any((s) => s?.id == 'route_source')) {
-        await mapboxMap!.style.removeStyleSource('route_source');
+      final existingLayers = await style.getStyleLayers();
+      final layerIdsToRemove = [
+        'route_layer',
+        'route_outline_layer',
+        'route_markers_layer',
+        'route_arrows_layer',
+      ];
+
+      for (final id in layerIdsToRemove) {
+        if (existingLayers.any((l) => l?.id == id)) {
+          try {
+            await style.removeStyleLayer(id);
+            debugPrint('✅ Removed layer $id');
+          } catch (e) {
+            debugPrint('⚠️ Failed to remove layer $id: $e');
+          }
+        }
       }
 
-      if (sources.any((s) => s?.id == 'route_markers')) {
-        await mapboxMap!.style.removeStyleSource('route_markers');
+      final existingSources = await style.getStyleSources();
+      final sourceIdsToRemove = [
+        'route_source',
+        'route_markers',
+        'route_arrows',
+      ];
+
+      for (final id in sourceIdsToRemove) {
+        if (existingSources.any((s) => s?.id == id)) {
+          try {
+            await style.removeStyleSource(id);
+            debugPrint('✅ Removed source $id');
+          } catch (e) {
+            debugPrint('⚠️ Failed to remove source $id: $e');
+          }
+        }
       }
     } catch (e) {
-      debugPrint('Error removing route sources: $e');
+      debugPrint('❌ Error removing route layers/sources: $e');
     }
   }
 
-  Future<List<Position>> mapDirectionRoute({required double originLat, required double originLng, required double destLat, required double destLng, String vehicleType = 'bike',}) async {
+  Future<List<Position>> mapDirectionRoute({
+    required double originLat,
+    required double originLng,
+    required double destLat,
+    required double destLng,
+    String vehicleType = 'bike',
+  }) async {
     try {
       if (mapboxMap == null) return [];
-      await _removeRouteLayersAndSource();
 
       final url = Uri.parse(
         'https://rsapi.goong.io/v2/direction'
-        '?origin=$originLat,$originLng'
-        '&destination=$destLat,$destLng'
-        '&vehicle=$vehicleType'
-        '&alternatives=false'
-        '&api_key=$goongApiKey',
+            '?origin=$originLat,$originLng'
+            '&destination=$destLat,$destLng'
+            '&vehicle=$vehicleType'
+            '&alternatives=false'
+            '&api_key=$goongApiKey',
       );
 
       final response = await http.get(url);
@@ -339,11 +470,29 @@ class VirtualEscortMapController extends GetxController {
       }
 
       final data = jsonDecode(response.body);
+      rawRouteData.value = data;
+      loadRouteAndStartTracking(response.body);
       final polyline =
-          data['routes'][0]['overview_polyline']['points'] as String;
+      data['routes'][0]['overview_polyline']['points'] as String;
       final List<Position> positions = _decodePolylineToPositions(polyline);
+      final densePositions = densifyRoute(positions, step: 12);
 
+      final existingPolyline = await secureStorage.read(key: 'escort_polyline');
+      final existingEscortResponse = await secureStorage.read(key: 'escort_response');
+      if (existingPolyline != null || existingEscortResponse!=null) {
+        await secureStorage.delete(key: 'escort_polyline');
+        await secureStorage.delete(key: 'escort_dense_positions');
+        await secureStorage.delete(key: 'escort_response');
+      }
       await secureStorage.write(key: 'escort_polyline', value: polyline);
+
+      final denseJson = jsonEncode(
+        densePositions.map((p) => {'lat': p.lat, 'lng': p.lng}).toList(),
+      );
+      await secureStorage.write(
+        key: 'escort_dense_positions',
+        value: denseJson,
+      );
 
       final featureCollection = {
         "type": "FeatureCollection",
@@ -361,6 +510,36 @@ class VirtualEscortMapController extends GetxController {
       };
 
       final routeInfo = data['routes'][0]['legs'][0];
+      routeDurationText.value = routeInfo['duration']['text'] ?? '';
+
+      routeDistanceText.value = routeInfo['distance']['text'] ?? '';
+      routeDurationText.value = routeInfo['duration']['text'] ?? '';
+      routeVehicleType.value = vehicleType;
+
+      String durationText = routeInfo['duration']['text'] ?? '0 phút';
+      int baseMinutes = 0;
+
+      final regexHours = RegExp(r'(\d+)\s*giờ');
+      final regexMinutes = RegExp(r'(\d+)\s*phút');
+
+      final hourMatch = regexHours.firstMatch(durationText);
+      final minuteMatch = regexMinutes.firstMatch(durationText);
+
+      if (hourMatch != null) {
+        baseMinutes += int.parse(hourMatch.group(1)!) * 60;
+      }
+      if (minuteMatch != null) {
+        baseMinutes += int.parse(minuteMatch.group(1)!);
+      }
+
+      List<String> newOptions = [
+        THelperFunctions.formatDurationInMinutes(baseMinutes),
+        THelperFunctions.formatDurationInMinutes(baseMinutes + 5),
+        THelperFunctions.formatDurationInMinutes(baseMinutes + 10),
+      ];
+
+      durationOptions.assignAll(newOptions);
+      estimatedTime.value = newOptions.first;
 
       final steps = routeInfo['steps'] as List;
       final List<Map<String, dynamic>> navigationSteps = steps.map((step) {
@@ -372,30 +551,16 @@ class VirtualEscortMapController extends GetxController {
         };
       }).toList();
 
-      await secureStorage.write(key: 'escort_steps', value: jsonEncode(navigationSteps));
-
+      await secureStorage.write(
+        key: 'escort_steps',
+        value: jsonEncode(navigationSteps),
+      );
 
       routeDistanceText.value = routeInfo['distance']['text'] ?? '';
       routeDurationText.value = routeInfo['duration']['text'] ?? '';
       routeVehicleType.value = vehicleType;
 
       showRouteInfoPopup.value = true;
-
-      try {
-        final layers = await mapboxMap!.style.getStyleLayers();
-        final hasRouteLayer = layers.any((l) => l?.id == 'route_layer');
-        if (hasRouteLayer) {
-          await mapboxMap!.style.removeStyleLayer('route_layer');
-        }
-      } catch (_) {}
-
-      try {
-        final sources = await mapboxMap!.style.getStyleSources();
-        final hasRouteSource = sources.any((s) => s?.id == 'route_source');
-        if (hasRouteSource) {
-          await mapboxMap!.style.removeStyleSource('route_source');
-        }
-      } catch (_) {}
 
       await mapboxMap!.style.addSource(
         GeoJsonSource(id: 'route_source', data: jsonEncode(featureCollection)),
@@ -463,7 +628,7 @@ class VirtualEscortMapController extends GetxController {
           iconAllowOverlap: false,
           iconIgnorePlacement: false,
         ),
-        LayerPosition(below: 'mapbox-location-indicator-layer'),
+        LayerPosition(below: 'highway-name-minor'),
       );
 
       await mapboxMap!.flyTo(
@@ -471,15 +636,42 @@ class VirtualEscortMapController extends GetxController {
           center: Point(
             coordinates: Position(positions.first.lng, positions.first.lat),
           ),
-          zoom: 19,
+          zoom: 15,
         ),
         MapAnimationOptions(duration: 1500),
       );
-      return positions;
+      return densePositions;
     } catch (e) {
       debugPrint('❌ Failed to load route: $e');
       return [];
     }
+  }
+
+  List<Position> densifyRoute(List<Position> route, {double step = 15}) {
+    final dense = <Position>[];
+    for (var i = 0; i < route.length - 1; i++) {
+      final start = route[i];
+      final end = route[i + 1];
+      final dist = calculateDistance(
+        start.lat as double,
+        start.lng as double,
+        end.lat as double,
+        end.lng as double,
+      );
+      final segments = (dist / step).ceil().clamp(1, 1000);
+
+      for (var j = 0; j < segments; j++) {
+        final t = j / segments;
+        dense.add(
+          Position.named(
+            lat: start.lat * (1 - t) + end.lat * t,
+            lng: start.lng * (1 - t) + end.lng * t,
+          ),
+        );
+      }
+    }
+    dense.add(route.last);
+    return dense;
   }
 
   List<Position> _decodePolylineToPositions(String encoded) {
@@ -602,7 +794,10 @@ class VirtualEscortMapController extends GetxController {
     }
   }
 
-  Future<void> virtualEscortStartInitMap(MapboxMap controller, bool isDarkMode,) async {
+  Future<void> virtualEscortStartInitMap(
+      MapboxMap controller,
+      bool isDarkMode,
+      ) async {
     mapboxMap = controller;
     mapboxMap!.setCamera(
       CameraOptions(
@@ -612,44 +807,63 @@ class VirtualEscortMapController extends GetxController {
         zoom: 14.0,
       ),
     );
-
     final darkStyle =
         "https://tiles.goong.io/assets/goong_map_dark.json?$goongMapTilesKey";
     final lightStyle =
         "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey";
     final styleUri = isDarkMode ? darkStyle : lightStyle;
     await mapboxMap!.loadStyleURI(styleUri);
-    await initUserMarker();
-    final storage = const FlutterSecureStorage();
-    final polyline = await storage.read(key: 'escort_polyline');
-    if (polyline != null) {
-      final positions = _decodePolylineToPositions(polyline);
-      startUserTrackingAlongRoute(positions);
-    }
-
-    if (originPosition.value != null && destinationPosition.value != null) {
-      await mapDirectionRoute(
-        originLat: originPosition.value!.lat.toDouble(),
-        originLng: originPosition.value!.lng.toDouble(),
-        destLat: destinationPosition.value!.lat.toDouble(),
-        destLng: destinationPosition.value!.lng.toDouble(),
-      );
-    }
   }
 
   Future<void> startVirtualEscort() async {
     try {
+      bool serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return TLoaders.warningSnackBar(
+          title: 'Lỗi',
+          message: 'Vui lòng bật định vị GPS để bắt đầu hành trình.',
+        );
+      }
+
+      geo.LocationPermission permission =
+      await geo.Geolocator.checkPermission();
+      if (permission == geo.LocationPermission.denied) {
+        permission = await geo.Geolocator.requestPermission();
+        if (permission == geo.LocationPermission.denied) {
+          return TLoaders.warningSnackBar(
+            title: 'Lỗi',
+            message: 'Ứng dụng cần quyền truy cập vị trí.',
+          );
+        }
+      }
+      if (permission == geo.LocationPermission.deniedForever) {
+        return TLoaders.warningSnackBar(
+          title: 'Lỗi',
+          message:
+          'Vị trí đã bị từ chối vĩnh viễn. Vui lòng vào cài đặt để điều chỉnh.',
+        );
+      }
+
+      await _removeRouteLayersAndSource();
+
       final storage = const FlutterSecureStorage();
       final polyline = await storage.read(key: 'escort_polyline');
       if (polyline == null) {
         debugPrint('⚠️ No saved polyline found');
         return;
       }
+      final denseJson = await storage.read(key: 'escort_dense_positions');
+      late final List<Position> positions;
 
-      final positions = _decodePolylineToPositions(polyline);
-
-      await _removeRouteLayersAndSource();
-
+      if (denseJson != null) {
+        final decoded = jsonDecode(denseJson) as List;
+        positions = decoded
+            .map((e) => Position.named(lat: e['lat'], lng: e['lng']))
+            .toList();
+      } else {
+        positions = _decodePolylineToPositions(polyline);
+      }
+      startUserTrackingAlongRoute(positions);
       final arrowFeatures = <Map<String, dynamic>>[];
 
       for (var i = 0; i < positions.length - 1; i++) {
@@ -660,10 +874,7 @@ class VirtualEscortMapController extends GetxController {
             "type": "Point",
             "coordinates": [positions[i].lng, positions[i].lat],
           },
-          "properties": {
-            "icon": "step_arrow_icon",
-            "bearing": bearing,
-          },
+          "properties": {"icon": "step_arrow_icon", "bearing": bearing},
         });
       }
 
@@ -692,7 +903,10 @@ class VirtualEscortMapController extends GetxController {
 
       if (!sources.any((s) => s?.id == 'route_source')) {
         await mapboxMap!.style.addSource(
-          GeoJsonSource(id: 'route_source', data: jsonEncode(featureCollection)),
+          GeoJsonSource(
+            id: 'route_source',
+            data: jsonEncode(featureCollection),
+          ),
         );
       }
 
@@ -765,13 +979,16 @@ class VirtualEscortMapController extends GetxController {
             iconAllowOverlap: false,
             iconIgnorePlacement: false,
           ),
-          LayerPosition(below: 'mapbox-location-indicator-layer'),
+          LayerPosition(below: 'highway-name-minor'),
         );
       }
 
       if (!sources.any((s) => s?.id == 'route_arrows')) {
         await mapboxMap!.style.addSource(
-          GeoJsonSource(id: 'route_arrows', data: jsonEncode(arrowFeatureCollection)),
+          GeoJsonSource(
+            id: 'route_arrows',
+            data: jsonEncode(arrowFeatureCollection),
+          ),
         );
       }
 
@@ -789,6 +1006,12 @@ class VirtualEscortMapController extends GetxController {
           LayerPosition(below: 'route_markers_layer'),
         );
       }
+
+      await initUserMarker(positions);
+      await updateUserMarker(
+        positions.first.lat as double,
+        positions.first.lng as double,
+      );
       final userBearing = calculateBearing(positions[0], positions[1]);
       await mapboxMap!.flyTo(
         CameraOptions(
@@ -819,186 +1042,621 @@ class VirtualEscortMapController extends GetxController {
     return (bearing + 360) % 360;
   }
 
-  void startUserTrackingAlongRoute(List<Position> routePositions) {
-    double? lastBearing;
-    locationUpdateTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-      final gpsPosition = await geo.Geolocator.getCurrentPosition();
-      final snappedPosition = snapToRoute(
-        Position.named(lat: gpsPosition.latitude, lng: gpsPosition.longitude),
-        routePositions,
-      );
-      final nextIndex = routePositions.indexOf(snappedPosition) + 1;
-      final bearing = (nextIndex < routePositions.length)
-          ? calculateBearing(snappedPosition, routePositions[nextIndex])
-          : (lastBearing ?? 0.0);
-
-      final smoothBearing = lastBearing == null
-          ? bearing
-          : (bearing + lastBearing!) / 2;
-
-      lastBearing = smoothBearing;
-
-      await mapboxMap!.easeTo(
-        CameraOptions(
-          center: Point(
-            coordinates: Position.named(
-              lat: snappedPosition.lat,
-              lng: snappedPosition.lng,
-            ),
-          ),
-          zoom: 18,
-          bearing: smoothBearing,
-          pitch: 50,
-          padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
-        ),
-        MapAnimationOptions(duration: 1000),
-      );
-      if (_userMarker != null) {
-        _userMarker!.geometry = Point(
-          coordinates: Position(snappedPosition.lng, snappedPosition.lat),
-        );
-        await _pointAnnotationManager.update(_userMarker!);
-      }
-    });
-    // List<Position> testPositions = [
-    //   Position.named(lat: 10.845696149299554, lng: 106.68034845575994),
-    //   Position.named(lat: 10.845686929256455, lng: 106.68025524900244),
-    //   Position.named(lat: 10.845685612107415, lng: 106.6802203802874),
-    //   Position.named(lat: 10.845690222129015, lng: 106.68020026372103),
-    //   Position.named(lat: 10.845744225233922, lng: 106.68015868948387),
-    //   Position.named(lat: 10.84582391272455, lng: 106.68013186739537),
-    //   Position.named(lat: 10.845878574379409, lng: 106.68009901033697),
-    //   Position.named(lat: 10.845943773207678, lng: 106.68007554100956),
-    //   Position.named(lat: 10.84598394621599, lng: 106.68004737781662),
-    //   Position.named(lat: 10.846037290697192, lng: 106.6800098268889),
-    //   Position.named(lat: 10.846065609366898, lng: 106.67998233424821),
-    //   Position.named(lat: 10.846078780840259, lng: 106.67997361706945),
-    //   Position.named(lat: 10.846085366576727, lng: 106.67995819436857),
-    //   Position.named(lat: 10.846067585087939, lng: 106.67993472504115),
-    //   Position.named(lat: 10.846037949270936, lng: 106.67990320908717),
-    //   Position.named(lat: 10.846010947746224, lng: 106.67984956491017),
-    //   Position.named(lat: 10.84592467456224, lng: 106.6797483115088),
-    //   Position.named(lat: 10.845851572840065, lng: 106.67968125628757),
-    //   Position.named(lat: 10.845817985556316, lng: 106.67963565873715),
-    //   Position.named(lat: 10.845764641039096, lng: 106.67949551332478),
-    //   Position.named(lat: 10.845727102295964, lng: 106.67940632985807),
-    //   Position.named(lat: 10.845694832147231, lng: 106.67934061574127),
-    //   Position.named(lat: 10.845596045956029, lng: 106.67914213228643),
-    //   Position.named(lat: 10.845519055783306, lng: 106.67896936737557),
-    //   Position.named(lat: 10.845490078486895, lng: 106.67885403239507),
-    //   Position.named(lat: 10.845345191962762, lng: 106.678588493719),
-    //   Position.named(lat: 10.845326751854659, lng: 106.6785294851243),
-    //   Position.named(lat: 10.845210842577663, lng: 106.67849998082697),
-    //   Position.named(lat: 10.844992195397356, lng: 106.67842487894059),
-    //   Position.named(lat: 10.844676078727957, lng: 106.67836318813706),
-    //   Position.named(lat: 10.844428453770222, lng: 106.6782719930362),
-    //   Position.named(lat: 10.844046478682301, lng: 106.67818616231781),
-    //   Position.named(lat: 10.843798853203301, lng: 106.67806814512846),
-    //   Position.named(lat: 10.843656600175862, lng: 106.67800377211609),
-    //   Position.named(lat: 10.84327989275787, lng: 106.67779992424356),
-    //   Position.named(lat: 10.843042803909183, lng: 106.67768727143154),
-    //   Position.named(lat: 10.842766200039025, lng: 106.67745660147051),
-    //   Position.named(lat: 10.842616043545256, lng: 106.67737613520502),
-    //   Position.named(lat: 10.842397394480939, lng: 106.67722593150948),
-    //   Position.named(lat: 10.842168207940782, lng: 106.67713205419976),
-    //   Position.named(lat: 10.841875797272566, lng: 106.67698989713075),
-    //   Position.named(lat: 10.84177013935299, lng: 106.67694037572836),
-    //   Position.named(lat: 10.841755650523549, lng: 106.67691623584872),
-    //   Position.named(lat: 10.84177409085181, lng: 106.67685052173191),
-    //   Position.named(lat: 10.841812288671012, lng: 106.67679955976378),
-    //   Position.named(lat: 10.84187024397361, lng: 106.67671909349829),
-    //   Position.named(lat: 10.84191766194009, lng: 106.6766372861284),
-    //   Position.named(lat: 10.841967714224777, lng: 106.67656084314135),
-    //   Position.named(lat: 10.841832046156647, lng: 106.67650719896437),
-    //   Position.named(lat: 10.84169110935291, lng: 106.67646294250582),
-    //   Position.named(lat: 10.841378940698972, lng: 106.67636772409168),
-    // ];
-    // int testIndex = 0;
-    // locationUpdateTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-    //   // Instead of real GPS:
-    //   final gpsPosition = testPositions[testIndex];
-    //   testIndex = (testIndex + 1) % testPositions.length; // loop through
-    //
-    //   final snappedPosition = snapToRoute(gpsPosition, routePositions);
-    //   final nextIndex = routePositions.indexOf(snappedPosition) + 1;
-    //
-    //   final bearing = (nextIndex < routePositions.length)
-    //       ? calculateBearing(snappedPosition, routePositions[nextIndex])
-    //       : (lastBearing ?? 0.0);
-    //
-    //   final smoothBearing = lastBearing == null
-    //       ? bearing
-    //       : (bearing + lastBearing!) / 2;
-    //
-    //   lastBearing = smoothBearing;
-    //
-    //   await mapboxMap!.easeTo(
-    //     CameraOptions(
-    //       center: Point(
-    //         coordinates: Position.named(
-    //           lat: snappedPosition.lat,
-    //           lng: snappedPosition.lng,
-    //         ),
-    //       ),
-    //       zoom: 18,
-    //       bearing: smoothBearing,
-    //       pitch: 60,
-    //     ),
-    //     MapAnimationOptions(duration: 1200),
-    //   );
-    //
-    //   if (_userMarker != null) {
-    //     _userMarker!.geometry = Point(
-    //       coordinates: Position(snappedPosition.lng, snappedPosition.lat),
-    //     );
-    //     await _pointAnnotationManager.update(_userMarker!);
-    //   }
-    // });
+  Future<List<RouteStepModel>> parseRouteSteps(String responseBody) async {
+    final data = jsonDecode(responseBody);
+    final stepsJson = data['routes'][0]['legs'][0]['steps'] as List<dynamic>;
+    return stepsJson.map((s) => RouteStepModel.fromJson(s)).toList();
   }
 
-  Position snapToRoute(Position gpsPosition, List<Position> route) {
-    Position closestPoint = route.first;
-    double closestDistance = double.infinity;
+  double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+    const double earthRadius = 6371000;
+    final dLat = (lat2 - lat1) * (3.141592653589793 / 180);
+    final dLng = (lng2 - lng1) * (3.141592653589793 / 180);
+    final a =
+        (sin(dLat / 2) * sin(dLat / 2)) +
+            cos(lat1 * (3.141592653589793 / 180)) *
+                cos(lat2 * (3.141592653589793 / 180)) *
+                (sin(dLng / 2) * sin(dLng / 2));
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return earthRadius * c;
+  }
 
-    for (final point in route) {
-      final distance = geo.Geolocator.distanceBetween(
-        gpsPosition.lat.toDouble(),
-        gpsPosition.lng.toDouble(),
-        point.lat.toDouble(),
-        point.lng.toDouble(),
+  Future<void> startTrackingWithInstructions(List<RouteStepModel> steps) async {
+    await preloadSpeedLimits(steps);
+    int currentStepIndex = 0;
+    Position? lastPosition;
+    double minDistanceToStep = double.infinity;
+
+    positionStream =
+        geo.Geolocator.getPositionStream(
+          locationSettings: const geo.LocationSettings(
+            accuracy: geo.LocationAccuracy.bestForNavigation,
+            distanceFilter: 1,
+          ),
+        ).listen((gps) async {
+          try {
+            final currentPos = Position.named(
+              lat: gps.latitude,
+              lng: gps.longitude,
+            );
+
+            double speed = gps.speed;
+            double factor = (speed / 10).clamp(0.2, 0.8);
+            final userPos = lastPosition == null
+                ? currentPos
+                : Position.named(
+              lat:
+              lastPosition!.lat * (1 - factor) +
+                  currentPos.lat * factor,
+              lng:
+              lastPosition!.lng * (1 - factor) +
+                  currentPos.lng * factor,
+            );
+            lastPosition = userPos;
+
+            if (currentStepIndex >= steps.length) return;
+
+            final currentStep = steps[currentStepIndex];
+
+            // Calculate distance to current step's end point
+            final distanceToEnd = calculateDistance(
+              userPos.lat as double,
+              userPos.lng as double,
+              currentStep.endLat,
+              currentStep.endLng,
+            );
+
+            // NEW: Calculate bearing to check if user is moving toward the point
+            final userBearing = lastPosition != null
+                ? calculateBearing(lastPosition!, userPos)
+                : null;
+
+            final bearingToStep = calculateBearing(
+              userPos,
+              Position.named(lat: currentStep.endLat, lng: currentStep.endLng),
+            );
+
+            // NEW: Check if user has passed the step point
+            final hasPassed = _checkIfPassedStep(
+              userPos,
+              currentStep,
+              userBearing,
+              bearingToStep,
+            );
+
+            // NEW: Update minimum distance tracking
+            if (distanceToEnd < minDistanceToStep) {
+              minDistanceToStep = distanceToEnd;
+            }
+
+            currentInstruction.value = currentStep.instruction;
+            distanceToNext.value = '${distanceToEnd.toStringAsFixed(0)} m';
+            speedLimit.value =
+                currentStep.speedLimit?.toStringAsFixed(0) ?? '--';
+
+            // NEW: Improved step progression logic
+            if (_shouldAdvanceToNextStep(
+              distanceToEnd,
+              hasPassed,
+              minDistanceToStep,
+              userBearing,
+              bearingToStep,
+            )) {
+              _advanceToNextStep(steps, currentStepIndex);
+              currentStepIndex++;
+
+              // Reset tracking variables for the new step
+              minDistanceToStep = double.infinity;
+              _lastStepUpdateTime = DateTime.now();
+            }
+          } catch (e) {
+            debugPrint('⚠️ Instruction tracking error: $e');
+          }
+        });
+  }
+
+  void _advanceToNextStep(List<RouteStepModel> steps, int currentIndex) {
+    if (currentIndex + 1 < steps.length) {
+      final nextStep = steps[currentIndex + 1];
+      debugPrint('➡️ Next instruction: ${nextStep.instruction}');
+      debugPrint(
+        '📏 Distance to next: ${calculateDistance(steps[currentIndex].endLat, steps[currentIndex].endLng, nextStep.endLat, nextStep.endLng).toStringAsFixed(0)} m',
       );
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestPoint = point;
+    } else {
+      debugPrint('🎉 Route completed!');
+    }
+  }
+
+  Future<void> loadRouteAndStartTracking(String responseBody) async {
+    final steps = await parseRouteSteps(responseBody);
+    startTrackingWithInstructions(steps);
+  }
+
+  bool checkDestinationReached(Position currentPosition, List<Position> routePositions) {
+    if (routePositions.isEmpty) return false;
+    final destination = routePositions.last;
+    final distance = _calculateDistance(currentPosition, destination);
+    return distance < 15.0;
+  }
+
+  void startUserTrackingAlongRoute(List<Position> routePositions) {
+    positionStream =
+        geo.Geolocator.getPositionStream(
+          locationSettings: const geo.LocationSettings(
+            accuracy: geo.LocationAccuracy.bestForNavigation,
+            distanceFilter: 2,
+          ),
+        ).listen((gps) async {
+          if (gpsHistory.isNotEmpty) {
+            final lastPos = gpsHistory.last;
+            final distance = _calculateDistance(
+              lastPos,
+              Position.named(lat: gps.latitude, lng: gps.longitude),
+            );
+            if (distance < 2.0) return;
+          }
+          gpsHistory.add(Position.named(lat: gps.latitude, lng: gps.longitude));
+          if (gpsHistory.length > 10) gpsHistory.removeAt(0);
+          latestSpeed = gps.speed;
+          lastGpsPosition = currentInterpolated ?? gpsHistory.last;
+          nextGpsPosition = gpsHistory.last;
+
+          // if (routePositions.isNotEmpty) {
+          //   await checkUserOffRoute(gps, routePositions);
+          // }
+
+          if (lastGpsTime != null) {
+            expectedTravelTime =
+                DateTime.now().difference(lastGpsTime!).inMilliseconds / 1000.0;
+          } else {
+            expectedTravelTime = 1.0;
+          }
+          lastGpsTime = DateTime.now();
+
+          final currentPos = Position.named(lat: gps.latitude, lng: gps.longitude);
+          if (checkDestinationReached(currentPos, routePositions) && !hasArrived.value) {
+            hasArrived.value = true;
+            positionStream?.cancel();
+            trackingTimer?.cancel();
+
+            if (Get.isRegistered<VirtualEscortJourneyStartScreen>()) {
+              Get.find<VirtualEscortJourneyStartScreen>().showDestinationReachedDialog();
+            }
+          }
+        });
+
+    trackingTimer = Timer.periodic(const Duration(milliseconds: 180), (timer) async {
+      if (lastGpsPosition == null || nextGpsPosition == null || lastGpsTime == null) return;
+
+      final latestGps = gpsHistory.last;
+      final distanceSinceLastNext = _calculateDistance(nextGpsPosition!, latestGps);
+      if (distanceSinceLastNext > gpsUpdateThreshold) {
+        lastGpsPosition = currentInterpolated ?? nextGpsPosition!;
+        nextGpsPosition = latestGps;
+        lastGpsTime = DateTime.now();
+      }
+
+      final now = DateTime.now();
+      final dt = now.difference(lastGpsTime!).inMilliseconds / 1000.0;
+      final travelTime = expectedTravelTime ?? 1.0;
+      final t = (dt / travelTime).clamp(0.0, 1.0);
+
+      final easedT = pow(t, 0.7).toDouble();
+      final lat = lastGpsPosition!.lat * (1 - easedT) + nextGpsPosition!.lat * easedT;
+      final lng = lastGpsPosition!.lng * (1 - easedT) + nextGpsPosition!.lng * easedT;
+      final interpolated = Position.named(lat: lat, lng: lng);
+
+      // Always update the marker position for smooth movement
+      await updateUserMarker(lat, lng);
+
+      // Only update camera if moved enough
+      if (_lastMarkerPosition == null ||
+          _calculateDistance(_lastMarkerPosition!, interpolated) > markerMoveThreshold) {
+        _lastMarkerPosition = interpolated;
+
+        double targetBearing = getLookaheadBearing(gpsHistory, 2);
+        smoothedBearing ??= targetBearing;
+        double diff = (((targetBearing - smoothedBearing!) + 540) % 360) - 180;
+        double lerpFactor = (0.1 + (diff.abs() / 180) * 0.4).clamp(0.1, 0.6);
+        smoothedBearing = interpolateBearing(smoothedBearing!, targetBearing, lerpFactor);
+
+        await mapboxMap!.setCamera(
+          CameraOptions(
+            center: Point(coordinates: interpolated),
+            zoom: 18,
+            bearing: smoothedBearing,
+            pitch: 50,
+            padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
+          ),
+        );
+      }
+
+      currentInterpolated = interpolated;
+    });
+  }
+
+  bool _checkIfPassedStep(
+      Position userPos,
+      RouteStepModel step,
+      double? userBearing,
+      double bearingToStep,
+      ) {
+    if (userBearing == null) return false;
+
+    // Calculate if user is moving away from the point
+    final bearingDiff = ((userBearing - bearingToStep) + 540) % 360 - 180;
+    final isMovingAway = bearingDiff.abs() > 90; // More than 90° difference
+
+    // Check if user is beyond the point in their direction of travel
+    final distance = calculateDistance(
+      userPos.lat as double,
+      userPos.lng as double,
+      step.endLat,
+      step.endLng,
+    );
+
+    return isMovingAway && distance < 50; // Moving away and within 50m
+  }
+
+  bool _shouldAdvanceToNextStep(
+      double distanceToEnd,
+      bool hasPassed,
+      double minDistance,
+      double? userBearing,
+      double bearingToStep,
+      ) {
+    // Option 1: Very close to the point (original logic)
+    if (distanceToEnd < 15) {
+      return true;
+    }
+
+    // Option 2: User has clearly passed the point
+    if (hasPassed) {
+      return true;
+    }
+
+    // Option 3: User reached closest point and is now moving away
+    if (minDistance < 25 && distanceToEnd > minDistance + 10) {
+      return true;
+    }
+
+    // Option 4: Time-based fallback (prevent getting stuck)
+    if (_lastStepUpdateTime != null) {
+      final timeSinceLastUpdate = DateTime.now().difference(
+        _lastStepUpdateTime!,
+      );
+      if (timeSinceLastUpdate.inSeconds > 30 && distanceToEnd < 50) {
+        return true; // Force advance after 30 seconds if reasonably close
       }
     }
-    return closestPoint;
+
+    // Option 5: Bearing-based detection for highways/fast roads
+    if (userBearing != null) {
+      final bearingDiff = ((userBearing - bearingToStep) + 540) % 360 - 180;
+      if (bearingDiff.abs() > 120 && distanceToEnd < 100) {
+        return true; // Moving in very different direction but was close
+      }
+    }
+
+    return false;
   }
 
-  Future<void> initUserMarker() async {
-    final bytes = await rootBundle.load(TImages.navigationRouteIcon);
-    final imageData = bytes.buffer.asUint8List();
+  double _calculateDistance(Position pos1, Position pos2) {
+    final lat1 = pos1.lat * pi / 180.0;
+    final lon1 = pos1.lng * pi / 180.0;
+    final lat2 = pos2.lat * pi / 180.0;
+    final lon2 = pos2.lng * pi / 180.0;
 
-    _pointAnnotationManager =
-    await mapboxMap!.annotations.createPointAnnotationManager();
+    final dLat = lat2 - lat1;
+    final dLon = lon2 - lon1;
 
-    final cameraState = await mapboxMap!.getCameraState();
-    final bearing = cameraState.bearing;
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
+            cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
-    _userMarker = await _pointAnnotationManager.create(
-      PointAnnotationOptions(
-        geometry: Point(coordinates: Position(0, 0)),
-        image: imageData,
-        iconSize: 2.0,
-        iconRotate: bearing,
-      ),
-    );
+    return _earthRadius * c;
+  }
+
+  double getLookaheadBearing(List<Position> history, int lookahead) {
+    if (history.length < 2) return smoothedBearing ?? 0.0;
+    final from = history[history.length - 2];
+    final to = history.last;
+    var bearing = calculateBearing(from, to);
+    int futureIndex = history.length - 1 + lookahead;
+    if (futureIndex < history.length) {
+      final current = history.last;
+      final lookaheadPoint = history[futureIndex];
+      bearing = calculateBearing(current, lookaheadPoint);
+    }
+    return bearing;
+  }
+
+  double interpolateBearing(double from, double to, double factor) {
+    double diff = ((to - from + 540) % 360) - 180;
+    return (from + diff * factor + 360) % 360;
+  }
+
+  Future<void> initUserMarker(List<Position> initialPositions) async {
+    try {
+      final startPos = initialPositions.isNotEmpty
+          ? initialPositions.first
+          : Position(0, 0);
+
+
+      final imageData = await getImage(TImages.navigationRouteIcon);
+      await mapboxMap!.style.addStyleImage(
+        'navigation-icon',
+        1.0,
+        imageData,
+        false,
+        [],
+        [],
+        null,
+      );
+
+      final initialFeature = {
+        "type": "Feature",
+        "id": "user_marker",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [startPos.lng, startPos.lat],
+        },
+        "properties": {
+          "bearing": 0,
+        },
+      };
+
+      final sources = await mapboxMap!.style.getStyleSources();
+      if (sources.any((s) => s?.id == 'navigation-marker-source')) {
+        await mapboxMap!.style.updateGeoJSONSourceFeatures(
+          'navigation-marker-source',
+          'marker_init',
+          [Feature.fromJson(initialFeature)],
+        );
+      } else {
+        await mapboxMap!.style.addSource(
+          GeoJsonSource(
+            id: 'navigation-marker-source',
+            data: jsonEncode({
+              "type": "FeatureCollection",
+              "features": [initialFeature],
+            }),
+          ),
+        );
+      }
+
+      final layers = await mapboxMap!.style.getStyleLayers();
+      if (!layers.any((l) => l?.id == 'navigation-marker-layer')) {
+        await mapboxMap!.style.addLayer(
+          SymbolLayer(
+            id: 'navigation-marker-layer',
+            sourceId: 'navigation-marker-source',
+            iconImage: 'navigation-icon',
+            iconSize: 0.65,
+            iconRotateExpression: ['get', 'bearing'],
+            iconAnchor: IconAnchor.BOTTOM,
+            iconPitchAlignment: IconPitchAlignment.MAP,
+            iconRotationAlignment: IconRotationAlignment.MAP,
+            iconIgnorePlacement: true,
+            iconAllowOverlap: true,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to initialize user marker: $e');
+    }
   }
 
   Future<void> updateUserMarker(double lat, double lng) async {
-    if (_userMarker != null) {
-      _userMarker!.geometry = Point(coordinates: Position(lng, lat));
-      await _pointAnnotationManager.update(_userMarker!);
+    try {
+      final cameraState = await mapboxMap!.getCameraState();
+      final bearing = cameraState.bearing;
+      debugPrint('📍 Updating marker to: $lat, $lng with bearing: $bearing');
+
+      final updatedFeature = Feature(
+        geometry: Point(coordinates: Position(lng, lat)),
+        properties: {
+          "bearing": bearing,
+        }, id: "user_marker",
+      );
+
+      await mapboxMap!.style.updateGeoJSONSourceFeatures(
+        'navigation-marker-source',
+        'user_marker_update',
+        [updatedFeature],
+      );
+
+      debugPrint('✅ Marker updated successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to update user marker: $e');
+      final sources = await mapboxMap!.style.getStyleSources();
+      final sourceExists = sources.any((s) => s?.id == 'navigation-marker-source');
+      debugPrint('Source exists: $sourceExists');
+    }
+  }
+
+  Future<double?> fetchSpeedLimit(double lat, double lng) async {
+    try {
+      final url = Uri.parse(
+        'https://speedlimit.goong.io/api/v1/speedlimit?lat=$lat&lon=$lng&api_key=$goongApiKey',
+      );
+
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['speedLimit'] as num?)?.toDouble();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Speed limit fetch error: $e');
+    }
+    return null;
+  }
+
+  Future<void> preloadSpeedLimits(List<RouteStepModel> steps) async {
+    for (var step in steps) {
+      step.speedLimit = await fetchSpeedLimit(step.startLat, step.startLng);
+    }
+  }
+
+  // Future<void> checkUserOffRoute(geo.Position gps, List<Position> routePositions) async {
+  //   if (hasArrived.value) return;
+  //   double minDistance = double.infinity;
+  //   Position nearestPoint = routePositions.first;
+  //   for (final point in routePositions) {
+  //     final distance = _calculateDistance(
+  //         Position.named(lat: gps.latitude, lng: gps.longitude),
+  //         point
+  //     );
+  //
+  //     if (distance < minDistance) {
+  //       minDistance = distance;
+  //       nearestPoint = point;
+  //     }
+  //   }
+  //   final destination = routePositions.last;
+  //   final distanceToDestination = _calculateDistance(
+  //       Position.named(lat: gps.latitude, lng: gps.longitude),
+  //       destination
+  //   );
+  //
+  //   if (distanceToDestination <= 20.0) return;
+  //
+  //   if (minDistance > 200) {
+  //     positionStream?.cancel();
+  //     trackingTimer?.cancel();
+  //     Get.off(() => VirtualEscortSosScreen());
+  //   }
+  // }
+
+  Future<void> loadObserverJourney(int memberId) async {
+    try {
+      final data = await escortService.getJourneyForObserver(memberId);
+      if (data == null) return;
+      final overviewPolyline = data['routes'][0]['overview_polyline']['points'];
+      final List<Position> positions = _decodePolylineToPositions(overviewPolyline);
+
+      final featureCollection = {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "id": "observer_route",
+            "properties": {},
+            "geometry": {
+              "type": "LineString",
+              "coordinates": positions.map((p) => [p.lng, p.lat]).toList(),
+            },
+          },
+        ],
+      };
+
+      await mapboxMap!.style.addSource(
+        GeoJsonSource(id: "observer_route_source", data: jsonEncode(featureCollection)),
+      );
+
+      await mapboxMap!.style.addLayerAt(
+        LineLayer(
+          id: 'observer_route_layer_outline',
+          sourceId: 'observer_route_source_outline',
+          lineColor: TColors.primary.toARGB32(),
+          lineWidth: 10.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        ),
+        LayerPosition(below: 'highway-name-minor'),
+      );
+
+      await mapboxMap!.style.addLayerAt(
+        LineLayer(
+          id: "observer_route_layer",
+          sourceId: "observer_route_source",
+          lineColor: TColors.accent.toARGB32(),
+          lineWidth: 8.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        ),
+        LayerPosition(below: "highway-name-minor"),
+      );
+
+      await mapboxMap!.flyTo(
+        CameraOptions(
+          center: Point(
+            coordinates: Position(positions.first.lng, positions.first.lat),
+          ),
+          zoom: 18,
+        ),
+        MapAnimationOptions(duration: 1500),
+      );
+
+      debugPrint("✅ Observer route loaded with ${positions.length} points");
+    } catch (e) {
+      debugPrint("❌ Failed to load observer journey: $e");
+    }
+  }
+
+  Future<void> createEscortAfterRoute({
+    required int groupId,
+    String vehicle = "bike",
+    List<int> watcherIds = const [],
+    required Map<dynamic, dynamic> rawJson,
+  }) async {
+    try {
+      final result = await escortService.createVirtualEscort(
+        groupId: groupId,
+        rawJson: jsonEncode(rawJson),
+        vehicle: vehicle,
+        watcherIds: watcherIds,
+      );
+
+      if (result["success"] == true) {
+        debugPrint("✅ Escort created: ${result["data"]}");
+      } else {
+        debugPrint("❌ Failed to create escort: ${result["message"]}");
+      }
+    } catch (e) {
+      debugPrint("❌ Exception in createEscortAfterRoute: $e");
+    }
+  }
+
+  Future<void> updateObserverMarker(double lat, double lng) async {
+    if (mapboxMap == null) {
+      debugPrint("⚠️ mapboxMap is null, cannot update observer marker");
+      return;
+    }
+    final imageBytes = await getImageFromAsset(TImages.currentLocationIconPuck);
+
+    if (_markerManager == null) {
+      await _recreateMarkerManager();
+    }
+    if (_markerManager == null) {
+      debugPrint("❌ Failed to create marker manager for observer marker");
+      return;
+    }
+
+    final point = Point(coordinates: Position(lng, lat));
+
+    try {
+      if (_observerMarker == null) {
+        _observerMarker = await _markerManager!.create(
+          PointAnnotationOptions(
+            geometry: point,
+            image: imageBytes,
+            iconSize: 0.2,
+          ),
+        );
+        debugPrint("✅ Observer marker created at $lat,$lng");
+      } else {
+        _observerMarker!.geometry = point;
+        await _markerManager!.update(_observerMarker!);
+        debugPrint("🔄 Observer marker updated to $lat,$lng");
+      }
+      await mapboxMap!.flyTo(
+        CameraOptions(center: point, zoom: 17),
+        MapAnimationOptions(duration: 1000),
+      );
+    } catch (e) {
+      debugPrint("❌ Failed to update observer marker: $e");
     }
   }
 }

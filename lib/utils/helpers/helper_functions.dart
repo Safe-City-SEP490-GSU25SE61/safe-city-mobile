@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -110,25 +108,22 @@ class THelperFunctions {
     return wrappedList;
   }
 
-  static String generateChatID(
-      {required String userId1, required String userId2}) {
-    List<String> userIds = [userId1, userId2];
-    userIds.sort();
-
-    String chatID = userIds.fold(
-        "'", (accumulatedID, currentUserId) => "$accumulatedID$currentUserId");
-    return chatID;
-  }
-
-  static String generatePaymentCode() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = Random();
-    return 'SWIFT${List.generate(16, (index) => characters[random.nextInt(characters.length)]).join()}';
-  }
-
-
   static String getCurrentDateForPayment() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  static String formatDurationInMinutes(int minutes) {
+    if (minutes >= 60) {
+      int hours = minutes ~/ 60;
+      int mins = minutes % 60;
+      if (mins > 0) {
+        return "$hours giờ $mins phút";
+      } else {
+        return "$hours giờ";
+      }
+    } else {
+      return "$minutes phút";
+    }
   }
 }

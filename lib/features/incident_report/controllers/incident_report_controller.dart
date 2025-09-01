@@ -208,7 +208,7 @@ class IncidentReportController extends GetxController {
 
           return DropdownMenuItem<String>(
             value: value,
-            child: Text(displayName),
+            child: Text(displayName, style: const TextStyle(fontSize: 14,fontWeight: FontWeight.w500)),
           );
         }).toList(),
       );
@@ -218,7 +218,7 @@ class IncidentReportController extends GetxController {
         priorities.map<DropdownMenuItem<String>>((level) {
           return DropdownMenuItem<String>(
             value: level['value'].toString(),
-            child: Text(level['displayName'].toString()),
+            child: Text(level['displayName'].toString(), style: const TextStyle(fontSize: 14,fontWeight: FontWeight.w500)),
           );
         }).toList(),
       );
@@ -242,7 +242,7 @@ class IncidentReportController extends GetxController {
       subList.map((sub) {
         return DropdownMenuItem<String>(
           value: sub['value'],
-          child: Text(sub['displayName']!),
+          child: Text(sub['displayName']!, style: const TextStyle(fontSize: 14,fontWeight: FontWeight.w500)),
         );
       }).toList(),
     );

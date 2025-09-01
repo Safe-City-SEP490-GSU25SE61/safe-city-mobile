@@ -3,12 +3,15 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/common/widgets/effects/shimmer_effect.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_journey_create.dart';
+import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_observer_screen.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_pending_request.dart';
 
 import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/image_strings.dart';
 import '../../../utils/constants/sizes.dart';
 import '../controllers/virtual_escort_group_controller.dart';
+import '../controllers/virtual_escort_journey_controller.dart';
 
 class VirtualEscortGroupDetailPage extends StatelessWidget {
   final int groupId;
@@ -18,7 +21,7 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = VirtualEscortGroupController.instance;
-
+    final signalRController = Get.put(VirtualEscortJourneyController());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.fetchGroupDetail(groupId);
     });
@@ -45,7 +48,7 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                 width: double.infinity,
                 height: 160,
                 decoration: const BoxDecoration(
-                  gradient: TColors.blueGradient,
+                  gradient: TColors.purpleBlueGradient,
                 ),
                 child: Stack(
                   children: [
@@ -60,16 +63,17 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                         ),
                         onSelected: (value) {
                           if (value == 'delete') {
-                            showDeleteGroupDialog(context,detail.groupCode);
+                            showDeleteGroupDialog(context, detail.groupCode);
                           }
                         },
-                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
-                            value: 'delete',
-                            height: 30,
-                            child: Text('Xóa nhóm'),
-                          ),
-                        ],
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                              const PopupMenuItem<String>(
+                                value: 'delete',
+                                height: 30,
+                                child: Text('Xóa nhóm'),
+                              ),
+                            ],
                       ),
                     ),
 
@@ -91,8 +95,8 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      right: 16,
-                      bottom: 16,
+                      right: 10,
+                      bottom: 10,
                       child: InkWell(
                         onTap: () {
                           // TODO: Add your "Change Image" logic here
@@ -100,7 +104,7 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(30),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
+                            horizontal: 10,
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
@@ -110,13 +114,17 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: const [
-                              Icon(Iconsax.camera, color: Colors.black, size: 16),
+                              Icon(
+                                Iconsax.camera,
+                                color: Colors.black,
+                                size: 16,
+                              ),
                               SizedBox(width: 6),
                               Text(
                                 "Đổi ảnh",
                                 style: TextStyle(
                                   color: Colors.black,
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -137,7 +145,8 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => Get.to(() => VirtualEscortJourneyCreate()),
+                        onPressed: () =>
+                            Get.to(() => VirtualEscortJourneyCreate(groupId: groupId,)),
                         icon: const Icon(Iconsax.add, size: 24),
                         label: const Text(
                           "Tạo giám sát",
@@ -156,20 +165,44 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Get.to(() => VirtualEscortGroupPendingRequestScreen(groupId: groupId)),
-                        icon: const Icon(Iconsax.scan, size: 20),
-                        label: const Text(
-                          "Duyệt thành viên",
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          minimumSize: const Size.fromHeight(50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () => Get.to(
+                                  () => VirtualEscortGroupPendingRequestScreen(
+                                groupId: groupId,
+                              ),
+                            ),
+                            icon: const Icon(Iconsax.scan, size: 20),
+                            label: const Text(
+                              "Duyệt thành viên",
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              minimumSize: const Size.fromHeight(50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
-                        ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -189,100 +222,189 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                     return const Center(child: Text("Không có thành viên"));
                   }
                   return Container(
-                  color: TColors.lightGrey,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(14),
-                    itemCount: detail.members.length,
-                    itemBuilder: (context, index) {
-                      final member = detail.members[index];
-                      return Card(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                            leading: CircleAvatar(
-                              backgroundImage: member.avatarUrl.isNotEmpty
-                                  ? NetworkImage(member.avatarUrl)
-                                  : null,
-                              backgroundColor: Colors.grey,
-                              radius: 30,
+                    color: TColors.lightGrey,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(10),
+                      itemCount: detail.members.length,
+                      itemBuilder: (context, index) {
+                        final member = detail.members[index];
+                        return InkWell(
+                          onTap: () {
+                            if (member.escortStatus.toLowerCase() == 'on-journey') {
+                              Get.to(() =>  VirtualEscortObserverScreen(memberId: member.id,));
+                              signalRController.initConnection(isLeader: false);
+                            }
+                          },
+                          child: Card(
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            title: Text(
-                              member.fullName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                            elevation: 2,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 8,
                               ),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.more_vert,
-                                    size: 22,
-                                    color: Colors.black,
-                                  ),
-                                  onPressed: () {
-                                    // TODO: Add your "more options" logic here
-                                  },
-                                ),
-                              ],
-                            ),
-                            subtitle: Row(
-                              children: [
-                                if (member.role.toLowerCase() == 'leader')
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.shade100,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      children: const [
-                                        Icon(Icons.star, color: Colors.green, size: 14),
-                                        SizedBox(width: 2),
-                                        Text(
-                                          "Chủ sở hữu",
-                                          style: TextStyle(
-                                            color: Colors.green,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundImage:
+                                            (member.avatarUrl.isNotEmpty)
+                                            ? NetworkImage(member.avatarUrl)
+                                            : const AssetImage(
+                                                    TImages.userImageMale,
+                                                  )
+                                                  as ImageProvider,
+                                        backgroundColor: Colors.grey,
+                                        radius: 30,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            truncateWithEllipsis(
+                                              14,
+                                              member.fullName,
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black,
+                                            ),
                                           ),
+                                          const SizedBox(height: 2),
+                                           Text(
+                                             truncateWithEllipsis(
+                                               18,
+                                               member.email,
+                                             ),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              (member.role.toLowerCase() == 'leader')
+                                              ? TColors.successContainer.withValues(alpha: 0.9)
+                                              : TColors.infoContainer.withValues(alpha: 0.9),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (member.role.toLowerCase() ==
+                                                'leader') ...[
+                                              const Icon(
+                                                Icons.star,
+                                                color: Colors.green,
+                                                size: 12,
+                                              ),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                "Chủ sở hữu",
+                                                style: TextStyle(
+                                                  color: TColors.success,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ] else ...[
+                                              const Text(
+                                                "Thành viên",
+                                                style: TextStyle(
+                                                  color: TColors.info,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      if (member.escortStatus.toLowerCase() == "on-journey") ...[
+                                        const SizedBox(width: 6),
+                                        const Icon(
+                                          Iconsax.routing,
+                                          size: 22,
+                                          color: Colors.blueAccent,
                                         ),
                                       ],
-                                    ),
-                                  )
-                                else
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.purple.shade100,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Text(
-                                      "Thành viên",
-                                      style: TextStyle(
-                                        color: Colors.purple,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
-                                    ),
+                                      if (detail.isLeader && member.role.toLowerCase() != 'leader')
+                                        PopupMenuButton<String>(
+                                          icon: const Icon(Icons.more_vert, size: 20, color: Colors.black),
+                                          onSelected: (value) {
+                                            if (value == 'delete') {
+                                              Get.defaultDialog(
+                                                title: "Xóa thành viên",
+                                                middleText: "Bạn có chắc muốn xóa ${member.fullName} khỏi nhóm?",
+                                                confirm: SizedBox(
+                                                  width: 70,
+                                                  height: 50,
+                                                  child: ElevatedButton(
+                                                    onPressed: () async {
+                                                      Navigator.of(Get.overlayContext!).pop();
+                                                      await controller.deleteMember(
+                                                        memberId: member.id,
+                                                        groupId: groupId,
+                                                      );
+                                                    },
+                                                    child: const Text("Đồng ý", style: TextStyle(fontSize: 12),),
+                                                  ),
+                                                ),
+                                                cancel: SizedBox(
+                                                  width: 70,
+                                                  height: 50,
+                                                  child: OutlinedButton(
+                                                    style: OutlinedButton.styleFrom(
+                                                      side: const BorderSide(color: Colors.red),
+                                                      foregroundColor: Colors.red,
+                                                    ),
+                                                    onPressed: () => Navigator.of(Get.overlayContext!).pop(),
+                                                    child: const Text("Hủy",style: TextStyle(fontSize: 12),),
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            const PopupMenuItem<String>(
+                                              value: 'delete',
+                                              child: Text("Xóa thành viên"),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
                                   ),
-                              ],
+
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                );
+                        );
+                      },
+                    ),
+                  );
                 }),
               ),
             ],
@@ -291,6 +413,7 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
       }),
     );
   }
+
   void showDeleteGroupDialog(BuildContext context, String groupCode) {
     final controller = VirtualEscortGroupController.instance;
 
@@ -318,6 +441,8 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
       ),
     );
   }
+
+  String truncateWithEllipsis(int cutoff, String text) {
+    return (text.length <= cutoff) ? text : '${text.substring(0, cutoff)}...';
+  }
 }
-
-

@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/enums.dart';
 import '../../controllers/virtual_escort_map_controller.dart';
 
@@ -55,7 +56,7 @@ class VehicleSelector extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : Colors.grey[200],
+          color: isSelected ? TColors.primary : Colors.grey[200],
           borderRadius: BorderRadius.circular(10),
           boxShadow: isSelected
               ? [

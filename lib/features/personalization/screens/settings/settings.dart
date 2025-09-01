@@ -48,9 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TAppBar(
                     title: Text(
                       'Thiết lập tài khoản',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineMedium!.apply(color: TColors.white),
+                      style: TextStyle(color: TColors.white, fontSize: 20),
                     ),
                     showBackArrow: false,
                   ),
@@ -142,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TSettingsMenuTile(
                     icon: Iconsax.message_question,
                     title: 'Trung tâm trợ giúp',
-                    subtitle: 'Liên hệ  với trung tâm CSKH',
+                    subtitle: 'Liên hệ với trung tâm CSKH',
                     onTap: () {},
                   ),
                   TSettingsMenuTile(

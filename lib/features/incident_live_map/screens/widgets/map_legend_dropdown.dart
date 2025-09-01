@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:safe_city_mobile/utils/constants/image_strings.dart';
 
 class MapLegendDropdown extends StatelessWidget {
   final bool isVisible;
@@ -10,9 +11,9 @@ class MapLegendDropdown extends StatelessWidget {
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 200),
       curve: Curves.fastOutSlowIn,
-      top: isVisible ? 150 : -300,
+      top: isVisible ? 140 : -300,
       right: 170,
-      left: 14,
+      left: 15,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 300),
         opacity: isVisible ? 1.0 : 0.0,
@@ -34,17 +35,16 @@ class MapLegendDropdown extends StatelessWidget {
             children: [
               const Text(
                 "Chú giải",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold,color: Colors.black),
               ),
-              const SizedBox(height: 12),
-              _buildLegendItem('assets/images/map/pulsing_dot.gif', 'Vị trí hiện tại'),
-              _buildLegendItem('assets/images/map/location-icon.png', 'Vị trí được chọn'),
-              _buildLegendItem('assets/images/map/live_map_location_overview.png', 'Tổng quan phường'),
-              _buildLegendItem('assets/images/map/traffic.png', 'Sự cố giao thông'),
-              _buildLegendItem('assets/images/map/security.png', 'Sự cố an ninh'),
-              _buildLegendItem('assets/images/map/environment.png', 'Sự cố môi trường'),
-              _buildLegendItem('assets/images/map/infrastructure.png', 'Sự cố hạ tầng'),
-              _buildLegendItem('assets/images/map/other.png', 'Sự cố khác'),
+              _buildLegendItem(TImages.currentLocationIconPuck, 'Vị trí hiện tại'),
+              _buildLegendItem(TImages.locationIcon, 'Vị trí được chọn'),
+              _buildLegendItem(TImages.communesOverviewIcon, 'Tổng quan phường'),
+              _buildLegendItem(TImages.trafficMapIcon, 'Sự cố giao thông'),
+              _buildLegendItem(TImages.securityMapIcon, 'Sự cố an ninh'),
+              _buildLegendItem(TImages.environmentMapIcon, 'Sự cố môi trường'),
+              _buildLegendItem(TImages.infrastructureMapIcon, 'Sự cố hạ tầng'),
+              _buildLegendItem(TImages.otherMapIcon, 'Sự cố khác'),
             ],
           ),
         ),
@@ -63,11 +63,11 @@ Widget _buildLegendItem(String imagePath, String label) {
           width: 24,
           height: 24,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 14,color: Colors.black),
+            style: const TextStyle(fontSize: 12,color: Colors.black,fontWeight: FontWeight.w500),
           ),
         ),
       ],

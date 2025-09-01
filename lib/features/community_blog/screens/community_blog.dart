@@ -6,9 +6,8 @@ import 'package:safe_city_mobile/features/community_blog/screens/create_communit
 import 'package:safe_city_mobile/features/community_blog/screens/widgets/location_filter_button.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/helpers/helper_functions.dart';
-import '../../../utils/constants/enums.dart';
+import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../utils/constants/sizes.dart';
-import '../../../utils/popups/loaders.dart';
 import '../controllers/blog_controller.dart';
 import 'community_blog_history.dart';
 
@@ -26,7 +25,7 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
   @override
   void initState() {
     super.initState();
-    _initData(isFirstRequest: true);
+    // _initData(isFirstRequest: true);
     _scrollController = ScrollController();
   }
 
@@ -36,39 +35,25 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
     super.dispose();
   }
 
-  void _initData({
-    String? province,
-    String? commune,
-    BlogType? type,
-    bool isFirstRequest = true,
-  }) async {
-    await blogController.fetchInitialDataOnce(
-      provinceName: province,
-      communeName: commune,
-      type: type,
-      isFirstRequest: isFirstRequest,
-    );
+  Future<void> _handleRefresh() async {
+    await blogController.fetchInitialDataOnce(isFirstRequest: true);
   }
-
-  Future<void> _handleRefresh() async {}
 
   @override
   Widget build(BuildContext context) {
+    final popUpModal = PopUpModal.instance;
     final dark = THelperFunctions.isDarkMode(context);
     return Scaffold(
       backgroundColor: dark ? TColors.black : TColors.lightGrey,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          'Blog cộng đồng',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
+        title: Text('Blog cộng đồng', style: TextStyle(fontSize: 20)),
         actions: [
           InkWell(
             onTap: () => Get.to(() => BlogHistoryScreen()),
             borderRadius: BorderRadius.circular(30),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(30),
@@ -82,7 +67,7 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w500,
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -104,7 +89,7 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
                   return IgnorePointer(
                     ignoring: loading,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(10, 16, 10, 8),
                       child: Row(
                         children: [
                           Expanded(
@@ -114,14 +99,18 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
                               onFieldSubmitted: (value) async {
                                 if (loading) return;
                                 final searchText = value.trim();
-                                final selectedCommune = blogController.selectedCommune.value;
-                                final selectedProvince = blogController.selectedProvince.value;
+                                final selectedCommune =
+                                    blogController.selectedCommune.value;
+                                final selectedProvince =
+                                    blogController.selectedProvince.value;
 
-                                if (selectedProvince.isNotEmpty && selectedCommune.isNotEmpty) {
-                                  final communeId = blogController.blogService.getCommuneIdByName(
-                                    selectedProvince,
-                                    selectedCommune,
-                                  );
+                                if (selectedProvince.isNotEmpty &&
+                                    selectedCommune.isNotEmpty) {
+                                  final communeId = blogController.blogService
+                                      .getCommuneIdByName(
+                                        selectedProvince,
+                                        selectedCommune,
+                                      );
 
                                   if (communeId != null) {
                                     blogController.currentCommuneId = communeId;
@@ -179,7 +168,7 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
                     }
                     return ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
                       itemCount: blogController.blogs.length,
                       itemBuilder: (context, index) {
                         final blog = blogController.blogs[index];
@@ -211,9 +200,9 @@ class _CommunityBlogScreenState extends State<CommunityBlogScreen> {
           heroTag: 'createBtn',
           onPressed: () {
             if (!blogController.isPremium.value) {
-              TLoaders.warningSnackBar(
-                title: "Thông báo",
-                message: "Bạn phải đăng ký gói để sử dụng chức năng này",
+              popUpModal.showContentEmptyDialog(
+                title: 'Thông báo',
+                message: 'Bạn phải đăng ký gói để sử dụng chức năng này',
               );
               return;
             }

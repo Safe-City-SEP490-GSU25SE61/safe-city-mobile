@@ -8,6 +8,8 @@ enum PaymentMethods { payOS, visa, vnPay, moMo }
 
 enum UserRank { unrank, bronze, silver, gold, platinum, protector }
 
+enum NavState { overview, follow, arrived }
+
 String getRankText(UserRank rank) {
   switch (rank) {
     case UserRank.unrank:

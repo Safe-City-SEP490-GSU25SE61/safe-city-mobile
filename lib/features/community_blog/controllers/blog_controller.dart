@@ -134,6 +134,12 @@ class BlogController extends GetxController {
         isFirstRequest: false,
       );
       blogs.addAll(result['blogs'] as List<BlogModel>);
+      blogs.sort((a, b) {
+        if (a.pinned == b.pinned) {
+          return b.createdAt.compareTo(a.createdAt);
+        }
+        return b.pinned ? 1 : -1;
+      });
       isPremium.value = result['isPremium'] ?? true;
 
       final selectedProv = provinces.firstWhere(

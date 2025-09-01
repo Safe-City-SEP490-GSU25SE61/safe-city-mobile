@@ -92,6 +92,9 @@ class VirtualEscortGroupController extends GetxController {
       if (result["success"] == true && result["data"] != null) {
         final data = result["data"] as List;
         groups.value = data.map((json) => EscortGroup.fromJson(json)).toList();
+        for (final group in groups) {
+          fetchPendingRequests(group.id);
+        }
       } else {
         groups.clear();
         TLoaders.errorSnackBar(title: "Lỗi", message: "Không thể tải nhóm");
@@ -211,11 +214,11 @@ class VirtualEscortGroupController extends GetxController {
       }
 
       final result = await _service.joinEscortGroupByCode(code);
-      Get.back();
+      if (Get.isDialogOpen ?? false) Get.back();
 
       if (result["success"] == true) {
         await fetchMyGroups();
-        Navigator.of(Get.overlayContext!).pop();
+        Get.back();
         TLoaders.successSnackBar(
           title: "Thành công",
           message: result["message"] ?? "Đã tham gia nhóm thành công",
@@ -295,6 +298,87 @@ class VirtualEscortGroupController extends GetxController {
       TLoaders.errorSnackBar(
         title: "Lỗi",
         message: "Đã xảy ra lỗi khi xử lý yêu cầu",
+      );
+    }
+  }
+
+  Future<void> updateGroupSettings({
+    required String groupCode,
+    required bool autoApprove,
+    required bool receiveRequest,
+  }) async {
+    try {
+      TFullScreenLoader.openLoadingDialog(
+        "Đang cập nhật cài đặt nhóm...",
+        TImages.loadingCircle,
+      );
+
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        return;
+      }
+
+      final result = await _service.updateGroupSettings(
+        groupCode: groupCode,
+        autoApprove: autoApprove,
+        receiveRequest: receiveRequest,
+      );
+      if (groupDetail.value != null) {
+        await fetchGroupDetail(groupDetail.value!.id);
+      }
+
+      TFullScreenLoader.stopLoading();
+
+      if (result["success"] == true) {
+        TLoaders.successSnackBar(
+          title: "Thành công",
+          message: "Cập nhật cài đặt nhóm thành công",
+        );
+      } else {
+        TLoaders.errorSnackBar(
+          title: "Lỗi",
+          message: result["message"],
+        );
+      }
+    } catch (e) {
+      TFullScreenLoader.stopLoading();
+      if (kDebugMode) print("Error updating settings: $e");
+      TLoaders.errorSnackBar(
+        title: "Lỗi",
+        message: "Không thể cập nhật cài đặt",
+      );
+    }
+  }
+
+  Future<void> deleteMember({required int memberId, required int groupId}) async {
+    final detail = groupDetail.value;
+    if (detail == null || !detail.isLeader) {
+      TLoaders.warningSnackBar(title: "Không hợp lệ", message: "Bạn không có quyền");
+      return;
+    }
+
+    TFullScreenLoader.openLoadingDialog("Đang xóa thành viên...", TImages.loadingCircle);
+
+    final isConnected = await NetworkManager.instance.isConnected();
+    if (!isConnected) {
+      TFullScreenLoader.stopLoading();
+      return;
+    }
+
+    final result = await _service.deleteMember(memberId);
+    TFullScreenLoader.stopLoading();
+
+    if (result["success"] == true) {
+      TLoaders.successSnackBar(
+        title: "Thành công",
+        message: result["message"] ?? "Đã xóa thành viên",
+      );
+      await fetchGroupDetail(groupId);
+    } else {
+      TLoaders.errorSnackBar(
+        title: "Lỗi",
+        message: result["message"] ?? "Không thể xóa thành viên",
       );
     }
   }

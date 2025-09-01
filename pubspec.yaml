@@ -42,10 +42,17 @@ dependencies:
   app_links: ^6.4.0
   infinite_scroll_pagination: ^5.1.0
   fl_chart: ^1.0.0
+  slide_to_act: ^2.0.2
+  percent_indicator: ^4.2.5
+  signalr_netcore: ^1.4.3
+  battery_plus: ^6.2.3
+  latlong2: ^0.9.1
+  simple_kalman: ^1.0.2
 
   #Maps Integration
   mapbox_maps_flutter: ^2.9.0
   geolocator: ^14.0.2
+  google_maps_flutter: ^2.12.3
 
   #Local Notification
   awesome_notifications: ^0.10.1

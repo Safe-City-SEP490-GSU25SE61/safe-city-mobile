@@ -9,7 +9,6 @@ import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/image_strings.dart';
-import '../../../utils/constants/sizes.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../controllers/incident_report_controller.dart';
 
@@ -34,64 +33,58 @@ class ReportHistoryScreen extends StatelessWidget {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               children: [
-                TextFormField(
-                  controller: historyController.searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Tìm báo cáo...',
-                    hintStyle: const TextStyle(color: Colors.black),
-                    prefixIcon: const Icon(Iconsax.search_normal),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onFieldSubmitted: (value) {
-                    historyController.updateFilters(communeName: value);
-                    historyController.fetchReportHistory();
-                  },
-                ),
-
-                const SizedBox(height: 12),
-                GestureDetector(
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.white,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: historyController.searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Tìm báo cáo...',
+                          hintStyle: const TextStyle(color: Colors.black),
+                          prefixIcon: const Icon(Iconsax.search_normal),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
+                        onFieldSubmitted: (value) {
+                          historyController.updateFilters(communeName: value);
+                          historyController.fetchReportHistory();
+                        },
                       ),
-                      builder: (_) => FilterHistoryModal(
-                        onApply: () => historyController.fetchReportHistory(),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    height: 50,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          "Lọc báo cáo",
-                          style: TextStyle(fontWeight: FontWeight.w500),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.white,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (_) => FilterHistoryModal(
+                            onApply: () => historyController.fetchReportHistory(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Icon(Icons.filter_list),
-                      ],
+                        child: const Icon(Iconsax.filter),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -131,7 +124,7 @@ class ReportHistoryScreen extends StatelessWidget {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(TSizes.md),
+                  padding: const EdgeInsets.all(10),
                   itemCount: historyController.reportHistory.length,
                   itemBuilder: (context, index) {
                     final item = historyController.reportHistory[index];

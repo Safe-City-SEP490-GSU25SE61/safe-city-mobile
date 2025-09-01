@@ -6,9 +6,9 @@ import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/features/incident_report/screens/report_incident_history.dart';
 import 'package:safe_city_mobile/features/incident_report/screens/widgets/date_time_picker.dart';
 import 'package:safe_city_mobile/features/incident_report/screens/widgets/live_map.dart';
-import 'package:safe_city_mobile/features/incident_report/screens/widgets/popup_modal.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/helpers/helper_functions.dart';
+import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../utils/constants/sizes.dart';
 import '../../../utils/constants/text_strings.dart';
 import '../../../utils/validators/validation.dart';
@@ -19,26 +19,25 @@ class IncidentReportScreen extends StatelessWidget {
 
   Future<void> _handleRefresh() async {
     await Future.delayed(const Duration(seconds: 1));
-    // 🔥 TODO: Add your API call here to refresh membership data
+    final reportController = Get.put(IncidentReportController());
+    reportController.clearReportForm();
   }
 
   @override
   Widget build(BuildContext context) {
+    final popUpModal = PopUpModal.instance;
     final dark = THelperFunctions.isDarkMode(context);
     final reportController = Get.put(IncidentReportController());
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          'Báo cáo sự cố',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
+        title: Text('Báo cáo sự cố', style: TextStyle(fontSize: 20)),
         actions: [
           InkWell(
             onTap: () => Get.to(() => ReportHistoryScreen()),
             borderRadius: BorderRadius.circular(30),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(30),
@@ -52,7 +51,7 @@ class IncidentReportScreen extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w500,
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -67,7 +66,7 @@ class IncidentReportScreen extends StatelessWidget {
         onRefresh: _handleRefresh,
         color: TColors.primary,
         child: ListView(
-          padding: const EdgeInsets.all(TSizes.mediumSpace),
+          padding: const EdgeInsets.all(10),
           children: [
             Form(
               key: reportController.incidentReportFormKey,
@@ -80,8 +79,8 @@ class IncidentReportScreen extends StatelessWidget {
                       const Text(
                         "Thông tin người báo cáo",
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       Row(
@@ -92,7 +91,7 @@ class IncidentReportScreen extends StatelessWidget {
                               onChanged: (value) {
                                 reportController.isAnonymous.value =
                                     !reportController.isAnonymous.value;
-                                PopUpModal().showOkOnlyDialog(
+                                popUpModal.showOkOnlyDialog(
                                   title: 'Chế độ ẩn danh',
                                   message: reportController.isAnonymous.value
                                       ? TTexts.anonymousReportOnNotice
@@ -114,13 +113,13 @@ class IncidentReportScreen extends StatelessWidget {
                     ],
                   ),
 
-                  SizedBox(height: TSizes.spaceBtwItems),
+                  SizedBox(height: TSizes.mediumSpace),
                   const Text(
-                    "Thông tin vụ việc",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    "Phân loại báo cáo",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
 
-                  const SizedBox(height: TSizes.spaceBtwItems),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Nhóm loại báo cáo
                   Obx(
@@ -130,9 +129,9 @@ class IncidentReportScreen extends StatelessWidget {
                           text: TextSpan(
                             text: 'Nhóm loại báo cáo ',
                             style: TextStyle(
-                              color: dark ? Colors.white : Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              color: dark ? Colors.white : TColors.darkerGrey,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                             children: const [
                               TextSpan(
@@ -160,7 +159,7 @@ class IncidentReportScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Loại báo cáo chi tiết
                   Obx(
@@ -170,9 +169,9 @@ class IncidentReportScreen extends StatelessWidget {
                           text: TextSpan(
                             text: 'Loại báo cáo chi tiết ',
                             style: TextStyle(
-                              color: dark ? Colors.white : Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              color: dark ? Colors.white : TColors.darkerGrey,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                             children: const [
                               TextSpan(
@@ -201,7 +200,7 @@ class IncidentReportScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Mức độ ưu tiên
                   Obx(
@@ -211,9 +210,9 @@ class IncidentReportScreen extends StatelessWidget {
                           text: TextSpan(
                             text: 'Mức độ ưu tiên ',
                             style: TextStyle(
-                              color: dark ? Colors.white : Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              color: dark ? Colors.white : TColors.darkerGrey,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                             children: const [
                               TextSpan(
@@ -242,7 +241,13 @@ class IncidentReportScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
+                  SizedBox(height: TSizes.mediumSpace),
+                  const Text(
+                    "Thông tin vụ việc",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Địa điểm xảy ra
                   TextFormField(
@@ -255,9 +260,9 @@ class IncidentReportScreen extends StatelessWidget {
                         text: TextSpan(
                           text: 'Địa điểm xảy ra ',
                           style: TextStyle(
-                            color: dark ? Colors.white : Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            color: dark ? Colors.white : TColors.darkerGrey,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                           children: [
                             TextSpan(
@@ -309,7 +314,7 @@ class IncidentReportScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
+                  const SizedBox(height: TSizes.mediumSpace),
                   DateTimePickerField(
                     onChanged: (selectedDateTime) {
                       if (selectedDateTime != null) {
@@ -319,7 +324,7 @@ class IncidentReportScreen extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Mô tả chi tiết
                   TextFormField(
@@ -330,9 +335,9 @@ class IncidentReportScreen extends StatelessWidget {
                         text: TextSpan(
                           text: 'Mô tả chi tiết ',
                           style: TextStyle(
-                            color: dark ? Colors.white : Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            color: dark ? Colors.white : TColors.darkerGrey,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                           children: [
                             TextSpan(
@@ -352,15 +357,15 @@ class IncidentReportScreen extends StatelessWidget {
                     validator: (value) =>
                         TValidator.validateEmptyText("Mô tả", value),
                   ),
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Bằng chứng
                   RichText(
                     text: TextSpan(
                       text: 'Bằng chứng ',
                       style: TextStyle(
-                        color: dark ? Colors.white : Colors.black,
-                        fontSize: 16,
+                        color: dark ? Colors.white : TColors.darkerGrey,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -485,7 +490,7 @@ class IncidentReportScreen extends StatelessWidget {
                                           text:
                                               "Nhấn để tải lên hình ảnh hoặc video liên quan đến vụ việc.",
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                             color: dark
                                                 ? TColors.lightDarkGrey
@@ -495,7 +500,7 @@ class IncidentReportScreen extends StatelessWidget {
                                         TextSpan(
                                           text: "Tối đa ",
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 12,
                                             color: dark
                                                 ? TColors.white
                                                 : TColors.darkGrey,
@@ -514,7 +519,7 @@ class IncidentReportScreen extends StatelessWidget {
                                         TextSpan(
                                           text: " hoặc ",
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 12,
                                             color: dark
                                                 ? TColors.white
                                                 : TColors.darkGrey,
@@ -523,7 +528,7 @@ class IncidentReportScreen extends StatelessWidget {
                                         TextSpan(
                                           text: "1 video không quá 200MB",
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                             color: dark
                                                 ? TColors.lightDarkGrey
@@ -539,13 +544,12 @@ class IncidentReportScreen extends StatelessWidget {
                       );
                     }),
                   ),
-                  const SizedBox(height: TSizes.spaceBtwInputFields),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Lưu ý
                   Container(
                     width: double.infinity,
-                    margin: const EdgeInsets.only(top: 16),
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: TColors.warningContainer,
                       borderRadius: BorderRadius.circular(12),
@@ -560,14 +564,14 @@ class IncidentReportScreen extends StatelessWidget {
                             text: TextSpan(
                               style: const TextStyle(
                                 color: TColors.warning,
-                                fontSize: 14,
+                                fontSize: 13,
                               ),
                               children: [
                                 const TextSpan(
                                   text: '${TTexts.noticeTitle}\n',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: 16,
                                   ),
                                 ),
                                 TextSpan(text: TTexts.emergencyHelpNotice),
@@ -579,7 +583,7 @@ class IncidentReportScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: TSizes.spaceBtwItems),
+                  const SizedBox(height: TSizes.mediumSpace),
 
                   /// Gửi báo cáo
                   SizedBox(
@@ -590,7 +594,7 @@ class IncidentReportScreen extends StatelessWidget {
                         backgroundColor: TColors.primary,
                       ),
                       onPressed: () {
-                        PopUpModal().showConfirmCancelDialog(
+                        popUpModal.showConfirmCancelDialog(
                           title: 'Lưu ý khi gửi báo cáo',
                           message: TTexts.incidentReportNotice,
                           onConfirm: () {
