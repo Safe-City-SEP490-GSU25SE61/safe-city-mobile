@@ -11,12 +11,17 @@ import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
 import '../../../utils/constants/text_strings.dart';
+import '../../../utils/popups/loaders.dart';
 import '../controllers/virtual_escort_group_controller.dart';
 import '../controllers/virtual_escort_journey_controller.dart';
 import '../controllers/virtual_escort_map_controller.dart';
 
 class VirtualEscortJourneyCreate extends StatelessWidget {
-  const VirtualEscortJourneyCreate({super.key});
+  final int groupId;
+
+  VirtualEscortJourneyCreate({super.key, required this.groupId});
+
+  final RxList<int> selectedWatcherIds = <int>[].obs;
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +121,10 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                               .map(
                                 (time) => DropdownMenuItem(
                                   value: time,
-                                  child: Text(time,style: TextStyle(fontSize: 14),),
+                                  child: Text(
+                                    time,
+                                    style: TextStyle(fontSize: 14),
+                                  ),
                                 ),
                               )
                               .toList(),
@@ -174,6 +182,9 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                       padding: const EdgeInsets.all(14.0),
                       child: GroupMembersWidget(
                         group: groupController.groupDetail.value,
+                        onSelectionChanged: (ids) {
+                          selectedWatcherIds.assignAll(ids);
+                        },
                       ),
                     ),
                   ),
@@ -224,10 +235,29 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       final originPos = mapController.originPosition.value;
                       final destPos = mapController.destinationPosition.value;
-                      final vehicle = mapController.selectedVehicle.value;
+                      final vehicleForRoute = mapController.selectedVehicle.value;
+                      final vehicle = mapController.selectedVehicle.value.toString().split('.').last;
+                      final group = groupController.groupDetail.value;
+                      final hasMembers = group != null && group.members.any((m) => m.role != "Leader");
+
+                      if (!hasMembers) {
+                        TLoaders.warningSnackBar(
+                          title: 'Không có thành viên',
+                          message: 'Nhóm không có thành viên nào để giám sát',
+                        );
+                        return;
+                      }
+
+                      if (selectedWatcherIds.isEmpty) {
+                        TLoaders.warningSnackBar(
+                          title: 'Không có thành viên giám sát',
+                          message: 'Vui lòng chọn ít nhất một người giám sát',
+                        );
+                        return;
+                      }
 
                       if (originPos != null && destPos != null) {
                         Get.to(
@@ -236,16 +266,23 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                             originLng: originPos.lng.toDouble(),
                             destinationLat: destPos.lat.toDouble(),
                             destinationLng: destPos.lng.toDouble(),
-                            vehicle: vehicle,
+                            vehicle: vehicleForRoute,
                             estimatedTime: mapController.estimatedTime.value,
                           ),
                         );
-                        controller.initConnection(isLeader: true);
-                      } else {
-                        Get.snackbar(
-                          'Error',
-                          'Please select origin and destination first',
+                        await mapController.createEscortAfterRoute(
+                          groupId: groupId,
+                          vehicle: vehicle,
+                          watcherIds: selectedWatcherIds.toList(), rawJson: mapController.rawRouteData.value,
                         );
+                        await controller.initConnection(isLeader: true);
+                        await controller.startSendingLocation();
+                      } else {
+                        TLoaders.warningSnackBar(
+                          title: 'Không có điểm đến',
+                          message: 'Vui lòng chọn ít điểm đến cho hành trình',
+                        );
+                        return;
                       }
                     },
                     child: const Text('Bắt đầu hộ tống an toàn'),

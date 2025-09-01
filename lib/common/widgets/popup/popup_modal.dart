@@ -1,11 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:safe_city_mobile/utils/constants/sizes.dart';
 import 'package:slide_to_act/slide_to_act.dart';
 
-import '../../../features/virtual_escort/controllers/virtual_escort_pause_controller.dart';
+import '../../../features/virtual_escort/screens/virtual_escort_sos.dart';
 import '../../../utils/constants/colors.dart';
 
 class PopUpModal {
@@ -140,130 +139,6 @@ class PopUpModal {
     );
   }
 
-  /// Slide to confirm + cancel button popup
-  void showSlideConfirmPauseDialog({
-    required String title,
-    required String message,
-    VoidCallback? onConfirm,
-    VoidCallback? onCancel,
-  }) {
-    final controller = Get.put(PauseController());
-
-    Get.defaultDialog(
-      backgroundColor: Colors.white,
-      title: title,
-      titleStyle: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-      contentPadding: const EdgeInsets.all(16),
-      barrierDismissible: false,
-      content: Obx(() {
-        return SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              /// Message
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$message ',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: Colors.black,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Số lần dừng: ${controller.pauseChances.value}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 14),
-
-
-              /// Show countdown if active
-              if (controller.remainingSeconds.value > 0) ...[
-                CircularPercentIndicator(
-                  radius: 60.0,
-                  lineWidth: 6.0,
-                  percent: controller.remainingSeconds.value / 300,
-                  center: Text(
-                    "${(controller.remainingSeconds.value ~/ 60).toString().padLeft(2, '0')}:${(controller.remainingSeconds.value % 60).toString().padLeft(2, '0')}",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  progressColor: TColors.error,
-                  backgroundColor: Colors.grey.shade300,
-                  circularStrokeCap: CircularStrokeCap.round,
-                  animation: true,
-                  animateFromLastPercent: true,
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    controller.stopPause();
-                    if (onConfirm != null) onConfirm();
-                    Get.back();
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 6.0, horizontal: TSizes.lg),
-                    child: Text('Tiếp tục hành trình'),
-                  ),
-                ),
-              ] else ...[
-                /// Slide to confirm
-                Builder(
-                  builder: (context) {
-                    final GlobalKey<SlideActionState> key = GlobalKey();
-                    return SlideAction(
-                      key: key,
-                      outerColor: TColors.primary,
-                      innerColor: Colors.white,
-                      text: "Trượt để tạm dừng",
-                      textStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      onSubmit: () {
-                        controller.startPause();
-                        return null;
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 14),
-
-                /// Show cancel button ONLY when not pausing
-                OutlinedButton(
-                  onPressed: () {
-                    if (onCancel != null) onCancel();
-                    Get.back();
-                  },
-                  child: const Text('Hủy bỏ', style: TextStyle(color: Colors.black)),
-                ),
-              ],
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
   void showSlideToProceedDialog({
     required String title,
     required String message,
@@ -275,6 +150,7 @@ class PopUpModal {
       titleStyle: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
+        color: Colors.black
       ),
       contentPadding: const EdgeInsets.all(16),
       barrierDismissible: true,
@@ -285,7 +161,7 @@ class PopUpModal {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, height: 1.4),
+            style: const TextStyle(fontSize: 14, height: 1.4,color: Colors.black),
           ),
           const SizedBox(height: 20),
 
@@ -304,11 +180,46 @@ class PopUpModal {
                 ),
                 onSubmit: () {
                   Get.back();
-                  Get.to(());
+                  Get.to(() => VirtualEscortSosScreen());
                   return null;
                 },
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildSidebarAlert(IconData icon, String message) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: TColors.error),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
+            ),
           ),
         ],
       ),

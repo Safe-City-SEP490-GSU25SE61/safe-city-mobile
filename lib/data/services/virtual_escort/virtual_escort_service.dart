@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:signalr_netcore/http_connection_options.dart';
 import 'package:signalr_netcore/hub_connection.dart';
@@ -16,6 +17,8 @@ class VirtualEscortService {
   HubConnection? hubConnection;
   final String? apiConnection = dotenv.env['API_DEPLOYMENT_URL'];
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  final leaderLat = 0.0.obs;
+  final leaderLng = 0.0.obs;
 
   Future<String?> getAccessToken() async {
     return await secureStorage.read(key: 'access_token');
@@ -47,7 +50,8 @@ class VirtualEscortService {
 
       if (kDebugMode) {
         print(
-          "Create Escort Group response: ${response.statusCode} -> ${response.body}",
+          "Create Escort Group response: ${response.statusCode} -> ${response
+              .body}",
         );
       }
 
@@ -91,7 +95,8 @@ class VirtualEscortService {
 
       if (kDebugMode) {
         print(
-          "Get My Escort Groups response: ${response.statusCode} -> ${response.body}",
+          "Get My Escort Groups response: ${response.statusCode} -> ${response
+              .body}",
         );
       }
 
@@ -134,7 +139,8 @@ class VirtualEscortService {
       ).timeout(const Duration(seconds: 20));
 
       if (kDebugMode) {
-        print("Get Escort Group Detail: ${response.statusCode} -> ${response.body}");
+        print("Get Escort Group Detail: ${response.statusCode} -> ${response
+            .body}");
       }
 
       if (response.statusCode == 200) {
@@ -163,7 +169,8 @@ class VirtualEscortService {
     }
 
     try {
-      final uri = Uri.parse('${apiConnection}escort-groups?groupCode=$groupCode');
+      final uri = Uri.parse(
+          '${apiConnection}escort-groups?groupCode=$groupCode');
 
       final response = await client.delete(
         uri,
@@ -174,7 +181,9 @@ class VirtualEscortService {
       ).timeout(const Duration(seconds: 15));
 
       if (kDebugMode) {
-        print("Delete Escort Group response: ${response.statusCode} -> ${response.body}");
+        print(
+            "Delete Escort Group response: ${response.statusCode} -> ${response
+                .body}");
       }
 
       if (response.statusCode == 200) {
@@ -205,7 +214,8 @@ class VirtualEscortService {
     }
 
     try {
-      final uri = Uri.parse('${apiConnection}escort-groups/join-code?code=$code');
+      final uri = Uri.parse(
+          '${apiConnection}escort-groups/join-code?code=$code');
 
       final response = await client.post(
         uri,
@@ -216,7 +226,8 @@ class VirtualEscortService {
       ).timeout(const Duration(seconds: 15));
 
       if (kDebugMode) {
-        print("Join Escort Group response: ${response.statusCode} -> ${response.body}");
+        print("Join Escort Group response: ${response.statusCode} -> ${response
+            .body}");
       }
 
       final jsonData = jsonDecode(response.body);
@@ -224,7 +235,8 @@ class VirtualEscortService {
       if (response.statusCode == 200) {
         return {
           "success": true,
-          "message": jsonData["message"] ?? "Gửi yêu cầu tham gia nhóm thành công.",
+          "message": jsonData["message"] ??
+              "Gửi yêu cầu tham gia nhóm thành công.",
           "data": jsonData["data"]
         };
       } else if (response.statusCode == 400) {
@@ -254,7 +266,10 @@ class VirtualEscortService {
       if (kDebugMode) {
         print("Error joining escort group: $e");
       }
-      return {"success": false, "message": "Đã xảy ra lỗi vui lòng thử lại sau: $e"};
+      return {
+        "success": false,
+        "message": "Đã xảy ra lỗi vui lòng thử lại sau: $e"
+      };
     }
   }
 
@@ -274,7 +289,8 @@ class VirtualEscortService {
       ).timeout(const Duration(seconds: 15));
 
       if (kDebugMode) {
-        print("Get Pending Requests: ${response.statusCode} -> ${response.body}");
+        print(
+            "Get Pending Requests: ${response.statusCode} -> ${response.body}");
       }
 
       if (response.statusCode == 200) {
@@ -295,7 +311,8 @@ class VirtualEscortService {
     }
   }
 
-  Future<Map<String, dynamic>> verifyMemberRequest({required int groupId, required int requestId, required bool approve,}) async {
+  Future<Map<String, dynamic>> verifyMemberRequest(
+      {required int groupId, required int requestId, required bool approve,}) async {
     final token = await getAccessToken();
     if (token == null) {
       return {"success": false, "message": "No access token found"};
@@ -315,7 +332,8 @@ class VirtualEscortService {
       ).timeout(const Duration(seconds: 15));
 
       if (kDebugMode) {
-        print("Verify Member Request: ${response.statusCode} -> ${response.body}");
+        print("Verify Member Request: ${response.statusCode} -> ${response
+            .body}");
       }
 
       final jsonData = jsonDecode(response.body);
@@ -346,20 +364,106 @@ class VirtualEscortService {
     }
   }
 
+  Future<Map<String, dynamic>> deleteMember(int memberId) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+    try {
+      final uri = Uri.parse(
+          '${apiConnection}escort-groups/member?memberId=$memberId');
+      final response = await client.delete(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+        },
+      ).timeout(const Duration(seconds: 15));
+      if (kDebugMode) {
+        print("Delete Member: ${response.statusCode} -> ${response.body}");
+      }
+      final jsonData = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {
+          "success": true,
+          "message": jsonData["message"] ?? "Member removed successfully"
+        };
+      } else {
+        return {
+          "success": false,
+          "message": jsonData["error"] ?? jsonData["message"] ?? "Failed"
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error deleting member: $e");
+      return {"success": false, "message": "Exception: $e"};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateGroupSettings(
+      {required String groupCode, required bool autoApprove, required bool receiveRequest}) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+
+    try {
+      final uri = Uri.parse('${apiConnection}escort-groups/settings');
+      final response = await client.put(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "groupCode": groupCode,
+          "autoApprove": autoApprove,
+          "receiveRequest": receiveRequest,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      if (kDebugMode) {
+        print("Update Group Settings: ${response.statusCode} -> ${response
+            .body}");
+      }
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": true,
+          "message": jsonData["message"] ?? "Update settings successfully",
+        };
+      } else {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": false,
+          "message": jsonData["error"] ?? jsonData["message"] ??
+              "Failed to update settings",
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error updating group settings: $e");
+      }
+      return {"success": false, "message": "Exception: $e"};
+    }
+  }
+
   Future<void> initSignalR({required bool isLeader}) async {
     try {
       final token = await getAccessToken();
       final memberId = await getMemberId();
 
-      if (token == null ) {
+      if (token == null) {
         debugPrint("❌ Cannot init SignalR: Missing token or memberId");
         return;
       }
-    // || memberId == null
+      // || memberId == null
 
-      final role = isLeader ? "leader" : "follower";
+      final role = isLeader ? "leader" : "observers";
       // final hubUrl = "${apiConnection}hub?role=$role&memberId=$memberId";
-      final hubUrl = "https://safe-city-back-end.onrender.com/journey-hub?role=$role&memberId=28";
+      final hubUrl = "https://safe-city-back-end.onrender.com/journey-hub?role=$role&memberId=35";
 
       debugPrint("🔌 Connecting to: $hubUrl");
 
@@ -369,13 +473,17 @@ class VirtualEscortService {
         options: HttpConnectionOptions(
           accessTokenFactory: () async => token,
         ),
-      ).build();
-      hubConnection?.on("ReceiveLocationUpdate", (args) {
-        if (args == null || args.length < 2) return;
-        final lat = args[0] as double;
-        final lng = args[1] as double;
-        debugPrint("📡 Received location update: $lat, $lng");
-      });
+      ).withAutomaticReconnect().build();
+      // hubConnection?.on("ReceiveLeaderLocation", (args) {
+      //   if (args == null || args.length < 2) return;
+      //   final lat = args[0] as double;
+      //   final lng = args[1] as double;
+      //   debugPrint("📡 Received location update: $lat, $lng");
+      //   debugPrint("📡 Received location update: $lat, $lng");
+      //
+      //   leaderLat.value = lat;
+      //   leaderLng.value = lng;
+      // });
 
       await hubConnection?.start();
       debugPrint("✅ SignalR connected as $role with memberId=$memberId");
@@ -389,10 +497,107 @@ class VirtualEscortService {
   }
 
   Future<void> updateLocationSignalR(double lat, double lng) async {
-    await hubConnection?.invoke("UpdateLocation", args: [lat, lng]);
+    if (hubConnection?.state == HubConnectionState.Connected) {
+      try {
+        await hubConnection?.invoke("SendLocation", args: [lat, lng]);
+        debugPrint("📡 Location sent: $lat, $lng");
+      } catch (e) {
+        debugPrint("❌ Failed to send location (invoke error): $e");
+      }
+    } else {
+      debugPrint("⚠️ Hub not connected, skipping location update.");
+    }
   }
 
   Future<void> stopSignalR() async {
     await hubConnection?.stop();
+  }
+
+  Future<Map<String, dynamic>?> getJourneyForObserver(int memberId) async {
+    try {
+      final token = await getAccessToken();
+      final url = Uri.parse(
+          "${apiConnection}virtual-escorts/journey-for-observer?memberId=$memberId");
+
+      final response = await http.get(
+        url,
+        headers: {
+          "accept": "*/*",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        debugPrint("❌ Failed to load observer journey: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      debugPrint("❌ Exception in getJourneyForObserver: $e");
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> createVirtualEscort({
+    required int groupId,
+    required String rawJson,
+    String vehicle = "bike",
+    List<int> watcherIds = const [],
+  }) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${apiConnection}virtual-escorts'),
+      );
+
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Accept'] = '*/*';
+
+      request.fields['GroupId'] = groupId.toString();
+      request.fields['RawJson'] = rawJson;
+      request.fields['Vehicle'] = vehicle;
+      request.fields['WatcherIds'] = watcherIds.isNotEmpty ? watcherIds.join(',') : "0";
+
+      var streamedResponse = await request.send().timeout(
+        const Duration(seconds: 20),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (kDebugMode) {
+        print("Create Virtual Escort: ${response.statusCode} -> ${response.body}");
+      }
+
+      final jsonData = (() {
+        try {
+          return jsonDecode(response.body);
+        } catch (e) {
+          debugPrint("⚠️ JSON parsing failed: $e");
+          return {};
+        }
+      })();
+
+      if (response.statusCode == 200) {
+        return {
+          "success": true,
+          "message": jsonData["message"] ?? "Escort created successfully",
+          "data": jsonData["data"]
+        };
+      } else {
+        return {
+          "success": false,
+          "message": jsonData["message"] ?? "Failed to create escort",
+          "errors": jsonData["errors"] ?? {}
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) print("❌ Error creating escort: $e");
+      return {"success": false, "message": "Exception: $e"};
+    }
   }
 }

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:safe_city_mobile/utils/constants/text_strings.dart';
 import 'package:slide_to_act/slide_to_act.dart';
 
+import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/sizes.dart';
 import '../../../utils/helpers/helper_functions.dart';
+import '../controllers/virtual_escort_journey_controller.dart';
 
 class VirtualEscortSosScreen extends StatefulWidget {
-  final VoidCallback onCancel;
-
-  const VirtualEscortSosScreen({super.key, required this.onCancel});
+  const VirtualEscortSosScreen({super.key});
 
   @override
   State<VirtualEscortSosScreen> createState() => _VirtualEscortSosScreenState();
@@ -18,6 +20,9 @@ class VirtualEscortSosScreen extends StatefulWidget {
 class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+
+  // 🔑 control state of the second card
+  bool membersNotified = true; // set to false to "grey out"
 
   @override
   void initState() {
@@ -34,27 +39,6 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
     super.dispose();
   }
 
-  void _triggerSOS(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => const AlertDialog(
-        title: Text("🚨 SOS Triggered"),
-        content: Text("Emergency services have been notified."),
-      ),
-    );
-  }
-
-  void _cancelSOS(BuildContext context) {
-    Get.snackbar(
-      "Hủy tín hiệu",
-      "Tín hiệu SOS đã được hủy.",
-      backgroundColor: Colors.black.withValues(alpha: 0.7),
-      colorText: Colors.white,
-    );
-    widget.onCancel();
-    Navigator.pop(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
@@ -63,14 +47,30 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
       backgroundColor: TColors.lightGrey,
       appBar: AppBar(
         backgroundColor: TColors.error,
-        title: const Text("Phát tín hiệu khẩn cấp"),
+        title: const Text(
+          "Phát tín hiệu khẩn cấp",
+          style: TextStyle(color: Colors.white),
+        ),
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Ripple SOS Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Text(
+              TTexts.sosInformation,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+
+          // 🔹 SOS Ripple Button
           Center(
             child: Stack(
               alignment: Alignment.center,
@@ -87,8 +87,8 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
                           height: 250 + (_controller.value * 60),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: TColors.error.withOpacity(
-                              0.2 * (1 - _controller.value),
+                            color: TColors.error.withValues(
+                              alpha: 0.2 * (1 - _controller.value),
                             ),
                           ),
                         ),
@@ -97,7 +97,15 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
                   },
                 ),
                 GestureDetector(
-                  onTap: () => _triggerSOS(context),
+                  onTap: () {
+                    final controller = VirtualEscortJourneyController.instance;
+                    controller.sendSosSignal();
+
+                    PopUpModal.instance.showOkOnlyDialog(
+                      title: "SOS đã gửi",
+                      message: "Tín hiệu khẩn cấp đã được gửi tới các thành viên trong nhóm.",
+                    );
+                  },
                   child: Container(
                     width: 230,
                     height: 230,
@@ -119,9 +127,8 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
               ],
             ),
           ),
-          const SizedBox(height: 80),
 
-          // Slide to cancel
+          const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: SlideAction(
@@ -130,12 +137,104 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
               text: "Trượt để hủy",
               textStyle: TextStyle(
                 color: dark ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
               ),
               onSubmit: () {
-                _cancelSOS(context);
+                Get.back();
                 return null;
               },
+            ),
+          ),
+          const SizedBox(height: TSizes.mediumSpace),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                // First Card: Call Emergency
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      // TODO: Call emergency logic
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Iconsax.call, color: TColors.error, size: 24),
+                          SizedBox(width: 4),
+                          Text(
+                            "Gọi khẩn cấp",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Second Card: Members notified
+                Expanded(
+                  child: InkWell(
+                    onTap: membersNotified
+                        ? () {
+                            // TODO: Show members list
+                          }
+                        : null,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: membersNotified
+                              ? Colors.green
+                              : Colors.grey.shade400,
+                          width: 2,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Iconsax.people,
+                                color: membersNotified
+                                    ? Colors.green
+                                    : Colors.grey.shade400,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "12 Người nhận",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: membersNotified
+                                      ? Colors.black
+                                      : Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

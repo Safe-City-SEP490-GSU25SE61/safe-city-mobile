@@ -6,6 +6,7 @@
   final String benefit;
   final DateTime createAt;
   final DateTime lastUpdated;
+  final String imageUrl;
 
   AchievementModel({
     required this.id,
@@ -15,6 +16,7 @@
     required this.benefit,
     required this.createAt,
     required this.lastUpdated,
+    required this.imageUrl,
   });
 
   factory AchievementModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@
       benefit: json['benefit'],
       createAt: DateTime.parse(json['createAt']),
       lastUpdated: DateTime.parse(json['lastUpdated']),
+      imageUrl: json['imageUrl'],
     );
   }
 }

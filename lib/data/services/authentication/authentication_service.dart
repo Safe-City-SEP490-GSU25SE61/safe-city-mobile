@@ -171,6 +171,10 @@ class AuthenticationService {
       );
 
       final responseData = jsonDecode(response.body);
+      if (kDebugMode) {
+        print('Response Status: ${response.statusCode}');
+        print('Response Body: $responseData');
+      }
 
       if (response.statusCode == 200) {
         if (kDebugMode) {

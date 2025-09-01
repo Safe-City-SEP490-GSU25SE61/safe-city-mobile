@@ -25,6 +25,10 @@ class LoginController extends GetxController {
   final biometricHelper = BiometricHelper();
   GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
 
+  void resetFormKey() {
+    loginFormKey = GlobalKey<FormState>();
+  }
+
   Future<void> handleFingerprintLogin() async {
     try {
       TFullScreenLoader.openLoadingDialog(
@@ -80,6 +84,9 @@ class LoginController extends GetxController {
         password: savedPassword,
         deviceId: deviceId,
       );
+      if (kDebugMode) {
+        print("🔐 Biometric Login Result: $result");
+      }
       TFullScreenLoader.stopLoading();
 
       if (result['success']) {

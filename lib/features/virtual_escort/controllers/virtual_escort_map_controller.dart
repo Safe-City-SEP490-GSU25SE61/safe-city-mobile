@@ -13,16 +13,19 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
+import '../../../data/services/virtual_escort/virtual_escort_service.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/constants/image_strings.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../../../utils/popups/loaders.dart';
 import '../models/goong_prediction_model.dart';
 import '../models/route_step_model.dart';
+import '../screens/virtual_escort_journey_start.dart';
 import '../screens/virtual_escort_sos.dart';
 
 class VirtualEscortMapController extends GetxController {
   static VirtualEscortMapController get instance => Get.find();
+  final escortService = VirtualEscortService();
   MapboxMap? mapboxMap;
   PointAnnotationManager? _customMarkerManager;
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY2']!;
@@ -37,8 +40,6 @@ class VirtualEscortMapController extends GetxController {
   final RxString routeVehicleType = ''.obs;
   final RxBool showRouteInfoPopup = false.obs;
   final secureStorage = const FlutterSecureStorage();
-  late final PointAnnotationManager _pointAnnotationManager;
-  PointAnnotation? _userMarker;
   final RxList<String> durationOptions = <String>[].obs;
   final RxString estimatedTime = ''.obs;
   PointAnnotationManager? _markerManager;
@@ -56,9 +57,14 @@ class VirtualEscortMapController extends GetxController {
   final List<Position> gpsHistory = [];
   bool isUserOffRoute = false;
   final double _earthRadius = 6371000.0;
-  final double _minMovementDistance = 0.1;
   double latestSpeed = 0.0;
   DateTime? _lastStepUpdateTime;
+  Position? _lastMarkerPosition;
+   double gpsUpdateThreshold = 3.0;
+   double markerMoveThreshold = 1.5;
+  var hasArrived = false.obs;
+  final rawRouteData = {}.obs;
+  PointAnnotation? _observerMarker;
 
   @override
   void onClose() {
@@ -98,7 +104,7 @@ class VirtualEscortMapController extends GetxController {
       return TLoaders.warningSnackBar(
         title: 'Lỗi',
         message:
-            'Vị trí đã bị từ chối vĩnh viễn. Vui lòng bật quyền trong cài đặt.',
+        'Vị trí đã bị từ chối vĩnh viễn. Vui lòng bật quyền trong cài đặt.',
       );
     }
 
@@ -146,7 +152,7 @@ class VirtualEscortMapController extends GetxController {
   Future<void> searchPlace(String input) async {
     final loc =
         await geo.Geolocator.getLastKnownPosition() ??
-        await geo.Geolocator.getCurrentPosition();
+            await geo.Geolocator.getCurrentPosition();
 
     final userLat = loc.latitude;
     final userLng = loc.longitude;
@@ -166,10 +172,10 @@ class VirtualEscortMapController extends GetxController {
         try {
           final res = await http
               .get(
-                Uri.parse(
-                  'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongApiKey',
-                ),
-              )
+            Uri.parse(
+              'https://rsapi.goong.io/Place/Detail?place_id=${p.placeId}&api_key=$goongApiKey',
+            ),
+          )
               .timeout(const Duration(seconds: 3));
           if (res.statusCode == 200) {
             final loc = jsonDecode(res.body)['result']['geometry']['location'];
@@ -262,7 +268,7 @@ class VirtualEscortMapController extends GetxController {
       if (kDebugMode) {
         debugPrint(
           "❌ Failed to fetch location detail "
-          "(HTTP ${res.statusCode}): ${res.body}",
+              "(HTTP ${res.statusCode}): ${res.body}",
         );
       }
     }
@@ -450,11 +456,11 @@ class VirtualEscortMapController extends GetxController {
 
       final url = Uri.parse(
         'https://rsapi.goong.io/v2/direction'
-        '?origin=$originLat,$originLng'
-        '&destination=$destLat,$destLng'
-        '&vehicle=$vehicleType'
-        '&alternatives=false'
-        '&api_key=$goongApiKey',
+            '?origin=$originLat,$originLng'
+            '&destination=$destLat,$destLng'
+            '&vehicle=$vehicleType'
+            '&alternatives=false'
+            '&api_key=$goongApiKey',
       );
 
       final response = await http.get(url);
@@ -464,18 +470,20 @@ class VirtualEscortMapController extends GetxController {
       }
 
       final data = jsonDecode(response.body);
+      rawRouteData.value = data;
       loadRouteAndStartTracking(response.body);
       final polyline =
-          data['routes'][0]['overview_polyline']['points'] as String;
+      data['routes'][0]['overview_polyline']['points'] as String;
       final List<Position> positions = _decodePolylineToPositions(polyline);
       final densePositions = densifyRoute(positions, step: 12);
 
       final existingPolyline = await secureStorage.read(key: 'escort_polyline');
-      if (existingPolyline != null) {
+      final existingEscortResponse = await secureStorage.read(key: 'escort_response');
+      if (existingPolyline != null || existingEscortResponse!=null) {
         await secureStorage.delete(key: 'escort_polyline');
         await secureStorage.delete(key: 'escort_dense_positions');
+        await secureStorage.delete(key: 'escort_response');
       }
-
       await secureStorage.write(key: 'escort_polyline', value: polyline);
 
       final denseJson = jsonEncode(
@@ -787,9 +795,9 @@ class VirtualEscortMapController extends GetxController {
   }
 
   Future<void> virtualEscortStartInitMap(
-    MapboxMap controller,
-    bool isDarkMode,
-  ) async {
+      MapboxMap controller,
+      bool isDarkMode,
+      ) async {
     mapboxMap = controller;
     mapboxMap!.setCamera(
       CameraOptions(
@@ -818,7 +826,7 @@ class VirtualEscortMapController extends GetxController {
       }
 
       geo.LocationPermission permission =
-          await geo.Geolocator.checkPermission();
+      await geo.Geolocator.checkPermission();
       if (permission == geo.LocationPermission.denied) {
         permission = await geo.Geolocator.requestPermission();
         if (permission == geo.LocationPermission.denied) {
@@ -832,7 +840,7 @@ class VirtualEscortMapController extends GetxController {
         return TLoaders.warningSnackBar(
           title: 'Lỗi',
           message:
-              'Vị trí đã bị từ chối vĩnh viễn. Vui lòng vào cài đặt để điều chỉnh.',
+          'Vị trí đã bị từ chối vĩnh viễn. Vui lòng vào cài đặt để điều chỉnh.',
         );
       }
 
@@ -855,7 +863,6 @@ class VirtualEscortMapController extends GetxController {
       } else {
         positions = _decodePolylineToPositions(polyline);
       }
-
       startUserTrackingAlongRoute(positions);
       final arrowFeatures = <Map<String, dynamic>>[];
 
@@ -999,6 +1006,7 @@ class VirtualEscortMapController extends GetxController {
           LayerPosition(below: 'route_markers_layer'),
         );
       }
+
       await initUserMarker(positions);
       await updateUserMarker(
         positions.first.lat as double,
@@ -1046,9 +1054,9 @@ class VirtualEscortMapController extends GetxController {
     final dLng = (lng2 - lng1) * (3.141592653589793 / 180);
     final a =
         (sin(dLat / 2) * sin(dLat / 2)) +
-        cos(lat1 * (3.141592653589793 / 180)) *
-            cos(lat2 * (3.141592653589793 / 180)) *
-            (sin(dLng / 2) * sin(dLng / 2));
+            cos(lat1 * (3.141592653589793 / 180)) *
+                cos(lat2 * (3.141592653589793 / 180)) *
+                (sin(dLng / 2) * sin(dLng / 2));
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return earthRadius * c;
   }
@@ -1059,95 +1067,219 @@ class VirtualEscortMapController extends GetxController {
     Position? lastPosition;
     double minDistanceToStep = double.infinity;
 
-    positionStream = geo.Geolocator.getPositionStream(
-      locationSettings: const geo.LocationSettings(
-        accuracy: geo.LocationAccuracy.bestForNavigation,
-        distanceFilter: 1,
-      ),
-    ).listen((gps) async {
-      try {
-        final currentPos = Position.named(
-          lat: gps.latitude,
-          lng: gps.longitude,
-        );
+    positionStream =
+        geo.Geolocator.getPositionStream(
+          locationSettings: const geo.LocationSettings(
+            accuracy: geo.LocationAccuracy.bestForNavigation,
+            distanceFilter: 1,
+          ),
+        ).listen((gps) async {
+          try {
+            final currentPos = Position.named(
+              lat: gps.latitude,
+              lng: gps.longitude,
+            );
 
-        double speed = gps.speed;
-        double factor = (speed / 10).clamp(0.2, 0.8);
-        final userPos = lastPosition == null
-            ? currentPos
-            : Position.named(
-          lat: lastPosition!.lat * (1 - factor) + currentPos.lat * factor,
-          lng: lastPosition!.lng * (1 - factor) + currentPos.lng * factor,
-        );
-        lastPosition = userPos;
+            double speed = gps.speed;
+            double factor = (speed / 10).clamp(0.2, 0.8);
+            final userPos = lastPosition == null
+                ? currentPos
+                : Position.named(
+              lat:
+              lastPosition!.lat * (1 - factor) +
+                  currentPos.lat * factor,
+              lng:
+              lastPosition!.lng * (1 - factor) +
+                  currentPos.lng * factor,
+            );
+            lastPosition = userPos;
 
-        if (currentStepIndex >= steps.length) return;
+            if (currentStepIndex >= steps.length) return;
 
-        final currentStep = steps[currentStepIndex];
+            final currentStep = steps[currentStepIndex];
 
-        // Calculate distance to current step's end point
-        final distanceToEnd = calculateDistance(
-          userPos.lat as double,
-          userPos.lng as double,
-          currentStep.endLat,
-          currentStep.endLng,
-        );
+            // Calculate distance to current step's end point
+            final distanceToEnd = calculateDistance(
+              userPos.lat as double,
+              userPos.lng as double,
+              currentStep.endLat,
+              currentStep.endLng,
+            );
 
-        // NEW: Calculate bearing to check if user is moving toward the point
-        final userBearing = lastPosition != null
-            ? calculateBearing(lastPosition!, userPos)
-            : null;
+            // NEW: Calculate bearing to check if user is moving toward the point
+            final userBearing = lastPosition != null
+                ? calculateBearing(lastPosition!, userPos)
+                : null;
 
-        final bearingToStep = calculateBearing(
-            userPos,
-            Position.named(lat: currentStep.endLat, lng: currentStep.endLng)
-        );
+            final bearingToStep = calculateBearing(
+              userPos,
+              Position.named(lat: currentStep.endLat, lng: currentStep.endLng),
+            );
 
-        // NEW: Check if user has passed the step point
-        final hasPassed = _checkIfPassedStep(
-            userPos,
-            currentStep,
-            userBearing,
-            bearingToStep
-        );
+            // NEW: Check if user has passed the step point
+            final hasPassed = _checkIfPassedStep(
+              userPos,
+              currentStep,
+              userBearing,
+              bearingToStep,
+            );
 
-        // NEW: Update minimum distance tracking
-        if (distanceToEnd < minDistanceToStep) {
-          minDistanceToStep = distanceToEnd;
-        }
+            // NEW: Update minimum distance tracking
+            if (distanceToEnd < minDistanceToStep) {
+              minDistanceToStep = distanceToEnd;
+            }
 
-        currentInstruction.value = currentStep.instruction;
-        distanceToNext.value = '${distanceToEnd.toStringAsFixed(0)} m';
-        speedLimit.value = currentStep.speedLimit?.toStringAsFixed(0) ?? '--';
+            currentInstruction.value = currentStep.instruction;
+            distanceToNext.value = '${distanceToEnd.toStringAsFixed(0)} m';
+            speedLimit.value =
+                currentStep.speedLimit?.toStringAsFixed(0) ?? '--';
 
-        // NEW: Improved step progression logic
-        if (_shouldAdvanceToNextStep(
-            distanceToEnd,
-            hasPassed,
-            minDistanceToStep,
-            userBearing,
-            bearingToStep
-        )) {
-          _advanceToNextStep(steps, currentStepIndex);
-          currentStepIndex++;
+            // NEW: Improved step progression logic
+            if (_shouldAdvanceToNextStep(
+              distanceToEnd,
+              hasPassed,
+              minDistanceToStep,
+              userBearing,
+              bearingToStep,
+            )) {
+              _advanceToNextStep(steps, currentStepIndex);
+              currentStepIndex++;
 
-          // Reset tracking variables for the new step
-          minDistanceToStep = double.infinity;
-          _lastStepUpdateTime = DateTime.now();
-        }
+              // Reset tracking variables for the new step
+              minDistanceToStep = double.infinity;
+              _lastStepUpdateTime = DateTime.now();
+            }
+          } catch (e) {
+            debugPrint('⚠️ Instruction tracking error: $e');
+          }
+        });
+  }
 
-      } catch (e) {
-        debugPrint('⚠️ Instruction tracking error: $e');
+  void _advanceToNextStep(List<RouteStepModel> steps, int currentIndex) {
+    if (currentIndex + 1 < steps.length) {
+      final nextStep = steps[currentIndex + 1];
+      debugPrint('➡️ Next instruction: ${nextStep.instruction}');
+      debugPrint(
+        '📏 Distance to next: ${calculateDistance(steps[currentIndex].endLat, steps[currentIndex].endLng, nextStep.endLat, nextStep.endLng).toStringAsFixed(0)} m',
+      );
+    } else {
+      debugPrint('🎉 Route completed!');
+    }
+  }
+
+  Future<void> loadRouteAndStartTracking(String responseBody) async {
+    final steps = await parseRouteSteps(responseBody);
+    startTrackingWithInstructions(steps);
+  }
+
+  bool checkDestinationReached(Position currentPosition, List<Position> routePositions) {
+    if (routePositions.isEmpty) return false;
+    final destination = routePositions.last;
+    final distance = _calculateDistance(currentPosition, destination);
+    return distance < 15.0;
+  }
+
+  void startUserTrackingAlongRoute(List<Position> routePositions) {
+    positionStream =
+        geo.Geolocator.getPositionStream(
+          locationSettings: const geo.LocationSettings(
+            accuracy: geo.LocationAccuracy.bestForNavigation,
+            distanceFilter: 2,
+          ),
+        ).listen((gps) async {
+          if (gpsHistory.isNotEmpty) {
+            final lastPos = gpsHistory.last;
+            final distance = _calculateDistance(
+              lastPos,
+              Position.named(lat: gps.latitude, lng: gps.longitude),
+            );
+            if (distance < 2.0) return;
+          }
+          gpsHistory.add(Position.named(lat: gps.latitude, lng: gps.longitude));
+          if (gpsHistory.length > 10) gpsHistory.removeAt(0);
+          latestSpeed = gps.speed;
+          lastGpsPosition = currentInterpolated ?? gpsHistory.last;
+          nextGpsPosition = gpsHistory.last;
+
+          // if (routePositions.isNotEmpty) {
+          //   await checkUserOffRoute(gps, routePositions);
+          // }
+
+          if (lastGpsTime != null) {
+            expectedTravelTime =
+                DateTime.now().difference(lastGpsTime!).inMilliseconds / 1000.0;
+          } else {
+            expectedTravelTime = 1.0;
+          }
+          lastGpsTime = DateTime.now();
+
+          final currentPos = Position.named(lat: gps.latitude, lng: gps.longitude);
+          if (checkDestinationReached(currentPos, routePositions) && !hasArrived.value) {
+            hasArrived.value = true;
+            positionStream?.cancel();
+            trackingTimer?.cancel();
+
+            if (Get.isRegistered<VirtualEscortJourneyStartScreen>()) {
+              Get.find<VirtualEscortJourneyStartScreen>().showDestinationReachedDialog();
+            }
+          }
+        });
+
+    trackingTimer = Timer.periodic(const Duration(milliseconds: 180), (timer) async {
+      if (lastGpsPosition == null || nextGpsPosition == null || lastGpsTime == null) return;
+
+      final latestGps = gpsHistory.last;
+      final distanceSinceLastNext = _calculateDistance(nextGpsPosition!, latestGps);
+      if (distanceSinceLastNext > gpsUpdateThreshold) {
+        lastGpsPosition = currentInterpolated ?? nextGpsPosition!;
+        nextGpsPosition = latestGps;
+        lastGpsTime = DateTime.now();
       }
+
+      final now = DateTime.now();
+      final dt = now.difference(lastGpsTime!).inMilliseconds / 1000.0;
+      final travelTime = expectedTravelTime ?? 1.0;
+      final t = (dt / travelTime).clamp(0.0, 1.0);
+
+      final easedT = pow(t, 0.7).toDouble();
+      final lat = lastGpsPosition!.lat * (1 - easedT) + nextGpsPosition!.lat * easedT;
+      final lng = lastGpsPosition!.lng * (1 - easedT) + nextGpsPosition!.lng * easedT;
+      final interpolated = Position.named(lat: lat, lng: lng);
+
+      // Always update the marker position for smooth movement
+      await updateUserMarker(lat, lng);
+
+      // Only update camera if moved enough
+      if (_lastMarkerPosition == null ||
+          _calculateDistance(_lastMarkerPosition!, interpolated) > markerMoveThreshold) {
+        _lastMarkerPosition = interpolated;
+
+        double targetBearing = getLookaheadBearing(gpsHistory, 2);
+        smoothedBearing ??= targetBearing;
+        double diff = (((targetBearing - smoothedBearing!) + 540) % 360) - 180;
+        double lerpFactor = (0.1 + (diff.abs() / 180) * 0.4).clamp(0.1, 0.6);
+        smoothedBearing = interpolateBearing(smoothedBearing!, targetBearing, lerpFactor);
+
+        await mapboxMap!.setCamera(
+          CameraOptions(
+            center: Point(coordinates: interpolated),
+            zoom: 18,
+            bearing: smoothedBearing,
+            pitch: 50,
+            padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
+          ),
+        );
+      }
+
+      currentInterpolated = interpolated;
     });
   }
 
-// NEW METHOD: Check if user has passed the step point
   bool _checkIfPassedStep(
       Position userPos,
       RouteStepModel step,
       double? userBearing,
-      double bearingToStep
+      double bearingToStep,
       ) {
     if (userBearing == null) return false;
 
@@ -1166,13 +1298,12 @@ class VirtualEscortMapController extends GetxController {
     return isMovingAway && distance < 50; // Moving away and within 50m
   }
 
-// NEW METHOD: Determine if should advance to next step
   bool _shouldAdvanceToNextStep(
       double distanceToEnd,
       bool hasPassed,
       double minDistance,
       double? userBearing,
-      double bearingToStep
+      double bearingToStep,
       ) {
     // Option 1: Very close to the point (original logic)
     if (distanceToEnd < 15) {
@@ -1191,7 +1322,9 @@ class VirtualEscortMapController extends GetxController {
 
     // Option 4: Time-based fallback (prevent getting stuck)
     if (_lastStepUpdateTime != null) {
-      final timeSinceLastUpdate = DateTime.now().difference(_lastStepUpdateTime!);
+      final timeSinceLastUpdate = DateTime.now().difference(
+        _lastStepUpdateTime!,
+      );
       if (timeSinceLastUpdate.inSeconds > 30 && distanceToEnd < 50) {
         return true; // Force advance after 30 seconds if reasonably close
       }
@@ -1208,184 +1341,6 @@ class VirtualEscortMapController extends GetxController {
     return false;
   }
 
-// NEW METHOD: Handle step advancement
-  void _advanceToNextStep(List<RouteStepModel> steps, int currentIndex) {
-    if (currentIndex + 1 < steps.length) {
-      final nextStep = steps[currentIndex + 1];
-      debugPrint('➡️ Next instruction: ${nextStep.instruction}');
-      debugPrint('📏 Distance to next: ${calculateDistance(
-        steps[currentIndex].endLat,
-        steps[currentIndex].endLng,
-        nextStep.endLat,
-        nextStep.endLng,
-      ).toStringAsFixed(0)} m');
-    } else {
-      debugPrint('🎉 Route completed!');
-    }
-  }
-
-  Future<void> loadRouteAndStartTracking(String responseBody) async {
-    final steps = await parseRouteSteps(responseBody);
-    startTrackingWithInstructions(steps);
-  }
-
-  void startUserTrackingAlongRoute(List<Position> routePositions) {
-    positionStream =
-        geo.Geolocator.getPositionStream(
-          locationSettings: const geo.LocationSettings(
-            accuracy: geo.LocationAccuracy.bestForNavigation,
-            distanceFilter: 2,
-          ),
-        ).listen((gps) async {
-          gpsHistory.add(Position.named(lat: gps.latitude, lng: gps.longitude));
-          if (gpsHistory.length > 10) gpsHistory.removeAt(0);
-          latestSpeed = gps.speed;
-          lastGpsPosition = currentInterpolated ?? gpsHistory.last;
-          nextGpsPosition = gpsHistory.last;
-
-          if (routePositions.isNotEmpty) {
-            await checkUserOffRoute(gps, routePositions);
-          }
-
-          if (lastGpsTime != null) {
-            expectedTravelTime =
-                DateTime.now().difference(lastGpsTime!).inMilliseconds / 1000.0;
-          } else {
-            expectedTravelTime = 1.0;
-          }
-          lastGpsTime = DateTime.now();
-        });
-
-    trackingTimer = Timer.periodic(const Duration(milliseconds: 50), (
-      timer,
-    ) async {
-      if (lastGpsPosition == null ||
-          nextGpsPosition == null ||
-          lastGpsTime == null) {
-        return;
-      }
-
-      final now = DateTime.now();
-      final gpsDt = now.difference(lastGpsTime!).inMilliseconds / 1000.0;
-
-      final travelTime = expectedTravelTime ?? 1.0;
-      final t = (gpsDt / travelTime).clamp(0.0, 1.0);
-
-      double turnFactor = 1.0;
-      if (gpsHistory.length >= 3) {
-        final prev = gpsHistory[gpsHistory.length - 3];
-        final curr = gpsHistory[gpsHistory.length - 2];
-        final next = gpsHistory.last;
-
-        final bearing1 = calculateBearing(prev, curr);
-        final bearing2 = calculateBearing(curr, next);
-        final diff = (((bearing2 - bearing1) + 540) % 360) - 180;
-
-        if (diff.abs() > 60) {
-          turnFactor = 1.4;
-        } else if (diff.abs() > 30) {
-          turnFactor = 1.15;
-        }
-      }
-
-      final baseCatchUp = latestSpeed >= 30 ? 2.6 : 1.8;
-      final speedFactor = (latestSpeed / 20.0).clamp(1.0, 2.8);
-      final adjustedT = (t * baseCatchUp * turnFactor * speedFactor).clamp(
-        0.0,
-        1.0,
-      );
-      final easedT = pow(adjustedT, 0.7).toDouble();
-
-      final lat =
-          lastGpsPosition!.lat * (1 - easedT) + nextGpsPosition!.lat * easedT;
-      final lng =
-          lastGpsPosition!.lng * (1 - easedT) + nextGpsPosition!.lng * easedT;
-      currentInterpolated = Position.named(lat: lat, lng: lng);
-
-      double targetBearing = getLookaheadBearing(gpsHistory, 2);
-
-      smoothedBearing ??= targetBearing;
-
-      double diff = (((targetBearing - smoothedBearing!) + 540) % 360) - 180;
-      double lerpFactor = (0.1 + (diff.abs() / 180) * 0.4).clamp(0.1, 0.6);
-      smoothedBearing = interpolateBearing(
-        smoothedBearing!,
-        targetBearing,
-        lerpFactor,
-      );
-
-      // FIXED MARKER MOVEMENT - REPLACED THE OLD CODE
-      if (_userMarker != null) {
-        await _updateMarkerPositionProperly();
-      }
-
-      await mapboxMap!.setCamera(
-        CameraOptions(
-          center: Point(coordinates: currentInterpolated!),
-          zoom: 18,
-          bearing: smoothedBearing,
-          pitch: 50,
-          padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
-        ),
-      );
-    });
-  }
-
-  // NEW METHOD: Proper marker position update
-  Future<void> _updateMarkerPositionProperly() async {
-    if (_userMarker == null || currentInterpolated == null) return;
-
-    final markerPos = _userMarker!.geometry.coordinates;
-    final targetPos = currentInterpolated!;
-
-    // Calculate distance and bearing to target
-    final distance = _calculateDistance(markerPos, targetPos);
-
-    // If too close, don't move (prevents jitter)
-    if (distance < _minMovementDistance) return;
-
-    final bearing = _calculateBearing(markerPos, targetPos);
-
-    // Speed-adaptive interpolation factor
-    double interpolationFactor = _getInterpolationFactor();
-
-    // Turn-sensitive adjustment - reduce movement during sharp turns
-    if (gpsHistory.length >= 3) {
-      final bearingChange = _calculateBearingChange();
-      if (bearingChange != null && bearingChange.abs() > 30) {
-        interpolationFactor *= 0.7; // Reduce movement during turns
-      }
-    }
-
-    // Move marker along the actual bearing (not straight-line!)
-    final moveDistance = distance * interpolationFactor;
-
-    final newPos = _calculateNewPosition(
-      markerPos.lat as double,
-      markerPos.lng as double,
-      bearing,
-      moveDistance,
-    );
-
-    _userMarker!.geometry = Point(coordinates: newPos);
-    _pointAnnotationManager.update(_userMarker!);
-  }
-
-  // NEW METHOD: Get interpolation factor based on speed
-  double _getInterpolationFactor() {
-    if (latestSpeed > 20) {
-      // High speed: ~72 km/h
-      return 0.6; // Quicker response but still smooth
-    } else if (latestSpeed > 10) {
-      // Medium speed: ~36 km/h
-      return 0.4; // Balanced
-    } else {
-      // Low speed: walking or slow driving
-      return 0.2; // Very smooth
-    }
-  }
-
-  // NEW METHOD: Calculate distance between two positions
   double _calculateDistance(Position pos1, Position pos2) {
     final lat1 = pos1.lat * pi / 180.0;
     final lon1 = pos1.lng * pi / 180.0;
@@ -1397,107 +1352,10 @@ class VirtualEscortMapController extends GetxController {
 
     final a =
         sin(dLat / 2) * sin(dLat / 2) +
-        cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
+            cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
     return _earthRadius * c;
-  }
-
-  // NEW METHOD: Calculate bearing between two positions
-  double _calculateBearing(Position from, Position to) {
-    final lat1 = from.lat * pi / 180.0;
-    final lon1 = from.lng * pi / 180.0;
-    final lat2 = to.lat * pi / 180.0;
-    final lon2 = to.lng * pi / 180.0;
-
-    final y = sin(lon2 - lon1) * cos(lat2);
-    final x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(lon2 - lon1);
-    final bearing = atan2(y, x);
-
-    return (bearing * 180.0 / pi + 360) % 360;
-  }
-
-  // NEW METHOD: Calculate new position along a bearing
-  Position _calculateNewPosition(
-    double lat,
-    double lng,
-    double bearing,
-    double distance,
-  ) {
-    final latRad = lat * pi / 180.0;
-    final lngRad = lng * pi / 180.0;
-    final bearingRad = bearing * pi / 180.0;
-
-    final newLatRad = asin(
-      sin(latRad) * cos(distance / _earthRadius) +
-          cos(latRad) * sin(distance / _earthRadius) * cos(bearingRad),
-    );
-
-    final newLngRad =
-        lngRad +
-        atan2(
-          sin(bearingRad) * sin(distance / _earthRadius) * cos(latRad),
-          cos(distance / _earthRadius) - sin(latRad) * sin(newLatRad),
-        );
-
-    return Position.named(
-      lat: newLatRad * 180.0 / pi,
-      lng: newLngRad * 180.0 / pi,
-    );
-  }
-
-  // NEW METHOD: Calculate bearing change for turn detection
-  double? _calculateBearingChange() {
-    if (gpsHistory.length < 3) return null;
-
-    final prev = gpsHistory[gpsHistory.length - 3];
-    final curr = gpsHistory[gpsHistory.length - 2];
-    final next = gpsHistory.last;
-
-    final bearing1 = calculateBearing(prev, curr);
-    final bearing2 = calculateBearing(curr, next);
-
-    return (((bearing2 - bearing1) + 540) % 360) - 180;
-  }
-
-  Future<void> checkUserOffRoute(
-    geo.Position gps,
-    List<Position> routePositions,
-  ) async {
-    double minDistance = double.infinity;
-
-    for (final point in routePositions) {
-      final distance = geo.Geolocator.distanceBetween(
-        gps.latitude,
-        gps.longitude,
-        point.lat as double,
-        point.lng as double,
-      );
-      if (distance < minDistance) {
-        minDistance = distance;
-      }
-    }
-
-    if (minDistance > 200) {
-      Get.dialog(
-        AlertDialog(
-          title: const Text("Lệch khỏi lộ trình"),
-          content: Text(
-            "Bạn đã rời khỏi tuyến đường hơn ${minDistance.toStringAsFixed(0)}m.\nBạn có muốn định tuyến lại không?",
-          ),
-          actions: [
-            TextButton(onPressed: () => Get.back(), child: const Text("Hủy")),
-            TextButton(
-              onPressed: () {
-                Get.back();
-                // TODO: Call your re-routing logic here
-              },
-              child: const Text("Định tuyến lại"),
-            ),
-          ],
-        ),
-      );
-    }
   }
 
   double getLookaheadBearing(List<Position> history, int lookahead) {
@@ -1520,33 +1378,101 @@ class VirtualEscortMapController extends GetxController {
   }
 
   Future<void> initUserMarker(List<Position> initialPositions) async {
-    final bytes = await rootBundle.load(TImages.navigationRouteIcon);
-    final imageData = bytes.buffer.asUint8List();
+    try {
+      final startPos = initialPositions.isNotEmpty
+          ? initialPositions.first
+          : Position(0, 0);
 
-    _pointAnnotationManager = await mapboxMap!.annotations
-        .createPointAnnotationManager();
 
-    final startPos = initialPositions.isNotEmpty
-        ? initialPositions.first
-        : Position(0, 0);
+      final imageData = await getImage(TImages.navigationRouteIcon);
+      await mapboxMap!.style.addStyleImage(
+        'navigation-icon',
+        1.0,
+        imageData,
+        false,
+        [],
+        [],
+        null,
+      );
 
-    final cameraState = await mapboxMap!.getCameraState();
-    final bearing = cameraState.bearing;
+      final initialFeature = {
+        "type": "Feature",
+        "id": "user_marker",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [startPos.lng, startPos.lat],
+        },
+        "properties": {
+          "bearing": 0,
+        },
+      };
 
-    _userMarker = await _pointAnnotationManager.create(
-      PointAnnotationOptions(
-        geometry: Point(coordinates: Position(startPos.lng, startPos.lat)),
-        image: imageData,
-        iconSize: 2.0,
-        iconRotate: bearing,
-      ),
-    );
+      final sources = await mapboxMap!.style.getStyleSources();
+      if (sources.any((s) => s?.id == 'navigation-marker-source')) {
+        await mapboxMap!.style.updateGeoJSONSourceFeatures(
+          'navigation-marker-source',
+          'marker_init',
+          [Feature.fromJson(initialFeature)],
+        );
+      } else {
+        await mapboxMap!.style.addSource(
+          GeoJsonSource(
+            id: 'navigation-marker-source',
+            data: jsonEncode({
+              "type": "FeatureCollection",
+              "features": [initialFeature],
+            }),
+          ),
+        );
+      }
+
+      final layers = await mapboxMap!.style.getStyleLayers();
+      if (!layers.any((l) => l?.id == 'navigation-marker-layer')) {
+        await mapboxMap!.style.addLayer(
+          SymbolLayer(
+            id: 'navigation-marker-layer',
+            sourceId: 'navigation-marker-source',
+            iconImage: 'navigation-icon',
+            iconSize: 0.65,
+            iconRotateExpression: ['get', 'bearing'],
+            iconAnchor: IconAnchor.BOTTOM,
+            iconPitchAlignment: IconPitchAlignment.MAP,
+            iconRotationAlignment: IconRotationAlignment.MAP,
+            iconIgnorePlacement: true,
+            iconAllowOverlap: true,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to initialize user marker: $e');
+    }
   }
 
   Future<void> updateUserMarker(double lat, double lng) async {
-    if (_userMarker != null) {
-      _userMarker!.geometry = Point(coordinates: Position(lng, lat));
-      await _pointAnnotationManager.update(_userMarker!);
+    try {
+      final cameraState = await mapboxMap!.getCameraState();
+      final bearing = cameraState.bearing;
+      debugPrint('📍 Updating marker to: $lat, $lng with bearing: $bearing');
+
+      final updatedFeature = Feature(
+        geometry: Point(coordinates: Position(lng, lat)),
+        properties: {
+          "bearing": bearing,
+        }, id: "user_marker",
+      );
+
+      await mapboxMap!.style.updateGeoJSONSourceFeatures(
+        'navigation-marker-source',
+        'user_marker_update',
+        [updatedFeature],
+      );
+
+      debugPrint('✅ Marker updated successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to update user marker: $e');
+      final sources = await mapboxMap!.style.getStyleSources();
+      final sourceExists = sources.any((s) => s?.id == 'navigation-marker-source');
+      debugPrint('Source exists: $sourceExists');
     }
   }
 
@@ -1570,6 +1496,167 @@ class VirtualEscortMapController extends GetxController {
   Future<void> preloadSpeedLimits(List<RouteStepModel> steps) async {
     for (var step in steps) {
       step.speedLimit = await fetchSpeedLimit(step.startLat, step.startLng);
+    }
+  }
+
+  // Future<void> checkUserOffRoute(geo.Position gps, List<Position> routePositions) async {
+  //   if (hasArrived.value) return;
+  //   double minDistance = double.infinity;
+  //   Position nearestPoint = routePositions.first;
+  //   for (final point in routePositions) {
+  //     final distance = _calculateDistance(
+  //         Position.named(lat: gps.latitude, lng: gps.longitude),
+  //         point
+  //     );
+  //
+  //     if (distance < minDistance) {
+  //       minDistance = distance;
+  //       nearestPoint = point;
+  //     }
+  //   }
+  //   final destination = routePositions.last;
+  //   final distanceToDestination = _calculateDistance(
+  //       Position.named(lat: gps.latitude, lng: gps.longitude),
+  //       destination
+  //   );
+  //
+  //   if (distanceToDestination <= 20.0) return;
+  //
+  //   if (minDistance > 200) {
+  //     positionStream?.cancel();
+  //     trackingTimer?.cancel();
+  //     Get.off(() => VirtualEscortSosScreen());
+  //   }
+  // }
+
+  Future<void> loadObserverJourney(int memberId) async {
+    try {
+      final data = await escortService.getJourneyForObserver(memberId);
+      if (data == null) return;
+      final overviewPolyline = data['routes'][0]['overview_polyline']['points'];
+      final List<Position> positions = _decodePolylineToPositions(overviewPolyline);
+
+      final featureCollection = {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "id": "observer_route",
+            "properties": {},
+            "geometry": {
+              "type": "LineString",
+              "coordinates": positions.map((p) => [p.lng, p.lat]).toList(),
+            },
+          },
+        ],
+      };
+
+      await mapboxMap!.style.addSource(
+        GeoJsonSource(id: "observer_route_source", data: jsonEncode(featureCollection)),
+      );
+
+      await mapboxMap!.style.addLayerAt(
+        LineLayer(
+          id: 'observer_route_layer_outline',
+          sourceId: 'observer_route_source_outline',
+          lineColor: TColors.primary.toARGB32(),
+          lineWidth: 10.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        ),
+        LayerPosition(below: 'highway-name-minor'),
+      );
+
+      await mapboxMap!.style.addLayerAt(
+        LineLayer(
+          id: "observer_route_layer",
+          sourceId: "observer_route_source",
+          lineColor: TColors.accent.toARGB32(),
+          lineWidth: 8.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        ),
+        LayerPosition(below: "highway-name-minor"),
+      );
+
+      await mapboxMap!.flyTo(
+        CameraOptions(
+          center: Point(
+            coordinates: Position(positions.first.lng, positions.first.lat),
+          ),
+          zoom: 18,
+        ),
+        MapAnimationOptions(duration: 1500),
+      );
+
+      debugPrint("✅ Observer route loaded with ${positions.length} points");
+    } catch (e) {
+      debugPrint("❌ Failed to load observer journey: $e");
+    }
+  }
+
+  Future<void> createEscortAfterRoute({
+    required int groupId,
+    String vehicle = "bike",
+    List<int> watcherIds = const [],
+    required Map<dynamic, dynamic> rawJson,
+  }) async {
+    try {
+      final result = await escortService.createVirtualEscort(
+        groupId: groupId,
+        rawJson: jsonEncode(rawJson),
+        vehicle: vehicle,
+        watcherIds: watcherIds,
+      );
+
+      if (result["success"] == true) {
+        debugPrint("✅ Escort created: ${result["data"]}");
+      } else {
+        debugPrint("❌ Failed to create escort: ${result["message"]}");
+      }
+    } catch (e) {
+      debugPrint("❌ Exception in createEscortAfterRoute: $e");
+    }
+  }
+
+  Future<void> updateObserverMarker(double lat, double lng) async {
+    if (mapboxMap == null) {
+      debugPrint("⚠️ mapboxMap is null, cannot update observer marker");
+      return;
+    }
+    final imageBytes = await getImageFromAsset(TImages.currentLocationIconPuck);
+
+    if (_markerManager == null) {
+      await _recreateMarkerManager();
+    }
+    if (_markerManager == null) {
+      debugPrint("❌ Failed to create marker manager for observer marker");
+      return;
+    }
+
+    final point = Point(coordinates: Position(lng, lat));
+
+    try {
+      if (_observerMarker == null) {
+        _observerMarker = await _markerManager!.create(
+          PointAnnotationOptions(
+            geometry: point,
+            image: imageBytes,
+            iconSize: 0.2,
+          ),
+        );
+        debugPrint("✅ Observer marker created at $lat,$lng");
+      } else {
+        _observerMarker!.geometry = point;
+        await _markerManager!.update(_observerMarker!);
+        debugPrint("🔄 Observer marker updated to $lat,$lng");
+      }
+      await mapboxMap!.flyTo(
+        CameraOptions(center: point, zoom: 17),
+        MapAnimationOptions(duration: 1000),
+      );
+    } catch (e) {
+      debugPrint("❌ Failed to update observer marker: $e");
     }
   }
 }

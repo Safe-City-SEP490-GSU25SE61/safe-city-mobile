@@ -132,11 +132,6 @@ class VirtualEscortScreen extends StatelessWidget {
                     ),
                   );
                 }
-                if (controller.groups.isEmpty) {
-                  return const SliverToBoxAdapter(
-                    child: Center(child: Text("Không có nhóm nào")),
-                  );
-                }
                 return SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final group = controller.groups[index];

@@ -200,18 +200,19 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Icon(
-                                mapController.selectedVehicle.value ==
-                                        VehicleType.bike
+                                mapController.selectedVehicle.value == VehicleType.bike
                                     ? Icons.pedal_bike
                                     : Icons.directions_car,
                                 color: TColors.accent,
                                 size: 30,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Text(
                                 vehicleToVietnamese(
                                   mapController.selectedVehicle.value,
@@ -234,9 +235,7 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                                   'destination': destinationAddress ?? '',
                                   'destinationLat': mapController.destinationPosition.value?.lat.toDouble(),
                                   'destinationLng': mapController.destinationPosition.value?.lng.toDouble(),
-                                  'vehicle': vehicleToVietnamese(
-                                    mapController.selectedVehicle.value,
-                                  ),
+                                  'vehicle': vehicleToVietnamese(mapController.selectedVehicle.value),
                                 },
                               );
                               mapController.clearRouteAndMarker();
@@ -247,7 +246,6 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                                 horizontal: 14,
                                 vertical: 8,
                               ),
-
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -262,8 +260,10 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             mapController.routeDurationText.value,
@@ -309,8 +309,10 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
           destinationAddress = description;
         }
       });
+
       mapController.clearRouteAndMarker();
       await mapController.selectPlace(placeId, isOrigin: isOrigin);
+
       if (mapController.originPosition.value != null &&
           mapController.destinationPosition.value != null) {
         await mapController.mapDirectionRoute(

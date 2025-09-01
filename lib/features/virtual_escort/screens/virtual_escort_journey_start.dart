@@ -1,13 +1,22 @@
-﻿import 'package:flutter/foundation.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_journey_end.dart';
 
 import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/enums.dart';
 import '../../../utils/helpers/helper_functions.dart';
+import '../../../utils/popups/loaders.dart';
+import '../controllers/virtual_escort_journey_controller.dart';
 import '../controllers/virtual_escort_map_controller.dart';
 
 class VirtualEscortJourneyStart extends StatefulWidget {
@@ -34,9 +43,88 @@ class VirtualEscortJourneyStart extends StatefulWidget {
 }
 
 class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
+  var hasArrived = false.obs;
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY2']!;
   final mapController = Get.put(VirtualEscortMapController());
+  final journeyController = Get.put(VirtualEscortJourneyController());
   List<Position> routePositions = [];
+  final popUpModal = PopUpModal.instance;
+  Timer? _destinationReachedTimer;
+  final secureStorage = const FlutterSecureStorage();
+
+  void showDestinationReachedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Đã đến nơi!"),
+          content: const Text("Bạn đã đến điểm đến thành công."),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                try {
+                  final biometricEnabled = await secureStorage.read(
+                    key: 'is_biometric_login_enabled',
+                  );
+
+                  if (biometricEnabled != 'true') {
+                    TLoaders.warningSnackBar(
+                      title: 'Tính năng chưa được bật',
+                      message: 'Vui lòng bật tính năng sinh trắc học để tiếp tục.',
+                    );
+                    return;
+                  }
+
+                  final auth = LocalAuthentication();
+                  final didConfirm = await auth.authenticate(
+                    localizedReason: 'Xác thực vân tay để xác nhận hành động',
+                    options: const AuthenticationOptions(
+                      biometricOnly: true,
+                      stickyAuth: true,
+                    ),
+                  );
+
+                  if (didConfirm) {
+                    journeyController.stopSendingLocation();
+                    Get.to(() => const VirtualEscortJourneyEnd());
+                  } else {
+                    TLoaders.warningSnackBar(
+                      title: 'Xác thực thất bại',
+                      message: 'Bạn cần xác thực để tiếp tục.',
+                    );
+                  }
+                } catch (e) {
+                  TLoaders.errorSnackBar(
+                    title: 'Lỗi',
+                    message: 'Đã xảy ra sự cố, vui lòng thử lại sau',
+                  );
+                }
+              },
+              child: const Text("Đồng ý"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    ever(mapController.hasArrived, (arrived) {
+      if (arrived) {
+        showDestinationReachedDialog();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _destinationReachedTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +137,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
           MapWidget(
             key: const ValueKey("map"),
             styleUri:
-                "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey",
+            "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey",
             onMapCreated: (controller) async {
               mapController.virtualEscortStartInitMap(controller, isDarkMode);
               await mapController.startVirtualEscort();
@@ -91,28 +179,29 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Obx(
-                            () {
-                          final text = mapController.currentInstruction.value.isEmpty
-                              ? 'Đang tính toán...'
-                              : mapController.currentInstruction.value;
-                          final limitedText = text.length > 25 ? '${text.substring(0, 25)}...' : text;
+                      Obx(() {
+                        final text =
+                        mapController.currentInstruction.value.isEmpty
+                            ? 'Đang tính toán...'
+                            : mapController.currentInstruction.value;
+                        final limitedText = text.length > 25
+                            ? '${text.substring(0, 25)}...'
+                            : text;
 
-                          return Text(
-                            limitedText,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
-                      ),
+                        return Text(
+                          limitedText,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }),
 
                       Obx(
-                        () => Text(
+                            () => Text(
                           mapController.distanceToNext.value.isEmpty
                               ? ''
                               : '${mapController.distanceToNext.value} nữa đến điểm tiếp theo',
@@ -129,7 +218,59 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
             ),
           ),
           Positioned(
-            bottom: 125,
+            top: 128,
+
+            child: Obx(() {
+              List<Widget> alerts = [];
+
+              if (journeyController.isInternetWeak.value) {
+                alerts.add(
+                  popUpModal.buildSidebarAlert(Iconsax.wifi, "Mất mạng"),
+                );
+              }
+              if (journeyController.isBatteryCritical.value) {
+                alerts.add(
+                  popUpModal.buildSidebarAlert(
+                    Iconsax.battery_empty,
+                    "Pin rất yếu",
+                  ),
+                );
+              } else if (journeyController.isBatteryLow.value) {
+                alerts.add(
+                  popUpModal.buildSidebarAlert(
+                    Iconsax.battery_empty,
+                    "Pin yếu",
+                  ),
+                );
+              }
+              if (journeyController.isGpsUnstable.value) {
+                alerts.add(
+                  popUpModal.buildSidebarAlert(Iconsax.gps, "GPS kém ổn định"),
+                );
+              }
+
+              if (alerts.isEmpty) return const SizedBox.shrink();
+
+              return SizedBox(
+                width: 120,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: alerts,
+                  ),
+                ),
+              );
+            }),
+          ),
+          Positioned(
+            bottom: 124,
             left: 12,
             child: Material(
               color: Colors.transparent,
@@ -148,7 +289,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                   ),
                   alignment: Alignment.center,
                   child: Obx(
-                    () => Column(
+                        () => Column(
                       children: [
                         Text(
                           mapController.speedLimit.value,
@@ -170,7 +311,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
             ),
           ),
           Positioned(
-            bottom: 125,
+            bottom: 124,
             right: 12,
             child: Material(
               color: Colors.transparent,
@@ -179,9 +320,8 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
               child: InkWell(
                 customBorder: const CircleBorder(),
                 onTap: () {
-
                   popUpModal.showSlideToProceedDialog(
-                    title: 'SOS Alert',
+                    title: 'Gửi tín hiệu hỗ trợ',
                     message: 'Bạn có chắc muốn gửi tín hiệu SOS?',
                     onCancel: () {
                       if (kDebugMode) {
@@ -211,111 +351,125 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
               ),
             ),
           ),
-
           Positioned(
             bottom: 26,
             left: 12,
             right: 12,
             child: Obx(() {
-              final duration = widget.estimatedTime.isEmpty
-                  ? (mapController.routeDurationText.value.isEmpty ? '...' : mapController.routeDurationText.value)
+              final durationStr = widget.estimatedTime.isEmpty
+                  ? (mapController.routeDurationText.value.isEmpty
+                  ? '...'
+                  : mapController.routeDurationText.value)
                   : widget.estimatedTime;
+
               final distance = mapController.routeDistanceText.value.isEmpty
                   ? '...'
                   : mapController.routeDistanceText.value;
 
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+              int minutes = 0;
+              final regex = RegExp(r'(\d+)');
+              final match = regex.firstMatch(durationStr);
+              if (match != null) {
+                minutes = int.tryParse(match.group(0) ?? '0') ?? 0;
+              }
+              final arrivalTime = DateTime.now().add(
+                Duration(minutes: minutes),
+              );
+              final formattedArrival = DateFormat.Hm().format(arrivalTime);
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 15,
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Thời gian",
-                              style: TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              duration,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 50),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Quãng đường",
-                              style: TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              distance,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: TColors.white,
-                        border: Border.all(color: TColors.primary, width: 4),
-                      ),
-                      child: Center(
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.pause,
-                            color: TColors.primary,
-                            size: 36,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Text(
+                                "Thời gian",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: TColors.darkerGrey,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    durationStr,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (minutes > 0) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "• $formattedArrival",
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black54,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
-                          onPressed: () {
-                            popUpModal.showSlideConfirmPauseDialog(
-                              title: "Xác nhận tạm dừng",
-                              message: "Bạn có chắc chắn muốn tạm dừng hộ tống?",
-                              onConfirm: () {
-                                debugPrint("✅ Confirmed");
-                              },
-                              onCancel: () {
-                                debugPrint("❌ Cancelled");
-                              },
-                            );
-                          },
                         ),
-                      ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Text(
+                                "Quãng đường",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: TColors.darkerGrey,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                distance,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+
+                ],
               );
             }),
           ),
+
         ],
       ),
     );

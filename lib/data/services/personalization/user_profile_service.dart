@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../../features/personalization/models/achivement_model.dart';
+import '../../../features/personalization/models/pont_history_model.dart';
 import '../../../features/personalization/models/user_profile_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -246,6 +247,45 @@ class UserProfileService {
       return data.map((json) => AchievementModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load achievements');
+    }
+  }
+
+  Future<PointHistoryModel?> fetchPointHistory({
+    String range = "month",
+    String? sourceType,
+    bool desc = true,
+  }) async {
+    final token = await getAccessToken();
+    if (token == null) return null;
+
+    try {
+      final uri = Uri.parse(
+        '${apiConnection}points/history?range=$range&desc=$desc'
+            '${sourceType != null ? "&sourceType=$sourceType" : ""}',
+      );
+
+      final response = await client.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'accept': '*/*',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(utf8.decode(response.bodyBytes));
+        return PointHistoryModel.fromJson(jsonBody);
+      } else {
+        if (kDebugMode) {
+          print("Failed to fetch point history: ${response.body}");
+        }
+        return null;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error fetching point history: $e");
+      }
+      return null;
     }
   }
 }

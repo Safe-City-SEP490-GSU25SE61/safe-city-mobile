@@ -100,6 +100,8 @@ class TTexts {
 • Người dùng có uy tín dưới 2 không thể gửi báo cáo.
 • Mỗi báo cáo cần thời gian để được xử lý và xác minh.
 ''';
+  static const String sosInformation = "Tín hiệu đã được gửi tới người quan sát. Nếu chưa có người quan sát khi tạo hành trình, vui lòng sử dụng tùy chọn bên dưới để gọi khẩn cấp.";
+
   static const String incidentLiveMapNotice = 'Dữ liệu chỉ mang tính tham khảo và mọi sự việc liên quan đã được xử lý theo quy định pháp luật.';
   static const String disclaimer = 'Lưu ý';
   static const String createBlogNotice = 'Khi gửi báo cáo sẽ được sĩ quan cộng đồng duyệt bài viết. Nếu thành công bạn sẽ được cộng một số điểm nhất định.';

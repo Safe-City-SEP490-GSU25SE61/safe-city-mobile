@@ -166,7 +166,7 @@ class MembershipTierScreen extends StatelessWidget {
                   benefits: achievement.benefit.split('. ').where((e) => e.isNotEmpty).toList(),
                   description: achievement.description,
                   requiredPoints: achievement.minPoint,
-                  dark: dark,
+                  dark: dark, iconUrl: achievement.imageUrl,
                 ),
               ),
             ],
@@ -178,6 +178,7 @@ class MembershipTierScreen extends StatelessWidget {
 
   Widget _buildRankBenefitTile({
     required String rank,
+    required String iconUrl,
     required List<String> benefits,
     required String description,
     required bool dark,
@@ -195,13 +196,29 @@ class MembershipTierScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  rank,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                Row(
+                  children: [
+                    Image.network(
+                      iconUrl,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.error_outline,
+                        size: 24,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      rank,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
                   '$requiredPoints điểm',
@@ -213,7 +230,9 @@ class MembershipTierScreen extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 4),
+
             Text(
               description,
               style: TextStyle(
@@ -222,6 +241,7 @@ class MembershipTierScreen extends StatelessWidget {
                 color: TColors.darkerGrey,
               ),
             ),
+
             const SizedBox(height: 8),
 
             ...benefits.map(
