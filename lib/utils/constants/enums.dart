@@ -273,6 +273,7 @@ String vehicleToString(VehicleType vehicle) {
       return 'hd';
   }
 }
+
 String vehicleToVietnamese(VehicleType vehicle) {
   switch (vehicle) {
     case VehicleType.car:
@@ -286,4 +287,40 @@ String vehicleToVietnamese(VehicleType vehicle) {
     case VehicleType.hd:
       return 'Xe đầu kéo';
   }
+}
+
+enum PointHistoryRange { day, week, month, year }
+
+enum PointHistorySource { blog, incident_report }
+
+enum PointHistorySort { asc, desc }
+
+extension PointHistoryRangeExt on PointHistoryRange {
+  String get label {
+    switch (this) {
+      case PointHistoryRange.day:
+        return "Ngày";
+      case PointHistoryRange.week:
+        return "Tuần";
+      case PointHistoryRange.month:
+        return "Tháng";
+      case PointHistoryRange.year:
+        return "Năm";
+    }
+  }
+}
+
+extension PointHistorySourceExt on PointHistorySource {
+  String get label {
+    switch (this) {
+      case PointHistorySource.blog:
+        return "Blog";
+      case PointHistorySource.incident_report:
+        return "Báo cáo sự cố";
+    }
+  }
+}
+
+extension PointHistorySortExt on PointHistorySort {
+  String get label => this == PointHistorySort.desc ? "Mới nhất" : "Cũ nhất";
 }

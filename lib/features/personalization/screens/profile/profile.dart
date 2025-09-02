@@ -20,6 +20,7 @@ import '../../../../utils/constants/text_strings.dart';
 import '../../../../utils/helpers/user_rank_helper.dart';
 import '../../controllers/profile/user_profile_controller.dart';
 import '../login_and_security/login_and_security.dart';
+import '../point_history/point_history.dart';
 
 class ProfileScreen extends StatelessWidget {
   ProfileScreen({super.key});
@@ -106,7 +107,10 @@ class ProfileScreen extends StatelessWidget {
                                   ),
                                 ),
 
-                                if (userController.user.value.isBiometricEnabled)
+                                if (userController
+                                    .user
+                                    .value
+                                    .isBiometricEnabled)
                                   Positioned(
                                     bottom: 0,
                                     right: 3,
@@ -174,20 +178,24 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
                   TProfileMenu(
-                    onPressed: () => Get.to(ChangeUserPassword()),
+                    onPressed: () => Get.to(() => ChangeUserPassword()),
                     title: 'Mật khẩu',
                     value: 'Thay đổi mật khẩu',
                     showIcon: true,
                   ),
                   TRankProfileMenu(title: 'Xếp hạng', rank: userRank),
                   TPointDisplay(
+                    showIcon: true,
                     totalPoint: user.totalPoint,
                     title: 'Tổng điểm',
+                    onPressed: () => Get.to(() => PointHistoryScreen()),
                   ),
                   TPointDisplay(
+                    showIcon: false,
                     totalPoint: userController.user.value.reputationPoint,
                     title: 'Điểm uy tín',
                     isReputationPoint: true,
+                    onPressed: () {},
                   ),
 
                   const Divider(),
@@ -203,7 +211,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           const Text(
                             TTexts.identityDataIsHidden,
-                            style: TextStyle(color: Colors.grey,fontSize: 12),
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
                           ),
                           const SizedBox(height: TSizes.spaceBtwItems),
                           SizedBox(

@@ -2,12 +2,14 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
 import 'package:safe_city_mobile/features/community_blog/models/blog_history_model.dart';
+import 'package:video_compress/video_compress.dart';
 
 import '../../../features/community_blog/models/blog_comment_model.dart';
 import '../../../features/community_blog/models/blog_models.dart';
@@ -178,14 +180,23 @@ class BlogService {
         final isImage = ['jpg', 'jpeg', 'png'].contains(ext);
 
         if (isImage) {
-          final mediaType = MediaType('image', ext == 'jpg' ? 'jpeg' : ext);
-          request.files.add(
-            await http.MultipartFile.fromPath(
-              'MediaFiles',
-              image.path!,
-              contentType: mediaType,
-            ),
+          final compressed = await FlutterImageCompress.compressWithFile(
+            image.path!,
+            minWidth: 1080,
+            minHeight: 1080,
+            quality: 70,
           );
+          if (compressed != null) {
+            final fileName = path.basename(image.path!);
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                'MediaFiles',
+                compressed,
+                filename: fileName,
+                contentType: MediaType('image', ext == 'jpg' ? 'jpeg' : ext),
+              ),
+            );
+          }
         } else {
           if (kDebugMode) {
             print('⚠️ Unsupported image format: $ext');
@@ -194,21 +205,30 @@ class BlogService {
       }
 
       if (video != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'MediaFiles',
-            video.path!,
-            contentType: MediaType('video', 'mp4'),
-          ),
+        final compressedVideo = await VideoCompress.compressVideo(
+          video.path!,
+          quality: VideoQuality.MediumQuality,
+          deleteOrigin: false,
         );
+
+        if (compressedVideo != null && compressedVideo.file != null) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'MediaFiles',
+              compressedVideo.file!.path,
+              contentType: MediaType('video', 'mp4'),
+            ),
+          );
+        }
       }
+
 
       final accessToken = await secureStorage.read(key: 'access_token');
       if (accessToken != null && accessToken.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $accessToken';
       }
 
-      final response = await request.send().timeout(const Duration(minutes: 5));
+      final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
       if (kDebugMode) {
@@ -223,7 +243,12 @@ class BlogService {
         };
       }
 
-      final responseData = jsonDecode(responseBody);
+      dynamic responseData;
+      try {
+        responseData = jsonDecode(responseBody);
+      } catch (_) {
+        responseData = {"message": responseBody};
+      }
 
       if (response.statusCode == 200) {
         return {

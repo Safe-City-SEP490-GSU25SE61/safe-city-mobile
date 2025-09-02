@@ -450,20 +450,17 @@ class VirtualEscortService {
     }
   }
 
-  Future<void> initSignalR({required bool isLeader}) async {
+  Future<void> initSignalR({required bool isLeader,required int memberId}) async {
     try {
       final token = await getAccessToken();
-      final memberId = await getMemberId();
 
       if (token == null) {
         debugPrint("❌ Cannot init SignalR: Missing token or memberId");
         return;
       }
-      // || memberId == null
 
       final role = isLeader ? "leader" : "observers";
-      // final hubUrl = "${apiConnection}hub?role=$role&memberId=$memberId";
-      final hubUrl = "https://safe-city-back-end.onrender.com/journey-hub?role=$role&memberId=35";
+      final hubUrl = "https://safe-city-back-end.onrender.com/journey-hub?role=$role&memberId=$memberId";
 
       debugPrint("🔌 Connecting to: $hubUrl");
 
@@ -474,16 +471,6 @@ class VirtualEscortService {
           accessTokenFactory: () async => token,
         ),
       ).withAutomaticReconnect().build();
-      // hubConnection?.on("ReceiveLeaderLocation", (args) {
-      //   if (args == null || args.length < 2) return;
-      //   final lat = args[0] as double;
-      //   final lng = args[1] as double;
-      //   debugPrint("📡 Received location update: $lat, $lng");
-      //   debugPrint("📡 Received location update: $lat, $lng");
-      //
-      //   leaderLat.value = lat;
-      //   leaderLng.value = lng;
-      // });
 
       await hubConnection?.start();
       debugPrint("✅ SignalR connected as $role with memberId=$memberId");

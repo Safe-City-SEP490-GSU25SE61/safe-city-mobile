@@ -97,8 +97,8 @@ class VirtualEscortJourneyController extends GetxController {
     }
   }
 
-  Future<void> initConnection({required bool isLeader}) async {
-    await escortService.initSignalR(isLeader: isLeader);
+  Future<void> initConnection({required bool isLeader,required int memberId}) async {
+    await escortService.initSignalR(isLeader: isLeader, memberId: memberId);
     if (!isLeader) {
       escortService.hubConnection?.on("ReceiveLeaderLocation", (args) {
         if (args == null || args.length < 2) return;

@@ -34,7 +34,7 @@ class _VirtualEscortObserverScreenState
         onMapCreated: (controller) async {
           mapController.virtualEscortStartInitMap(controller, isDarkMode);
           await mapController.loadObserverJourney(widget.memberId);
-          await journeyController.initConnection(isLeader: false);
+          await journeyController.initConnection(isLeader: false,memberId: widget.memberId);
         },
       ),
     );

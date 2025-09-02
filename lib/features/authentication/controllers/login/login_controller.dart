@@ -99,7 +99,8 @@ class LoginController extends GetxController {
         Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
         String? userRole = decodedToken['role'];
         String? userId = decodedToken['sub'];
-
+        String? userEmail = decodedToken['email'];
+        await secureStorage.write(key: 'user_email', value: userEmail);
         await secureStorage.write(key: 'user_id', value: userId);
 
         if (userRole == 'Citizen') {
@@ -195,8 +196,9 @@ class LoginController extends GetxController {
         Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
         String? userRole = decodedToken['role'];
         String? userId = decodedToken['sub'];
+        String? userEmail = decodedToken['email'];
         await secureStorage.write(key: 'user_id', value: userId);
-
+        await secureStorage.write(key: 'user_email', value: userEmail);
         if (userRole == 'Citizen') {
           TLoaders.successSnackBar(
             title: 'Chào mừng quay trở lại!',

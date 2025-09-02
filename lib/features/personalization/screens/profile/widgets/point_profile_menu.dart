@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
@@ -7,12 +8,20 @@ class TPointDisplay extends StatelessWidget {
   final int totalPoint;
   final String title;
   final bool isReputationPoint;
+  final VoidCallback onPressed;
+  final IconData icon;
+  final VoidCallback? onIconPressed;
+  final bool showIcon;
 
   const TPointDisplay({
     super.key,
     required this.totalPoint,
+    required this.onPressed,
     this.title = 'Tổng điểm',
     this.isReputationPoint = false,
+    this.icon = Iconsax.arrow_right_34,
+    this.onIconPressed,
+    this.showIcon = true,
   });
 
   Color _getPointColor(int point) {
@@ -31,48 +40,61 @@ class TPointDisplay extends StatelessWidget {
         ? _getPointColor(displayedPoint)
         : TColors.accent;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: TSizes.spaceBtwItems / 1.5),
-      child: Row(
-        children: [
-          /// Title
-          Expanded(
-            flex: 3,
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          /// Value
-          Expanded(
-            flex: 4,
-            child: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: '$displayedPoint',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: pointColor,
-                    ),
-                  ),
-                  TextSpan(
-                    text: ' Điểm',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: pointColor),
-                  ),
-                ],
+    return GestureDetector(
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: TSizes.spaceBtwItems / 1.5,
+        ),
+        child: Row(
+          children: [
+            /// Title
+            Expanded(
+              flex: 3,
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
 
-          /// Spacer
-          const Expanded(child: SizedBox()),
-        ],
+            /// Value
+            Expanded(
+              flex: 4,
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$displayedPoint',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: pointColor,
+                      ),
+                    ),
+                    TextSpan(
+                      text: ' Điểm',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: pointColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            /// Spacer
+            const Expanded(child: SizedBox()),
+
+            /// Optional trailing icon
+            if (showIcon)
+              GestureDetector(
+                onTap: onIconPressed ?? onPressed,
+                child: Icon(icon, size: 18),
+              ),
+          ],
+        ),
       ),
     );
   }

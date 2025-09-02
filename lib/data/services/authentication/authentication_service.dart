@@ -8,7 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthenticationService {
   var client = http.Client();
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  final secureStorage = const FlutterSecureStorage();
   final String? apiConnection = dotenv.env['API_DEPLOYMENT_URL'];
 
   Future<Map<String, dynamic>> handleSignUp({
@@ -51,9 +51,7 @@ class AuthenticationService {
         await http.MultipartFile.fromPath('backImage', backImage.path),
       );
 
-      final response = await request.send().timeout(
-        const Duration(seconds: 10),
-      );
+      final response = await request.send();
       final responseBody = await response.stream.bytesToString();
       final responseData = jsonDecode(responseBody);
 
@@ -119,8 +117,7 @@ class AuthenticationService {
             Uri.parse('${apiConnection}auth/login'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(userSignInInformation),
-          )
-          .timeout(const Duration(seconds: 10));
+          );
 
       var responseData = jsonDecode(response.body);
 

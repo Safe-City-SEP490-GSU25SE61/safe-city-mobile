@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/common/widgets/effects/shimmer_effect.dart';
@@ -7,11 +8,13 @@ import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_pending_request.dart';
 
 import '../../../common/widgets/appbar/appbar.dart';
+import '../../../common/widgets/effects/pulsing_circle.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/image_strings.dart';
 import '../../../utils/constants/sizes.dart';
 import '../controllers/virtual_escort_group_controller.dart';
 import '../controllers/virtual_escort_journey_controller.dart';
+import '../models/virtual_escort_group_detail.dart';
 
 class VirtualEscortGroupDetailPage extends StatelessWidget {
   final int groupId;
@@ -20,6 +23,7 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final secureStorage = const FlutterSecureStorage();
     final controller = VirtualEscortGroupController.instance;
     final signalRController = Get.put(VirtualEscortJourneyController());
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -145,8 +149,24 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () =>
-                            Get.to(() => VirtualEscortJourneyCreate(groupId: groupId,)),
+                        onPressed: () async {
+                          final savedEmail = await secureStorage.read(key: 'user_email');
+                          final detail = controller.groupDetail.value;
+                          if (detail == null) return;
+                          VirtualEscortMember? matchedMember;
+                          try {
+                            matchedMember = detail.members.firstWhere(
+                                  (m) => m.email.toLowerCase() == savedEmail?.toLowerCase(),
+                            );
+                          } catch (_) {
+                            matchedMember = null;
+                          }
+                          await secureStorage.write(key: 'escort_member_id', value: matchedMember!.id.toString());
+                          Get.to(() => VirtualEscortJourneyCreate(
+                            groupId: groupId,
+                            memberId: matchedMember!.id,
+                          ));
+                        },
                         icon: const Icon(Iconsax.add, size: 24),
                         label: const Text(
                           "Tạo giám sát",
@@ -232,7 +252,7 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                           onTap: () {
                             if (member.escortStatus.toLowerCase() == 'on-journey') {
                               Get.to(() =>  VirtualEscortObserverScreen(memberId: member.id,));
-                              signalRController.initConnection(isLeader: false);
+                              signalRController.initConnection(isLeader: false,memberId: member.id);
                             }
                           },
                           child: Card(
@@ -343,13 +363,10 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                                         ),
                                       ),
                                       if (member.escortStatus.toLowerCase() == "on-journey") ...[
-                                        const SizedBox(width: 6),
-                                        const Icon(
-                                          Iconsax.routing,
-                                          size: 22,
-                                          color: Colors.blueAccent,
-                                        ),
+                                        const SizedBox(width: 4),
+                                        const PulsingCircle(),
                                       ],
+
                                       if (detail.isLeader && member.role.toLowerCase() != 'leader')
                                         PopupMenuButton<String>(
                                           icon: const Icon(Icons.more_vert, size: 20, color: Colors.black),
