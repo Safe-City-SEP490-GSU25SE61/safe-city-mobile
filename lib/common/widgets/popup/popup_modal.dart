@@ -1,27 +1,114 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 import 'package:safe_city_mobile/utils/constants/sizes.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:slide_to_act/slide_to_act.dart';
 
 import '../../../features/virtual_escort/screens/virtual_escort_sos.dart';
 import '../../../utils/constants/colors.dart';
+import '../../../utils/constants/image_strings.dart';
 
 class PopUpModal {
   PopUpModal._internal();
   static final PopUpModal instance = PopUpModal._internal();
-
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   void showOkOnlyDialog({
     required String title,
-    required String message,
+    String? message,
+    Widget? messageWidget,
     VoidCallback? onOk,
   }) {
     Get.defaultDialog(
       title: title,
       contentPadding: const EdgeInsets.all(TSizes.mediumLargeSpace),
-      middleText: message,
+      content: messageWidget ??
+          Text(
+            message ?? "",
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, height: 1.4),
+          ),
+      confirm: ElevatedButton(
+        onPressed: () {
+          Get.back();
+          if (onOk != null) onOk();
+        },
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 18.0),
+          child: Text('Đồng ý'),
+        ),
+      ),
+    );
+  }
+
+  void showOkOnlyDialogSos({
+    required String title,
+    String? message,
+    double? lat,
+    double? lng,
+    VoidCallback? onOk,
+  }) {
+    final ScreenshotController screenshotController = ScreenshotController();
+    Get.defaultDialog(
+      title: title,
+      contentPadding: const EdgeInsets.all(16),
+      content: Screenshot(
+        controller: screenshotController,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Lottie.asset(
+              TImages.sosSignal,
+              height: 120,
+              repeat: true,
+              animate: true,
+            ),
+            const SizedBox(height: 12),
+
+            if (message != null || (lat != null && lng != null)) ...[
+              Text(
+                message ?? "Có tín hiệu SOS!",
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+              if (lat != null && lng != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  "Vị trí: ($lat, $lng)",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+            ],
+
+            // Screenshot button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.camera_alt, color: Colors.blue),
+                  tooltip: "Chụp màn hình",
+                  onPressed: () async {
+                    final image = await screenshotController.capture();
+                    if (image != null) {
+                      Get.snackbar("Thành công", "Đã chụp màn hình!");
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
       confirm: ElevatedButton(
         onPressed: () {
           Get.back();

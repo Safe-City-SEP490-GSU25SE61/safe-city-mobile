@@ -26,6 +26,8 @@ class VirtualEscortJourneyStart extends StatefulWidget {
   final double destinationLng;
   final VehicleType vehicle;
   final String estimatedTime;
+  final String routeDistance;
+  final int observerCount;
 
   const VirtualEscortJourneyStart({
     super.key,
@@ -35,6 +37,8 @@ class VirtualEscortJourneyStart extends StatefulWidget {
     required this.destinationLng,
     required this.vehicle,
     required this.estimatedTime,
+    required this.routeDistance,
+    required this.observerCount,
   });
 
   @override
@@ -71,7 +75,8 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                   if (biometricEnabled != 'true') {
                     TLoaders.warningSnackBar(
                       title: 'Tính năng chưa được bật',
-                      message: 'Vui lòng bật tính năng sinh trắc học để tiếp tục.',
+                      message:
+                          'Vui lòng bật tính năng sinh trắc học để tiếp tục.',
                     );
                     return;
                   }
@@ -87,7 +92,14 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
 
                   if (didConfirm) {
                     journeyController.stopSendingLocation();
-                    Get.to(() => const VirtualEscortJourneyEnd());
+                    Get.to(
+                      () => VirtualEscortJourneyEnd(
+                        duration: widget.estimatedTime,
+                        distance: widget.routeDistance,
+                        sosCount: journeyController.sosCount.value,
+                        observerCount: widget.observerCount,
+                      ),
+                    );
                   } else {
                     TLoaders.warningSnackBar(
                       title: 'Xác thực thất bại',
@@ -108,7 +120,6 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
       },
     );
   }
-
 
   @override
   void initState() {
@@ -137,7 +148,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
           MapWidget(
             key: const ValueKey("map"),
             styleUri:
-            "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey",
+                "https://tiles.goong.io/assets/goong_map_web.json?$goongMapTilesKey",
             onMapCreated: (controller) async {
               mapController.virtualEscortStartInitMap(controller, isDarkMode);
               await mapController.startVirtualEscort();
@@ -181,7 +192,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                     children: [
                       Obx(() {
                         final text =
-                        mapController.currentInstruction.value.isEmpty
+                            mapController.currentInstruction.value.isEmpty
                             ? 'Đang tính toán...'
                             : mapController.currentInstruction.value;
                         final limitedText = text.length > 25
@@ -201,7 +212,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                       }),
 
                       Obx(
-                            () => Text(
+                        () => Text(
                           mapController.distanceToNext.value.isEmpty
                               ? ''
                               : '${mapController.distanceToNext.value} nữa đến điểm tiếp theo',
@@ -289,7 +300,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                   ),
                   alignment: Alignment.center,
                   child: Obx(
-                        () => Column(
+                    () => Column(
                       children: [
                         Text(
                           mapController.speedLimit.value,
@@ -358,8 +369,8 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
             child: Obx(() {
               final durationStr = widget.estimatedTime.isEmpty
                   ? (mapController.routeDurationText.value.isEmpty
-                  ? '...'
-                  : mapController.routeDurationText.value)
+                        ? '...'
+                        : mapController.routeDurationText.value)
                   : widget.estimatedTime;
 
               final distance = mapController.routeDistanceText.value.isEmpty
@@ -406,9 +417,10 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                               const Text(
                                 "Thời gian",
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    color: TColors.darkerGrey,
-                                    fontWeight: FontWeight.w600),
+                                  fontSize: 14,
+                                  color: TColors.darkerGrey,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Row(
@@ -445,9 +457,10 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                               const Text(
                                 "Quãng đường",
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    color: TColors.darkerGrey,
-                                    fontWeight: FontWeight.w600),
+                                  fontSize: 14,
+                                  color: TColors.darkerGrey,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -464,12 +477,10 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                       ],
                     ),
                   ),
-
                 ],
               );
             }),
           ),
-
         ],
       ),
     );

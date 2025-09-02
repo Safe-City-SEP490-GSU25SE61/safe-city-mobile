@@ -52,6 +52,7 @@ dependencies:
   flutter_image_compress: ^2.4.0
   video_compress: ^3.1.4
   image: ^4.5.4
+  screenshot: ^3.0.0
 
   #Maps Integration
   mapbox_maps_flutter: ^2.9.0

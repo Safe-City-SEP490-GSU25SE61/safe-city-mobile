@@ -261,6 +261,9 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                       }
 
                       if (originPos != null && destPos != null) {
+                        final distance = mapController.routeDistanceText.value.isEmpty
+                            ? '...'
+                            : mapController.routeDistanceText.value;
                         Get.to(
                           () => VirtualEscortJourneyStart(
                             originLat: originPos.lat.toDouble(),
@@ -269,6 +272,8 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                             destinationLng: destPos.lng.toDouble(),
                             vehicle: vehicleForRoute,
                             estimatedTime: mapController.estimatedTime.value,
+                            routeDistance: distance,
+                            observerCount: selectedWatcherIds.length,
                           ),
                         );
                         await mapController.createEscortAfterRoute(

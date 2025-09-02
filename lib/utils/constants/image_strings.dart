@@ -26,6 +26,9 @@ class TImages {
   //--Success Status Images
   static const String successStatus = "assets/images/status/success.json";
   static const String cancelStatus = "assets/images/status/cancel.json";
+  static const String navigationReached = "assets/images/virtual_escort/navigation_reached.png";
+  static const String locationReached = "assets/images/virtual_escort/location_reached.png";
+  static const String sosSignal = "assets/images/virtual_escort/sos.json";
 
   //--Icon Images
   static const String grillIcon = "assets/images/icons/grill.gif";
