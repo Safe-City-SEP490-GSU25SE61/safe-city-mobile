@@ -11,6 +11,7 @@ import 'package:signalr_netcore/hub_connection_builder.dart';
 
 import '../../../features/virtual_escort/models/virtual_escort_group_detail.dart';
 import '../../../features/virtual_escort/models/virtual_escort_pending_request.dart';
+import '../../../features/virtual_escort/models/virtual_escort_personal_history.dart';
 
 class VirtualEscortService {
   var client = http.Client();
@@ -450,20 +451,55 @@ class VirtualEscortService {
     }
   }
 
-  Future<void> initSignalR({required bool isLeader}) async {
+  Future<Map<String, dynamic>> getEscortHistory() async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+
+    try {
+      final response = await client.get(
+        Uri.parse('${apiConnection}virtual-escorts/history'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 20));
+
+      if (kDebugMode) {
+        print("Get Escort History: ${response.statusCode} -> ${response.body}");
+      }
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": true,
+          "data": VirtualEscortPersonalHistory.fromJson(jsonData),
+        };
+      } else {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": false,
+          "message": jsonData["message"] ?? "Failed to fetch history",
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error fetching escort history: $e");
+      return {"success": false, "message": "Exception: $e"};
+    }
+  }
+
+  Future<void> initSignalR({required bool isLeader,required int memberId}) async {
     try {
       final token = await getAccessToken();
-      final memberId = await getMemberId();
 
       if (token == null) {
         debugPrint("❌ Cannot init SignalR: Missing token or memberId");
         return;
       }
-      // || memberId == null
 
       final role = isLeader ? "leader" : "observers";
-      // final hubUrl = "${apiConnection}hub?role=$role&memberId=$memberId";
-      final hubUrl = "https://safe-city-back-end.onrender.com/journey-hub?role=$role&memberId=35";
+      final hubUrl = "https://safe-city-back-end.onrender.com/journey-hub?role=$role&memberId=$memberId";
 
       debugPrint("🔌 Connecting to: $hubUrl");
 
@@ -474,16 +510,6 @@ class VirtualEscortService {
           accessTokenFactory: () async => token,
         ),
       ).withAutomaticReconnect().build();
-      // hubConnection?.on("ReceiveLeaderLocation", (args) {
-      //   if (args == null || args.length < 2) return;
-      //   final lat = args[0] as double;
-      //   final lng = args[1] as double;
-      //   debugPrint("📡 Received location update: $lat, $lng");
-      //   debugPrint("📡 Received location update: $lat, $lng");
-      //
-      //   leaderLat.value = lat;
-      //   leaderLng.value = lng;
-      // });
 
       await hubConnection?.start();
       debugPrint("✅ SignalR connected as $role with memberId=$memberId");

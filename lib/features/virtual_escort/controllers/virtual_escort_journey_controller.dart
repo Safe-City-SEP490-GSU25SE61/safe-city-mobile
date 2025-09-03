@@ -10,6 +10,8 @@ import 'package:signalr_netcore/hub_connection.dart';
 
 import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../data/services/virtual_escort/virtual_escort_service.dart';
+import '../../../navigation_dart.dart';
+import '../../../utils/constants/image_strings.dart';
 
 class VirtualEscortJourneyController extends GetxController {
   static VirtualEscortJourneyController get instance => Get.find();
@@ -28,6 +30,7 @@ class VirtualEscortJourneyController extends GetxController {
   Timer? _locationTimer;
   final leaderLat = 0.0.obs;
   final leaderLng = 0.0.obs;
+  final sosCount = 0.obs;
 
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   late StreamSubscription<BatteryState> _batterySubscription;
@@ -97,8 +100,8 @@ class VirtualEscortJourneyController extends GetxController {
     }
   }
 
-  Future<void> initConnection({required bool isLeader}) async {
-    await escortService.initSignalR(isLeader: isLeader);
+  Future<void> initConnection({required bool isLeader,required int memberId}) async {
+    await escortService.initSignalR(isLeader: isLeader, memberId: memberId);
     if (!isLeader) {
       escortService.hubConnection?.on("ReceiveLeaderLocation", (args) {
         if (args == null || args.length < 2) return;
@@ -122,11 +125,43 @@ class VirtualEscortJourneyController extends GetxController {
 
         debugPrint("🚨 SOS received: $message at ($lat, $lng)");
 
-        PopUpModal.instance.showOkOnlyDialog(
+        PopUpModal.instance.showOkOnlyDialogSos(
           title: "Tín hiệu SOS",
-          message: "$message\nVị trí: ($lat, $lng)",
+          message: "Người dùng đã gửi tín hiệu SOS!",
+          lat: lat,
+          lng: lng,
           onOk: () {
             VirtualEscortMapController.instance.updateObserverMarker(lat, lng);
+          },
+        );
+      });
+
+      escortService.hubConnection?.on("LeaderDisconnected", (args) {
+        final message = (args != null && args.isNotEmpty)
+            ? args[0] as String
+            : "Hành trình đã kết thúc.";
+
+        debugPrint("🏁 Journey ended by leader: $message");
+
+        PopUpModal.instance.showOkOnlyDialog(
+          title: "Thông báo",
+          messageWidget: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                TImages.locationReached,
+                height: 100,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Người tạo hành trình đã đến đích an toàn!",
+                style: TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          onOk: () {
+            Get.offAll(() => NavigationMenu());
           },
         );
       });
@@ -174,7 +209,7 @@ class VirtualEscortJourneyController extends GetxController {
         "SendSos",
         args: [lat, lng, DateTime.now().toUtc().toIso8601String()],
       );
-
+      sosCount.value++;
       debugPrint("📢 SOS sent: $lat, $lng");
     } catch (e) {
       debugPrint("❌ Failed to send SOS: $e");

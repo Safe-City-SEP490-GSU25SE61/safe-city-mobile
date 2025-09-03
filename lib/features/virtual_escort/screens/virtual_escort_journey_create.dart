@@ -18,8 +18,9 @@ import '../controllers/virtual_escort_map_controller.dart';
 
 class VirtualEscortJourneyCreate extends StatelessWidget {
   final int groupId;
+  final int memberId;
 
-  VirtualEscortJourneyCreate({super.key, required this.groupId});
+  VirtualEscortJourneyCreate({super.key, required this.groupId, required this.memberId});
 
   final RxList<int> selectedWatcherIds = <int>[].obs;
 
@@ -260,6 +261,9 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                       }
 
                       if (originPos != null && destPos != null) {
+                        final distance = mapController.routeDistanceText.value.isEmpty
+                            ? '...'
+                            : mapController.routeDistanceText.value;
                         Get.to(
                           () => VirtualEscortJourneyStart(
                             originLat: originPos.lat.toDouble(),
@@ -268,6 +272,8 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                             destinationLng: destPos.lng.toDouble(),
                             vehicle: vehicleForRoute,
                             estimatedTime: mapController.estimatedTime.value,
+                            routeDistance: distance,
+                            observerCount: selectedWatcherIds.length,
                           ),
                         );
                         await mapController.createEscortAfterRoute(
@@ -275,7 +281,7 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                           vehicle: vehicle,
                           watcherIds: selectedWatcherIds.toList(), rawJson: mapController.rawRouteData.value,
                         );
-                        await controller.initConnection(isLeader: true);
+                        await controller.initConnection(isLeader: true,memberId: memberId);
                         await controller.startSendingLocation();
                       } else {
                         TLoaders.warningSnackBar(

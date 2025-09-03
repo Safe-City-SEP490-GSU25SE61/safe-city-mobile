@@ -92,7 +92,7 @@ class PointHistoryItem {
 }
 
 class Source {
-  final int id;
+  final dynamic id;
   final String? title;
   final String? status;
   final DateTime? occurredAt;

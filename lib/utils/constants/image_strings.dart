@@ -26,6 +26,9 @@ class TImages {
   //--Success Status Images
   static const String successStatus = "assets/images/status/success.json";
   static const String cancelStatus = "assets/images/status/cancel.json";
+  static const String navigationReached = "assets/images/virtual_escort/navigation_reached.png";
+  static const String locationReached = "assets/images/virtual_escort/location_reached.png";
+  static const String sosSignal = "assets/images/virtual_escort/sos.json";
 
   //--Icon Images
   static const String grillIcon = "assets/images/icons/grill.gif";
@@ -63,6 +66,7 @@ class TImages {
   static const String directionLocationIcon = "assets/images/map/location_direction_dot.png";
   static const String navigationRouteIcon = "assets/images/map/route_navigation_marker.png";
   static const String stepArrowIcon = "assets/images/map/step_arrow.png";
+  static const String observerLocationPuck = "assets/images/map/location_for_observers.png";
 
   //--Virtual Escort Images
   static const String virtualEscortBkg = "assets/images/virtual_escort/virtual-escort-tracking.json";

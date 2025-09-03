@@ -3,25 +3,21 @@
 import '../../../../../common/widgets/appbar/appbar.dart';
 import '../../../../../utils/constants/image_strings.dart';
 import '../../../../../utils/constants/sizes.dart';
+import '../../../../../utils/helpers/helper_functions.dart';
 
 class AboutAppScreen extends StatelessWidget {
   const AboutAppScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dark = THelperFunctions.isDarkMode(context);
     return Scaffold(
-      appBar: const TAppBar(
-        title: Text('Thông tin chung'),
-        showBackArrow: true,
-      ),
-      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: TAppBar(title: Text('Thông tin chung'), showBackArrow: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
-              // Logo and version card
               Center(
                 child: SizedBox(
                   width: 350,
@@ -35,15 +31,14 @@ class AboutAppScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       child: Column(
                         children: [
-                          Image.asset(
-                            TImages.lightAppLogo,
-                            // Replace with your image asset
-                            height: 64,
-                          ),
+                          Image.asset(TImages.lightAppLogo, height: 64),
                           const SizedBox(height: 16),
-                          const Text(
+                          Text(
                             'Phiên bản 1.0.0 build 00001',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: dark ? Colors.black : Colors.black,
+                            ),
                           ),
                         ],
                       ),
@@ -139,8 +134,12 @@ class _SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = THelperFunctions.isDarkMode(context);
     return ListTile(
-      title: Text(title),
+      title: Text(
+        title,
+        style: TextStyle(color: dark ? Colors.black : Colors.black),
+      ),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         // TODO: Implement navigation

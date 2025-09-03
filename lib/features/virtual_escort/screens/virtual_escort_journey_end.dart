@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../../common/widgets/appbar/appbar.dart';
 import '../../../navigation_dart.dart';
@@ -32,7 +31,7 @@ class VirtualEscortJourneyEnd extends StatelessWidget {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => NavigationMenu()),
-                (route) => false,
+            (route) => false,
           );
         },
       ),
@@ -40,12 +39,12 @@ class VirtualEscortJourneyEnd extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
         child: Column(
           children: [
-            Lottie.asset(
-              TImages.successStatus,
-              width: 300,
-              height: 200,
-              repeat: true,
+            Image.asset(
+              TImages.navigationReached,
+              height: 280,
+              fit: BoxFit.contain,
             ),
+
             const SizedBox(height: 24),
             const Text(
               "Hành trình bạn đã hoàn tất!",
@@ -55,7 +54,11 @@ class VirtualEscortJourneyEnd extends StatelessWidget {
             _buildDetailRow("Thời gian di chuyển:", duration, dark),
             _buildDetailRow("Quãng đường đã đi:", distance, dark),
             _buildDetailRow("Số lần gọi SOS:", sosCount.toString(), dark),
-            _buildDetailRow("Số người quan sát:", observerCount.toString(), dark),
+            _buildDetailRow(
+              "Số người quan sát:",
+              observerCount.toString(),
+              dark,
+            ),
             const Spacer(),
             SizedBox(
               width: double.infinity,
@@ -64,7 +67,7 @@ class VirtualEscortJourneyEnd extends StatelessWidget {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => NavigationMenu()),
-                        (route) => false,
+                    (route) => false,
                   );
                 },
                 style: ElevatedButton.styleFrom(

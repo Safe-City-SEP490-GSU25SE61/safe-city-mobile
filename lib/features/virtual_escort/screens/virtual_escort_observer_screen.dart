@@ -21,7 +21,7 @@ class _VirtualEscortObserverScreenState
     extends State<VirtualEscortObserverScreen> {
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY2']!;
   final mapController = Get.put(VirtualEscortMapController());
-  final journeyController = VirtualEscortJourneyController.instance;
+  final journeyController = Get.put(VirtualEscortJourneyController());
   @override
   Widget build(BuildContext context) {
     final isDarkMode = THelperFunctions.isDarkMode(context);
@@ -34,7 +34,7 @@ class _VirtualEscortObserverScreenState
         onMapCreated: (controller) async {
           mapController.virtualEscortStartInitMap(controller, isDarkMode);
           await mapController.loadObserverJourney(widget.memberId);
-          await journeyController.initConnection(isLeader: false);
+          await journeyController.initConnection(isLeader: false,memberId: widget.memberId);
         },
       ),
     );

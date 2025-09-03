@@ -24,7 +24,9 @@ class ReportHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      historyController.fetchReportHistory();
+    });
     return Scaffold(
       appBar: const TAppBar(
         title: Text('Lịch sử báo cáo'),

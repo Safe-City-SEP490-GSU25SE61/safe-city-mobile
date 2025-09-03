@@ -126,4 +126,15 @@ class THelperFunctions {
       return "$minutes phút";
     }
   }
+
+  static String mapSourceTypeToVietnamese(String sourceType) {
+    switch (sourceType) {
+      case "blog":
+        return "Bài viết";
+      case "incident_report":
+        return "Báo cáo sự cố";
+      default:
+        return "Không xác định";
+    }
+  }
 }

@@ -12,6 +12,7 @@ import '../../../utils/popups/full_screen_loader.dart';
 import '../../../utils/popups/loaders.dart';
 import '../models/virtual_escort_group.dart';
 import '../models/virtual_escort_pending_request.dart';
+import '../models/virtual_escort_personal_history.dart' hide EscortGroup;
 
 class VirtualEscortGroupController extends GetxController {
   static VirtualEscortGroupController get instance => Get.find();
@@ -27,10 +28,14 @@ class VirtualEscortGroupController extends GetxController {
   final secureStorage = const FlutterSecureStorage();
   var pendingRequests = <VirtualEscortPendingRequest>[].obs;
   var isLoadingPending = false.obs;
+  var isLoadingHistory = false.obs;
+  var historyPersonal = Rxn<VirtualEscortPersonalHistory>();
+
 
   @override
   void onInit() {
     fetchMyGroups();
+    fetchPersonalHistory();
     super.onInit();
   }
 
@@ -380,6 +385,28 @@ class VirtualEscortGroupController extends GetxController {
         title: "Lỗi",
         message: result["message"] ?? "Không thể xóa thành viên",
       );
+    }
+  }
+
+  Future<void> fetchPersonalHistory() async {
+    try {
+      isLoadingHistory.value = true;
+      final result = await _service.getEscortHistory();
+
+      if (result["success"] == true) {
+        historyPersonal.value = result["data"] as VirtualEscortPersonalHistory;
+      } else {
+        historyPersonal.value = null;
+        TLoaders.errorSnackBar(
+          title: "Lỗi",
+          message: result["message"] ?? "Không thể tải lịch sử",
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error fetching history: $e");
+      historyPersonal.value = null;
+    } finally {
+      isLoadingHistory.value = false;
     }
   }
 

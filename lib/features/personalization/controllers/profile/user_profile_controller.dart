@@ -12,9 +12,11 @@ import '../../../../../utils/popups/loaders.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../../data/services/personalization/user_profile_service.dart';
+import '../../../../utils/constants/enums.dart';
 import '../../../../utils/helpers/network_manager.dart';
 
 import '../../models/achivement_model.dart';
+import '../../models/pont_history_model.dart';
 import '../../models/user_profile_model.dart';
 import '../../screens/profile/profile.dart';
 
@@ -36,12 +38,19 @@ class UserProfileController extends GetxController {
   final secureStorage = const FlutterSecureStorage();
   final _auth = LocalAuthentication();
   GlobalKey<FormState> profileFormKey = GlobalKey<FormState>();
+  final pointHistory = Rxn<PointHistoryModel>();
+  final isLoadingPointHistory = false.obs;
+  final selectedRange = PointHistoryRange.month.obs;
+  final selectedSource = Rxn<PointHistorySource>();
+  final selectedSort = PointHistorySort.desc.obs;
+
 
   @override
   void onInit() {
     super.onInit();
     fetchUserProfile();
     fetchAchievements();
+    fetchPointHistory();
   }
 
   Future<void> fetchUserProfile() async {
@@ -301,5 +310,41 @@ class UserProfileController extends GetxController {
     } catch (e) {
       if (kDebugMode) print('Failed to fetch achievements: $e');
     }
+  }
+
+  Future<void> fetchPointHistory({
+    String range = "month",
+    String? sourceType,
+    bool desc = true,
+  }) async {
+    try {
+      isLoadingPointHistory.value = true;
+      final history = await userProfileService.fetchPointHistory(
+        range: range,
+        sourceType: sourceType,
+        desc: desc,
+      );
+      pointHistory.value = history;
+    } catch (e) {
+      if (kDebugMode) print("Error in controller fetchPointHistory: $e");
+    } finally {
+      isLoadingPointHistory.value = false;
+    }
+  }
+
+  void updateFilters({
+    PointHistoryRange? range,
+    PointHistorySource? source,
+    PointHistorySort? sort,
+  }) {
+    if (range != null) selectedRange.value = range;
+    selectedSource.value = source;
+    if (sort != null) selectedSort.value = sort;
+
+    fetchPointHistory(
+      range: selectedRange.value.name,
+      sourceType: selectedSource.value?.name,
+      desc: selectedSort.value == PointHistorySort.desc,
+    );
   }
 }

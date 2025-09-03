@@ -12,6 +12,9 @@ import '../../../utils/constants/sizes.dart';
 import '../../../utils/formatters/formatter.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../controllers/blog_controller.dart';
+import '../models/blog_models.dart';
+import '../models/commune_model.dart';
+import '../models/province_with_commune_model.dart';
 import 'widgets/blog_comment_card.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 
@@ -35,7 +38,35 @@ class BlogDetailScreen extends StatelessWidget {
         ),
       ),
       body: Obx(() {
-        final blog = blogController.blogs.firstWhere((b) => b.id == blogId);
+        final blog = blogController.blogs.firstWhere(
+              (b) => b.id == blogId,
+          orElse: () => BlogModel(
+            id: blogId,
+            title: "Bài viết đang chờ xác minh",
+            content: jsonEncode([
+              {"insert": "Bài viết này chưa được cán bộ xã xác minh.\n"}
+            ]),
+            type: "pending",
+            authorName: "Hệ thống",
+            avatarUrl: "",
+            createdAt: DateTime.now(),
+            pinned: false,
+            commune: CommuneModel(
+              id: 0,
+              name: "Chưa xác định",
+            ),
+            province: ProvinceWithCommunesModel(
+              id: 0,
+              name: "Chưa xác định",
+              communes: [],
+            ),
+            mediaUrls: [],
+            totalLike: 0,
+            totalComment: 0,
+            isLike: false,
+            isPremium: false,
+          ),
+        );
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),

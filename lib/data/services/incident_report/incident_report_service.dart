@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
+import 'package:image/image.dart' as img;
+import 'package:video_compress/video_compress.dart';
 import '../../../features/incident_report/models/incident_report_model.dart';
 import '../../../features/incident_report/models/report_history_model.dart';
 
@@ -27,18 +30,17 @@ class IncidentReportService {
 
       if (images.isNotEmpty) {
         for (var image in images) {
-          final ext = path
-              .extension(image.path!)
-              .replaceFirst('.', '')
-              .toLowerCase();
+          final ext = path.extension(image.path!).replaceFirst('.', '').toLowerCase();
           final isImage = ['jpg', 'jpeg', 'png'].contains(ext);
 
           if (isImage) {
+            final compressedFile = await compressImage(File(image.path!));
             final mediaType = MediaType('image', ext == 'jpg' ? 'jpeg' : ext);
+
             request.files.add(
               await http.MultipartFile.fromPath(
                 'Images',
-                image.path!,
+                compressedFile.path,
                 contentType: mediaType,
               ),
             );
@@ -50,13 +52,34 @@ class IncidentReportService {
         }
       }
       if (video != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'Video',
+        try {
+          final compressedVideo = await VideoCompress.compressVideo(
             video.path!,
-            contentType: MediaType('video', 'mp4'),
-          ),
-        );
+            quality: VideoQuality.MediumQuality,
+            deleteOrigin: false,
+          );
+
+          final videoFile = compressedVideo?.file ?? File(video.path!);
+
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'Video',
+              videoFile.path,
+              contentType: MediaType('video', 'mp4'),
+            ),
+          );
+        } catch (err) {
+          if (kDebugMode) {
+            print("⚠️ Video compression failed, sending original: $err");
+          }
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'Video',
+              video.path!,
+              contentType: MediaType('video', 'mp4'),
+            ),
+          );
+        }
       }
 
       final accessToken = await _storage.read(key: 'access_token');
@@ -64,9 +87,7 @@ class IncidentReportService {
         request.headers['Authorization'] = 'Bearer $accessToken';
       }
 
-      final response = await request.send().timeout(
-        const Duration(seconds: 15),
-      );
+      final response = await request.send();
 
       final responseBody = await response.stream.bytesToString();
 
@@ -190,4 +211,14 @@ class IncidentReportService {
       };
     }
   }
+
+    static Future<File> compressImage(File file, {int quality = 70}) async {
+    final rawImage = img.decodeImage(await file.readAsBytes());
+    if (rawImage == null) return file;
+
+    final compressed = img.encodeJpg(rawImage, quality: quality);
+    final newPath = '${file.parent.path}/compressed_${path.basename(file.path)}';
+    final compressedFile = File(newPath)..writeAsBytesSync(compressed);
+    return compressedFile;
+    }
 }

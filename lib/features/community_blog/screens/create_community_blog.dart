@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -22,6 +23,7 @@ class CreateBlogScreen extends StatefulWidget {
   @override
   State<CreateBlogScreen> createState() => _CreateBlogScreenState();
 }
+
 class _CreateBlogScreenState extends State<CreateBlogScreen> {
   late quill.QuillController _quillController;
   final FocusNode _focusNode = FocusNode();
@@ -31,6 +33,28 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
   void initState() {
     super.initState();
     _quillController = quill.QuillController.basic();
+    final blogController = Get.put(BlogController());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (blogController.communes.isEmpty) {
+        final defaultProvince = blogController.selectedProvince.value.isNotEmpty
+            ? blogController.selectedProvince.value
+            : (blogController.provinces.isNotEmpty
+            ? blogController.provinces.first.name
+            : null);
+
+        if (defaultProvince != null) {
+          blogController.selectedProvince.value = defaultProvince;
+          await blogController.fetchCommunesByProvince(defaultProvince);
+          if (blogController.communes.isNotEmpty &&
+              blogController.selectedCommune.value.isEmpty) {
+            blogController.selectedCommune.value =
+                blogController.communes.first.name;
+            blogController.currentCommuneId =
+                blogController.communes.first.id;
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -70,38 +94,43 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
                   /// Nhóm loại blog
                   Obx(
-                        () => DropdownButtonFormField<BlogType>(
-                      decoration: InputDecoration(
-                        label: RichText(
-                          text: TextSpan(
-                            text: 'Nhóm loại blog ',
-                            style: TextStyle(
-                              color: dark ? Colors.white : TColors.darkerGrey,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            children: const [
-                              TextSpan(
-                                text: '*',
-                                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        () =>
+                        DropdownButtonFormField<BlogType>(
+                          decoration: InputDecoration(
+                            label: RichText(
+                              text: TextSpan(
+                                text: 'Nhóm loại blog ',
+                                style: TextStyle(
+                                  color: dark ? Colors.white : TColors
+                                      .darkerGrey,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                children: const [
+                                  TextSpan(
+                                    text: '*',
+                                    style: TextStyle(color: Colors.red,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
+                            prefixIcon: const Icon(Iconsax.category),
                           ),
+                          value: blogController.selectedCategory.value,
+                          items: blogController.blogTypeCategories,
+                          onChanged: (value) {
+                            blogController.selectedCategory.value = value;
+                          },
+                          validator: (value) =>
+                              TValidator.validateDropdown(
+                                "nhóm loại blog",
+                                value?.viLabel,
+                              ),
                         ),
-                        prefixIcon: const Icon(Iconsax.category),
-                      ),
-                      value: blogController.selectedCategory.value,
-                      items: blogController.blogTypeCategories,
-                      onChanged: (value) {
-                        blogController.selectedCategory.value = value;
-                      },
-                      validator: (value) => TValidator.validateDropdown(
-                        "nhóm loại blog",
-                        value?.viLabel,
-                      ),
-                    ),
                   ),
 
 
@@ -171,7 +200,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                           showUndo: true,
                           showRedo: true,
                           multiRowsDisplay: false,
-                          color: dark? TColors.dark:Colors.white,
+                          color: dark ? TColors.dark : Colors.white,
                           showHeaderStyle: false,
                           showFontSize: false,
                           showColorButton: false,
@@ -205,6 +234,75 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: TSizes.spaceBtwInputFields),
+
+                  /// Chọn xã/phường
+                  Obx(() {
+                    return DropdownButtonFormField2<String>(
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            text: 'Chọn xã/phường ',
+                            style: TextStyle(
+                              color: dark ? Colors.white : TColors.darkerGrey,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: const [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(color: Colors.red,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        prefixIcon: const Icon(Iconsax.location),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      value: blogController.selectedCommune.value.isNotEmpty
+                          ? blogController.selectedCommune.value
+                          : null,
+                      items: blogController.communes
+                          .map((commune) =>
+                          DropdownMenuItem<String>(
+                            value: commune.name,
+                            child: Text(
+                              commune.name,
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow
+                                  .ellipsis,
+                            ),
+                          ))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          blogController.selectedCommune.value = value;
+                          blogController.currentCommuneId =
+                              blogController.blogService.getCommuneIdByName(
+                                blogController.selectedProvince.value,
+                                value,
+                              );
+                        }
+                      },
+                      validator: (value) =>
+                          TValidator.validateDropdown("xã/phường", value),
+
+                      /// 👇 controls the dropdown menu size
+                      dropdownStyleData: DropdownStyleData(
+                        maxHeight: 250,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      menuItemStyleData: const MenuItemStyleData(
+                        height: 40, // height of each row
+                      ),
+                    );
+                  }),
                   const SizedBox(height: TSizes.spaceBtwInputFields),
 
                   /// Bằng chứng
@@ -265,9 +363,10 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                                       top: 0,
                                       right: 0,
                                       child: GestureDetector(
-                                        onTap: () => blogController
-                                            .images
-                                            .removeAt(index),
+                                        onTap: () =>
+                                            blogController
+                                                .images
+                                                .removeAt(index),
                                         child: const Icon(
                                           Iconsax.close_circle,
                                           color: Colors.redAccent,
@@ -408,7 +507,8 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                           title: 'Lưu ý khi gửi blog',
                           message: TTexts.createBlogNotice,
                           onConfirm: () {
-                            final content = _quillController.document.toPlainText().trim();
+                            final content = _quillController.document
+                                .toPlainText().trim();
                             if (content.isEmpty) {
                               TLoaders.warningSnackBar(
                                 title: 'Vui lòng nhập nội dung chi tiết cho blog',
@@ -416,7 +516,8 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                               );
                               return;
                             }
-                            final deltaJson = jsonEncode(_quillController.document.toDelta().toJson());
+                            final deltaJson = jsonEncode(
+                                _quillController.document.toDelta().toJson());
                             blogController.createNewBlogPost(deltaJson);
                           },
                           storageKey: 'hide_create_blog_notice',

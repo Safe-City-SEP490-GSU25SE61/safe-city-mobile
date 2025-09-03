@@ -12,7 +12,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class UserProfileService {
   var client = http.Client();
   final String? apiConnection = dotenv.env['API_DEPLOYMENT_URL'];
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  final secureStorage = const FlutterSecureStorage();
 
   Future<String?> getAccessToken() async {
     return await secureStorage.read(key: 'access_token');
@@ -25,15 +25,13 @@ class UserProfileService {
     }
 
     try {
-      var response = await client
-          .get(
-            Uri.parse('${apiConnection}settings/profile'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      var response = await client.get(
+        Uri.parse('${apiConnection}settings/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
 
       if (response.statusCode == 202) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -113,7 +111,7 @@ class UserProfileService {
       var file = await http.MultipartFile.fromPath('file', image.path);
       request.files.add(file);
 
-      var response = await request.send().timeout(const Duration(seconds: 10));
+      var response = await request.send();
       final responseData = await http.Response.fromStream(response);
 
       if (response.statusCode == 200) {
@@ -189,9 +187,7 @@ class UserProfileService {
     }
 
     try {
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 15),
-      );
+      final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
       if (kDebugMode) {
@@ -234,10 +230,7 @@ class UserProfileService {
 
     final response = await client.get(
       uri,
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Accept': '*/*',
-      },
+      headers: {'Authorization': 'Bearer $accessToken', 'Accept': '*/*'},
     );
 
     if (response.statusCode == 200) {
@@ -261,20 +254,18 @@ class UserProfileService {
     try {
       final uri = Uri.parse(
         '${apiConnection}points/history?range=$range&desc=$desc'
-            '${sourceType != null ? "&sourceType=$sourceType" : ""}',
+        '${sourceType != null ? "&sourceType=$sourceType" : ""}',
       );
 
       final response = await client.get(
         uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'accept': '*/*',
-        },
+        headers: {'Authorization': 'Bearer $token', 'accept': '*/*'},
       );
 
       if (response.statusCode == 200) {
         final jsonBody = jsonDecode(utf8.decode(response.bodyBytes));
-        return PointHistoryModel.fromJson(jsonBody);
+
+        return PointHistoryModel.fromJson(jsonBody['data']);
       } else {
         if (kDebugMode) {
           print("Failed to fetch point history: ${response.body}");

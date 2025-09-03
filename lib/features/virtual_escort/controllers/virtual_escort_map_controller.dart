@@ -1176,7 +1176,7 @@ class VirtualEscortMapController extends GetxController {
     if (routePositions.isEmpty) return false;
     final destination = routePositions.last;
     final distance = _calculateDistance(currentPosition, destination);
-    return distance < 15.0;
+    return distance < 20.0;
   }
 
   void startUserTrackingAlongRoute(List<Position> routePositions) {
@@ -1558,9 +1558,9 @@ class VirtualEscortMapController extends GetxController {
       await mapboxMap!.style.addLayerAt(
         LineLayer(
           id: 'observer_route_layer_outline',
-          sourceId: 'observer_route_source_outline',
+          sourceId: 'observer_route_source',
           lineColor: TColors.primary.toARGB32(),
-          lineWidth: 10.0,
+          lineWidth: 12.0,
           lineCap: LineCap.ROUND,
           lineJoin: LineJoin.ROUND,
         ),
@@ -1624,7 +1624,7 @@ class VirtualEscortMapController extends GetxController {
       debugPrint("⚠️ mapboxMap is null, cannot update observer marker");
       return;
     }
-    final imageBytes = await getImageFromAsset(TImages.currentLocationIconPuck);
+    final imageBytes = await getImageFromAsset(TImages.observerLocationPuck);
 
     if (_markerManager == null) {
       await _recreateMarkerManager();
@@ -1642,7 +1642,7 @@ class VirtualEscortMapController extends GetxController {
           PointAnnotationOptions(
             geometry: point,
             image: imageBytes,
-            iconSize: 0.2,
+            iconSize: 0.06,
           ),
         );
         debugPrint("✅ Observer marker created at $lat,$lng");
