@@ -157,7 +157,7 @@ class VirtualEscortMapController extends GetxController {
     final userLng = loc.longitude;
 
     final acUrl =
-        'https://rsapi.goong.io/v2/place/autocomplete?input=$input&location=$userLat,$userLng&limit=1&has_deprecated_administrative_unit=false&api_key=$goongApiKey';
+        'https://rsapi.goong.io/v2/place/autocomplete?input=$input&location=$userLat,$userLng&limit=5&has_deprecated_administrative_unit=false&api_key=$goongApiKey';
 
     final acRes = await http.get(Uri.parse(acUrl));
     if (acRes.statusCode != 200) return;
@@ -1183,7 +1183,7 @@ class VirtualEscortMapController extends GetxController {
         geo.Geolocator.getPositionStream(
           locationSettings: const geo.LocationSettings(
             accuracy: geo.LocationAccuracy.bestForNavigation,
-            distanceFilter: 2,
+            distanceFilter: 5,
           ),
         ).listen((gps) async {
           if (gpsHistory.isNotEmpty) {

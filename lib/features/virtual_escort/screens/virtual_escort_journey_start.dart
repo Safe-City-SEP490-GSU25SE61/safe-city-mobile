@@ -56,69 +56,163 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
   Timer? _destinationReachedTimer;
   final secureStorage = const FlutterSecureStorage();
 
+  Timer? _countdownTimer;
+  int _remainingSeconds = 60;
+  bool _sosTriggered = false;
+
   void showDestinationReachedDialog() {
+    _remainingSeconds = 60;
+    _sosTriggered = false;
+
+    _startCountdownTimer();
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Đã đến nơi!"),
-          content: const Text("Bạn đã đến điểm đến thành công."),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                try {
-                  final biometricEnabled = await secureStorage.read(
-                    key: 'is_biometric_login_enabled',
-                  );
-
-                  if (biometricEnabled != 'true') {
-                    TLoaders.warningSnackBar(
-                      title: 'Tính năng chưa được bật',
-                      message:
-                          'Vui lòng bật tính năng sinh trắc học để tiếp tục.',
-                    );
-                    return;
-                  }
-
-                  final auth = LocalAuthentication();
-                  final didConfirm = await auth.authenticate(
-                    localizedReason: 'Xác thực vân tay để xác nhận hành động',
-                    options: const AuthenticationOptions(
-                      biometricOnly: true,
-                      stickyAuth: true,
-                    ),
-                  );
-
-                  if (didConfirm) {
-                    journeyController.stopSendingLocation();
-                    Get.to(
-                      () => VirtualEscortJourneyEnd(
-                        duration: widget.estimatedTime,
-                        distance: widget.routeDistance,
-                        sosCount: journeyController.sosCount.value,
-                        observerCount: widget.observerCount,
-                      ),
-                    );
-                  } else {
-                    TLoaders.warningSnackBar(
-                      title: 'Xác thực thất bại',
-                      message: 'Bạn cần xác thực để tiếp tục.',
-                    );
-                  }
-                } catch (e) {
-                  TLoaders.errorSnackBar(
-                    title: 'Lỗi',
-                    message: 'Đã xảy ra sự cố, vui lòng thử lại sau',
-                  );
+        return StatefulBuilder(
+          builder: (context, setState) {
+            _countdownTimer?.cancel();
+            _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+              if (_remainingSeconds > 0) {
+                setState(() {
+                  _remainingSeconds--;
+                });
+                if (_remainingSeconds == 30) {
+                  setState(() {});
                 }
-              },
-              child: const Text("Đồng ý"),
-            ),
-          ],
+
+                if (_remainingSeconds == 0 && !_sosTriggered) {
+                  _sosTriggered = true;
+                  final controller = VirtualEscortJourneyController.instance;
+                  controller.sendSosSignal();
+                  setState(() {});
+                }
+              } else {
+                timer.cancel();
+              }
+            });
+
+            return AlertDialog(
+              title: Text(_remainingSeconds > 0 ? "Đã đến nơi!" : "🚨 SOS ĐÃ KÍCH HOẠT!"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_remainingSeconds > 30)
+                    const Text("Bạn đã đến điểm đến thành công."),
+                  if (_remainingSeconds <= 30 && _remainingSeconds > 0)
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: "SOS sẽ tự động kích hoạt nếu bạn không phản hồi sau ",
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextSpan(
+                            text: "$_remainingSeconds giây",
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                            text: "...",
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_remainingSeconds == 0)
+                    const Text(
+                      "SOS đã được kích hoạt tự động. Vui lòng kết thúc hành trình để hủy!",
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    _countdownTimer?.cancel();
+                    try {
+                      final biometricEnabled = await secureStorage.read(
+                        key: 'is_biometric_login_enabled',
+                      );
+
+                      if (biometricEnabled != 'true') {
+                        TLoaders.warningSnackBar(
+                          title: 'Tính năng chưa được bật',
+                          message: 'Vui lòng bật tính năng sinh trắc học để tiếp tục.',
+                        );
+                        return;
+                      }
+
+                      final auth = LocalAuthentication();
+                      final didConfirm = await auth.authenticate(
+                        localizedReason: 'Xác thực vân tay để xác nhận hành động',
+                        options: const AuthenticationOptions(
+                          biometricOnly: true,
+                          stickyAuth: true,
+                        ),
+                      );
+
+                      if (didConfirm) {
+                        journeyController.stopSendingLocation(isLeader: true);
+                        Get.to(
+                              () => VirtualEscortJourneyEnd(
+                            duration: widget.estimatedTime,
+                            distance: widget.routeDistance,
+                            sosCount: journeyController.sosCount.value,
+                            observerCount: widget.observerCount,
+                          ),
+                        );
+                      } else {
+                        TLoaders.warningSnackBar(
+                          title: 'Xác thực thất bại',
+                          message: 'Bạn cần xác thực để tiếp tục.',
+                        );
+                      }
+                    } catch (e) {
+                      TLoaders.errorSnackBar(
+                        title: 'Lỗi',
+                        message: 'Đã xảy ra sự cố, vui lòng thử lại sau',
+                      );
+                    }
+                  },
+                  child: const Text("Đồng ý"),
+                ),
+              ],
+            );
+          },
         );
       },
     );
+  }
+
+  void _startCountdownTimer() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+
+        // Trigger SOS after 1 minute
+        if (_remainingSeconds == 0 && !_sosTriggered) {
+          _sosTriggered = true;
+          final controller = VirtualEscortJourneyController.instance;
+          controller.sendSosSignal();
+        }
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   @override

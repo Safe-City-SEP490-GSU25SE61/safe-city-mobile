@@ -1,8 +1,11 @@
 ﻿import 'dart:convert';
 
+import 'package:battery_plus/battery_plus.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:signalr_netcore/http_connection_options.dart';
@@ -534,7 +537,23 @@ class VirtualEscortService {
   Future<void> updateLocationSignalR(double lat, double lng) async {
     if (hubConnection?.state == HubConnectionState.Connected) {
       try {
-        await hubConnection?.invoke("SendLocation", args: [lat, lng]);
+
+        final battery = Battery();
+        final batteryLevel = await battery.batteryLevel;
+        final isBatteryLow = batteryLevel <= 20;
+        final gpsStatus = await geo.Geolocator.isLocationServiceEnabled();
+        final isGPSAvailable = gpsStatus;
+
+        final connectivity = await Connectivity().checkConnectivity();
+        final isInternetAvailable = connectivity != ConnectivityResult.none;
+
+        await hubConnection?.invoke("SendLocation", args: [
+          lat,
+          lng,
+          isGPSAvailable,
+          isInternetAvailable,
+          isBatteryLow
+        ]);
         debugPrint("📡 Location sent: $lat, $lng");
       } catch (e) {
         debugPrint("❌ Failed to send location (invoke error): $e");

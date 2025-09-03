@@ -101,7 +101,7 @@ class VirtualEscortScreen extends StatelessWidget {
               ),
             ),
 
-            SliverToBoxAdapter(child: SizedBox(height: 100)),
+            SliverToBoxAdapter(child: SizedBox(height: 120)),
 
             if (controller.groups.isNotEmpty) ...[
               SliverToBoxAdapter(

@@ -47,7 +47,7 @@ class BlogModel {
       content: json['content'],
       type: json['type'],
       authorName: json['authorName'],
-      avatarUrl: json['avaterUrl'] ?? '',
+      avatarUrl: json['avatarUrl'] ?? '',
       createdAt: DateTime.parse(json['createdAt']),
       pinned: json['pinned'],
       commune: commune,

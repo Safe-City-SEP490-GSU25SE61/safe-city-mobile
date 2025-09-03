@@ -40,7 +40,7 @@ class CommuneReportDetailsWidget extends StatelessWidget {
                 /// Title
                 Center(
                   child: Text(
-                    "Chi tiết sự cố đã giải quyết",
+                    "Chi tiết sự cố",
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

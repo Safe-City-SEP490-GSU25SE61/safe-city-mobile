@@ -67,6 +67,7 @@ class BlogDetailScreen extends StatelessWidget {
             isPremium: false,
           ),
         );
+        print('DEBUG: Blog mediaUrls = ${blog.mediaUrls}');
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
