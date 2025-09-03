@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -237,12 +238,24 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                   height: 55,
                   child: ElevatedButton(
                     onPressed: () async {
+                      final secureStorage = const FlutterSecureStorage();
                       final originPos = mapController.originPosition.value;
                       final destPos = mapController.destinationPosition.value;
                       final vehicleForRoute = mapController.selectedVehicle.value;
                       final vehicle = mapController.selectedVehicle.value.toString().split('.').last;
                       final group = groupController.groupDetail.value;
                       final hasMembers = group != null && group.members.any((m) => m.role != "Leader");
+                      final biometricEnabled = await secureStorage.read(
+                        key: 'is_biometric_login_enabled',
+                      );
+
+                      if (biometricEnabled != 'true') {
+                        TLoaders.warningSnackBar(
+                          title: 'Tính năng chưa được bật',
+                          message: 'Vui lòng kích hoạt xác thực vân tay để bắt đầu hành trình',
+                        );
+                        return;
+                      }
 
                       if (!hasMembers) {
                         TLoaders.warningSnackBar(

@@ -107,10 +107,16 @@ class VirtualEscortJourneyController extends GetxController {
         if (args == null || args.length < 2) return;
         final lat = args[0] as double;
         final lng = args[1] as double;
+        final isGPSAvailable = args[2] as bool;
+        final isInternetAvailable = args[3] as bool;
+        final isUserBatteryLow = args[4] as bool;
 
         debugPrint("👀 Observer received leader location: $lat, $lng");
-        debugPrint("📡 Received location update: $lat, $lng");
-        debugPrint("📡 Received location update: $lat, $lng");
+        debugPrint("📡 GPS: $isGPSAvailable, Internet: $isInternetAvailable, BatteryLow: $isUserBatteryLow");
+
+        isGpsUnstable.value = !isGPSAvailable;
+        isInternetWeak.value = !isInternetAvailable;
+        isBatteryLow.value = isUserBatteryLow;
         leaderLat.value = lat;
         leaderLng.value = lng;
         VirtualEscortMapController.instance.updateObserverMarker(lat, lng);
@@ -178,7 +184,7 @@ class VirtualEscortJourneyController extends GetxController {
       }
     }
 
-    _locationTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+    _locationTimer = Timer.periodic(const Duration(seconds: 6), (timer) async {
       try {
         final position = await geo.Geolocator.getCurrentPosition(
           desiredAccuracy: geo.LocationAccuracy.high,
@@ -224,9 +230,22 @@ class VirtualEscortJourneyController extends GetxController {
     setTab(1);
   }
 
-  Future<void> stopSendingLocation() async {
-    await escortService.stopSignalR();
+  Future<void> stopSendingLocation({bool isLeader = false}) async {
+    if (isLeader && escortService.hubConnection?.state == HubConnectionState.Connected) {
+      try {
+        await escortService.hubConnection?.invoke("EndJourney");
+        debugPrint("🏁 Leader ended journey on server");
+      } catch (e) {
+        debugPrint("❌ Failed to end journey: $e");
+      }
+    }
     _locationTimer?.cancel();
     _locationTimer = null;
+    try {
+      await escortService.stopSignalR();
+      debugPrint("✅ SignalR disconnected");
+    } catch (e) {
+      debugPrint("❌ Failed to stop SignalR: $e");
+    }
   }
 }

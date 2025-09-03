@@ -397,10 +397,6 @@ class VirtualEscortGroupController extends GetxController {
         historyPersonal.value = result["data"] as VirtualEscortPersonalHistory;
       } else {
         historyPersonal.value = null;
-        TLoaders.errorSnackBar(
-          title: "Lỗi",
-          message: result["message"] ?? "Không thể tải lịch sử",
-        );
       }
     } catch (e) {
       if (kDebugMode) print("Error fetching history: $e");
