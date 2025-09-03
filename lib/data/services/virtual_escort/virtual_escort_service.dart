@@ -477,11 +477,20 @@ class VirtualEscortService {
           "data": VirtualEscortPersonalHistory.fromJson(jsonData),
         };
       } else {
-        final jsonData = jsonDecode(response.body);
-        return {
-          "success": false,
-          "message": jsonData["message"] ?? "Failed to fetch history",
-        };
+        try {
+          final jsonData = jsonDecode(response.body);
+          return {
+            "success": false,
+            "message": jsonData["message"] ?? "Failed to fetch history",
+          };
+        } catch (_) {
+          return {
+            "success": false,
+            "message": response.body.isNotEmpty
+                ? response.body
+                : "Failed to fetch history",
+          };
+        }
       }
     } catch (e) {
       if (kDebugMode) print("Error fetching escort history: $e");

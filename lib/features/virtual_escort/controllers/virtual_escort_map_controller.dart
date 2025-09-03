@@ -21,7 +21,6 @@ import '../../../utils/popups/loaders.dart';
 import '../models/goong_prediction_model.dart';
 import '../models/route_step_model.dart';
 import '../screens/virtual_escort_journey_start.dart';
-import '../screens/virtual_escort_sos.dart';
 
 class VirtualEscortMapController extends GetxController {
   static VirtualEscortMapController get instance => Get.find();

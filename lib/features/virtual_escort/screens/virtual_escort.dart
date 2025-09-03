@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_personal_history.dart';
-import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_sos.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_create.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_card.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/sugesstion_title.dart';
