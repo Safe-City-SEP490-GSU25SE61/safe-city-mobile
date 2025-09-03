@@ -1,6 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:safe_city_mobile/features/personalization/screens/point_history/widgets/point_history_modal.dart';
 

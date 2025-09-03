@@ -11,6 +11,7 @@ import 'package:signalr_netcore/hub_connection_builder.dart';
 
 import '../../../features/virtual_escort/models/virtual_escort_group_detail.dart';
 import '../../../features/virtual_escort/models/virtual_escort_pending_request.dart';
+import '../../../features/virtual_escort/models/virtual_escort_personal_history.dart';
 
 class VirtualEscortService {
   var client = http.Client();
@@ -446,6 +447,44 @@ class VirtualEscortService {
       if (kDebugMode) {
         print("Error updating group settings: $e");
       }
+      return {"success": false, "message": "Exception: $e"};
+    }
+  }
+
+  Future<Map<String, dynamic>> getEscortHistory() async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+
+    try {
+      final response = await client.get(
+        Uri.parse('${apiConnection}virtual-escorts/history'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 20));
+
+      if (kDebugMode) {
+        print("Get Escort History: ${response.statusCode} -> ${response.body}");
+      }
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": true,
+          "data": VirtualEscortPersonalHistory.fromJson(jsonData),
+        };
+      } else {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": false,
+          "message": jsonData["message"] ?? "Failed to fetch history",
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error fetching escort history: $e");
       return {"success": false, "message": "Exception: $e"};
     }
   }

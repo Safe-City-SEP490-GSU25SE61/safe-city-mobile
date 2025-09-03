@@ -123,32 +123,44 @@ class _PointHistoryFilterModalState extends State<PointHistoryFilterModal> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      OutlinedButton(
-                        onPressed: () {
-                          setState(() {
-                            selectedRange = PointHistoryRange.month;
-                            selectedSource = null;
-                            selectedSort = PointHistorySort.desc;
-                          });
-                          controller.updateFilters(
-                            range: PointHistoryRange.month,
-                            source: null,
-                            sort: PointHistorySort.desc,
-                          );
-                        },
-                        child: const Text("Thiết lập lại", style: TextStyle(color: Colors.black)),
+                      SizedBox(
+                        width: 120,
+                        height: 50,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedRange = PointHistoryRange.month;
+                              selectedSource = null;
+                              selectedSort = PointHistorySort.desc;
+                            });
+                            controller.updateFilters(
+                              range: PointHistoryRange.month,
+                              source: null,
+                              sort: PointHistorySort.desc,
+                            );
+                          },
+                          child: const Text("Thiết lập lại", style: TextStyle(fontSize: 12, color: Colors.black)),
+                        ),
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          controller.updateFilters(
-                            range: selectedRange,
-                            source: selectedSource,
-                            sort: selectedSort,
-                          );
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: TColors.primary),
-                        child: const Text("Áp dụng"),
+                      SizedBox(
+                        width: 100,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            controller.updateFilters(
+                              range: selectedRange,
+                              source: selectedSource,
+                              sort: selectedSort,
+                            );
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: TColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            textStyle: const TextStyle(fontSize: 12),
+                          ),
+                          child: const Text("Áp dụng"),
+                        ),
                       ),
                     ],
                   ),

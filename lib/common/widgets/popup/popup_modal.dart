@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:lottie/lottie.dart';
 import 'package:safe_city_mobile/utils/constants/sizes.dart';
 import 'package:screenshot/screenshot.dart';
@@ -89,13 +90,11 @@ class PopUpModal {
               ],
               const SizedBox(height: 12),
             ],
-
-            // Screenshot button
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.camera_alt, color: Colors.blue),
+                  icon: const Icon(Iconsax.camera, color: TColors.accent),
                   tooltip: "Chụp màn hình",
                   onPressed: () async {
                     final image = await screenshotController.capture();

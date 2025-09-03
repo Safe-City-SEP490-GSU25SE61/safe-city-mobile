@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_personal_history.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/virtual_escort_sos.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_create.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/virtual_escort_group_card.dart';
@@ -62,9 +63,7 @@ class VirtualEscortScreen extends StatelessWidget {
                             ),
                           ),
                           InkWell(
-                            onTap: () {
-                              // TODO: Handle Lịch sử
-                            },
+                            onTap: () => Get.to(() => VirtualEscortPersonalHistoryScreen()),
                             borderRadius: BorderRadius.circular(30),
                             child: Container(
                               padding: const EdgeInsets.symmetric(

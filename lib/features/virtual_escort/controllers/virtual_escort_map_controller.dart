@@ -1176,7 +1176,7 @@ class VirtualEscortMapController extends GetxController {
     if (routePositions.isEmpty) return false;
     final destination = routePositions.last;
     final distance = _calculateDistance(currentPosition, destination);
-    return distance < 15.0;
+    return distance < 20.0;
   }
 
   void startUserTrackingAlongRoute(List<Position> routePositions) {
