@@ -29,8 +29,10 @@ class VirtualEscortMapController extends GetxController {
   PointAnnotationManager? _customMarkerManager;
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY2']!;
   final goongApiKey = dotenv.env['GOONG_API_KEY2']!;
+  final goongApiKeyLocationSelection = dotenv.env['GOONG_API_KEY1']!;
   final searchController = TextEditingController();
   final RxList<GoongPredictionModel> predictions = <GoongPredictionModel>[].obs;
+  Rx<GoongPredictionModel?> selectedLocation = Rx<GoongPredictionModel?>(null);
   final originPosition = Rxn<Position>();
   final destinationPosition = Rxn<Position>();
   final selectedVehicle = VehicleType.bike.obs;
@@ -64,6 +66,23 @@ class VirtualEscortMapController extends GetxController {
   var hasArrived = false.obs;
   final rawRouteData = {}.obs;
   PointAnnotation? _observerMarker;
+
+  @override
+  void onInit() {
+    super.onInit();
+    ever<GoongPredictionModel?>(selectedLocation, (loc) async {
+      if (originPosition.value != null && destinationPosition.value != null) {
+        await mapDirectionRoute(
+          originLat: originPosition.value!.lat.toDouble(),
+          originLng: originPosition.value!.lng.toDouble(),
+          destLat: destinationPosition.value!.lat.toDouble(),
+          destLng: destinationPosition.value!.lng.toDouble(),
+          vehicleType: vehicleToString(selectedVehicle.value),
+        );
+      }
+    });
+  }
+
 
   @override
   void onClose() {
@@ -146,6 +165,21 @@ class VirtualEscortMapController extends GetxController {
         destLng: destinationPosition.value!.lng.toDouble(),
       );
     }
+
+    final tapInteraction = LongTapInteraction.onMap((context) async {
+      final tappedPoint = context.point;
+      final lat = tappedPoint.coordinates.lat.toDouble();
+      final lng = tappedPoint.coordinates.lng.toDouble();
+
+      await setDestinationFromTap(lat, lng);
+      if (selectedLocation.value != null) {
+        debugPrint("Destination selected: ${selectedLocation.value?.description}");
+      }
+    });
+    controller.addInteraction(
+      tapInteraction,
+      interactionID: "long-tap-to-select-location",
+    );
   }
 
   Future<void> searchPlace(String input) async {
@@ -157,9 +191,10 @@ class VirtualEscortMapController extends GetxController {
     final userLng = loc.longitude;
 
     final acUrl =
-        'https://rsapi.goong.io/v2/place/autocomplete?input=$input&location=$userLat,$userLng&limit=5&has_deprecated_administrative_unit=false&api_key=$goongApiKey';
+        'https://rsapi.goong.io/v2/place/autocomplete?input=$input&location=$userLat,$userLng&limit=10&has_deprecated_administrative_unit=false&api_key=$goongApiKey';
 
     final acRes = await http.get(Uri.parse(acUrl));
+    debugPrint('📡 Autocomplete API response [${acRes.statusCode}]: ${acRes.body}');
     if (acRes.statusCode != 200) return;
 
     final preds = (jsonDecode(acRes.body)['predictions'] as List)
@@ -313,6 +348,71 @@ class VirtualEscortMapController extends GetxController {
     );
   }
 
+  Future<void> reverseGeocodeFromCoordinates(double lat, double lng) async {
+    final url = Uri.parse(
+      'https://rsapi.goong.io/v2/geocode'
+          '?latlng=$lat,$lng'
+          '&limit=1'
+          '&has_deprecated_administrative_unit=true'
+          '&api_key=$goongApiKeyLocationSelection',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final results = data['results'];
+        if (results != null && results.isNotEmpty) {
+          final item = results[0];
+          final model = GoongPredictionModel(
+            placeId: item['place_id'],
+            mainText: item['name'] ?? "Vị trí đã chọn",
+            secondaryText: item['address'] ?? '',
+            description: item['formatted_address'] ?? '',
+          );
+          model.lat = lat;
+          model.lng = lng;
+
+          selectedLocation.value = model;
+
+          if (kDebugMode) {
+            print("📍 Reverse geocoded: ${model.description}");
+          }
+        } else {
+          debugPrint("⚠️ Không tìm thấy địa chỉ từ tọa độ.");
+        }
+      } else {
+        debugPrint("❌ Reverse geocode failed: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("❌ Lỗi reverse geocode: $e");
+    }
+  }
+
+  Future<void> setDestinationFromTap(double lat, double lng) async {
+    final pos = Position(lng, lat);
+    destinationPosition.value = pos;
+
+    final point = Point(coordinates: Position(lng, lat));
+    await _addCustomMarker(point);
+
+    await reverseGeocodeFromCoordinates(lat, lng);
+
+    if (originPosition.value == null) {
+      await locateUser(saveAsOrigin: true);
+    }
+
+    if (originPosition.value != null && destinationPosition.value != null) {
+      await mapDirectionRoute(
+        originLat: originPosition.value!.lat.toDouble(),
+        originLng: originPosition.value!.lng.toDouble(),
+        destLat: destinationPosition.value!.lat.toDouble(),
+        destLng: destinationPosition.value!.lng.toDouble(),
+        vehicleType: vehicleToString(selectedVehicle.value),
+      );
+    }
+  }
+
   Future<void> _recreateMarkerManager() async {
     if (mapboxMap == null) return;
     try {
@@ -452,6 +552,7 @@ class VirtualEscortMapController extends GetxController {
   }) async {
     try {
       if (mapboxMap == null) return [];
+      clearRouteAndMarker();
 
       final url = Uri.parse(
         'https://rsapi.goong.io/v2/direction'

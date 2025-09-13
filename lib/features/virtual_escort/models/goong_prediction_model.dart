@@ -1,8 +1,8 @@
 ﻿class GoongPredictionModel {
   final String description;
   final String placeId;
-  final String mainText;
-  final String secondaryText;
+  String? mainText;
+  String? secondaryText;
   double? lat;
   double? lng;
   String? distanceText;
@@ -10,8 +10,8 @@
   GoongPredictionModel({
     required this.description,
     required this.placeId,
-    required this.mainText,
-    required this.secondaryText,
+    this.mainText,
+    this.secondaryText,
   });
 
   factory GoongPredictionModel.fromJson(Map<String, dynamic> json) {

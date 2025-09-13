@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "com.SEP490.safe_city_mobile"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

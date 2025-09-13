@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:safe_city_mobile/features/virtual_escort/models/goong_prediction_model.dart';
 import 'package:safe_city_mobile/features/virtual_escort/screens/widgets/vehicle_selector.dart';
 import 'package:safe_city_mobile/utils/constants/colors.dart';
 
@@ -99,12 +100,15 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: destinationSearchField(
-                          label: "Chọn điểm đến",
-                          value: destinationAddress,
-                          onTap: () => _openSearch(false),
-                          prefixIcon: const Icon(Iconsax.location, size: 22),
-                        ),
+                        child: Obx(() {
+                          final loc = mapController.selectedLocation.value;
+                          return destinationSearchField(
+                            label: "Chọn điểm đến",
+                            value: loc?.description,
+                            onTap: () => _openSearch(false),
+                            prefixIcon: const Icon(Iconsax.location, size: 22),
+                          );
+                        }),
                       ),
                       IconButton(
                         tooltip: "Đổi điểm đi / điểm đến",
@@ -232,7 +236,7 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
                                   'origin': originAddress ?? '',
                                   'originLat': mapController.originPosition.value?.lat.toDouble(),
                                   'originLng': mapController.originPosition.value?.lng.toDouble(),
-                                  'destination': destinationAddress ?? '',
+                                  'destination': mapController.selectedLocation.value?.description ?? '',
                                   'destinationLat': mapController.destinationPosition.value?.lat.toDouble(),
                                   'destinationLng': mapController.destinationPosition.value?.lng.toDouble(),
                                   'vehicle': vehicleToVietnamese(mapController.selectedVehicle.value),
@@ -307,6 +311,8 @@ class _DestinationMapScreenState extends State<DestinationMapScreen> {
           originAddress = description;
         } else {
           destinationAddress = description;
+          mapController.selectedLocation.value = GoongPredictionModel(
+            description: description, placeId: placeId);
         }
       });
 

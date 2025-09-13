@@ -67,7 +67,7 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                       onTap: () => _pickStartAndDestinationLocation(
                         context,
                         controller,
-                        controller.destination,
+                        controller.origin,
                       ),
                       style: TextStyle(
                         color: TColors.primary,
