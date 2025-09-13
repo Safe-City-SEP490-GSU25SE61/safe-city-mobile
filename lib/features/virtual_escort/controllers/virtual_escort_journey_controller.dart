@@ -187,7 +187,10 @@ class VirtualEscortJourneyController extends GetxController {
     _locationTimer = Timer.periodic(const Duration(seconds: 6), (timer) async {
       try {
         final position = await geo.Geolocator.getCurrentPosition(
-          desiredAccuracy: geo.LocationAccuracy.high,
+          locationSettings: const geo.LocationSettings(
+            accuracy: geo.LocationAccuracy.best,
+            distanceFilter: 5,
+          ),
         );
 
         final lat = position.latitude;
@@ -205,7 +208,10 @@ class VirtualEscortJourneyController extends GetxController {
   Future<void> sendSosSignal() async {
     try {
       final position = await geo.Geolocator.getCurrentPosition(
-        desiredAccuracy: geo.LocationAccuracy.high,
+        locationSettings: const geo.LocationSettings(
+          accuracy: geo.LocationAccuracy.best,
+          distanceFilter: 5,
+        ),
       );
 
       final lat = position.latitude;

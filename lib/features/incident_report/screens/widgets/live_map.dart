@@ -93,7 +93,6 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
                       ],
                     ),
                     padding: const EdgeInsets.all(TSizes.mediumSpace),
-                    // extra bottom padding for button
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
