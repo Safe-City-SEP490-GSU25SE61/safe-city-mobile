@@ -10,7 +10,8 @@
             android:label="Safe City"
             android:name="${applicationName}"
             android:icon="@mipmap/ic_launcher"
-            android:requestLegacyExternalStorage="true">
+            android:requestLegacyExternalStorage="true"
+            android:enableOnBackInvokedCallback="true">
         <meta-data
                 android:name="com.google.android.geo.API_KEY"
                 android:value="AIzaSyBzqX7snPZ_xTxX7srZ0COSyGPNaOVqioU"/>
