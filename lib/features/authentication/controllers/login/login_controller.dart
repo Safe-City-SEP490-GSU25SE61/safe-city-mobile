@@ -167,6 +167,7 @@ class LoginController extends GetxController {
         email: email.text.trim(),
         password: password.text.trim(),
       );
+      if (kDebugMode) print("🔑 SignIn Result: $result");
 
       TFullScreenLoader.stopLoading();
       FocusScope.of(Get.context!).unfocus();
