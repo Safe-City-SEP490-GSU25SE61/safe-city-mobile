@@ -16,6 +16,7 @@ import '../../../utils/constants/colors.dart';
 import '../../../utils/formatters/formatter.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../../../utils/popups/loaders.dart';
+import 'agora_video_calling.dart';
 import '../controllers/virtual_escort_group_controller.dart';
 
 class VirtualEscortScreen extends StatelessWidget {
@@ -197,11 +198,11 @@ class VirtualEscortScreen extends StatelessWidget {
                     description:
                         'Tự tạo cho mình lộ trình di chuyển và kích hoạt SOS nếu gặp bất trắc',
                     icon: Iconsax.user,
-                    onTap: () => Get.dialog(
-                      CreateVirtualEscortGroupDialog(),
-                      barrierDismissible: false,
-                    ),
-                    // onTap: () => Get.to(() =>VirtualEscortSosScreen()),
+                    // onTap: () => Get.dialog(
+                    //   CreateVirtualEscortGroupDialog(),
+                    //   barrierDismissible: false,
+                    // ),
+                    onTap: () => Get.to(() =>AgoraVideoCallingScreen()),
                     bkgColor: TColors.personalEscortBkg,
                     iconColor: TColors.personalEscortIcon,
                   ),

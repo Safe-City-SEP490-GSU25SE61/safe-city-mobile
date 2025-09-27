@@ -96,6 +96,7 @@ dependencies:
 
   #Animations
   animations: ^2.0.11
+  agora_rtc_engine: ^6.5.3
 
 
 #Packages end here
