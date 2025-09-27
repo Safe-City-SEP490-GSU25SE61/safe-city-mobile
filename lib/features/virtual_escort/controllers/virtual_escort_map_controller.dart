@@ -1325,54 +1325,80 @@ class VirtualEscortMapController extends GetxController {
           }
         });
 
-    trackingTimer = Timer.periodic(const Duration(milliseconds: 180), (timer) async {
+    trackingTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) async {
       if (lastGpsPosition == null || nextGpsPosition == null || lastGpsTime == null) return;
-
-      final latestGps = gpsHistory.last;
-      final distanceSinceLastNext = _calculateDistance(nextGpsPosition!, latestGps);
-      if (distanceSinceLastNext > gpsUpdateThreshold) {
-        lastGpsPosition = currentInterpolated ?? nextGpsPosition!;
-        nextGpsPosition = latestGps;
-        lastGpsTime = DateTime.now();
-      }
 
       final now = DateTime.now();
       final dt = now.difference(lastGpsTime!).inMilliseconds / 1000.0;
       final travelTime = expectedTravelTime ?? 1.0;
-      final t = (dt / travelTime).clamp(0.0, 1.0);
 
-      final easedT = pow(t, 0.7).toDouble();
-      final lat = lastGpsPosition!.lat * (1 - easedT) + nextGpsPosition!.lat * easedT;
-      final lng = lastGpsPosition!.lng * (1 - easedT) + nextGpsPosition!.lng * easedT;
-      final interpolated = Position.named(lat: lat, lng: lng);
+      double t = (dt / travelTime).clamp(0.0, 1.0);
 
-      // Always update the marker position for smooth movement
-      await updateUserMarker(lat, lng);
-
-      // Only update camera if moved enough
-      if (_lastMarkerPosition == null ||
-          _calculateDistance(_lastMarkerPosition!, interpolated) > markerMoveThreshold) {
-        _lastMarkerPosition = interpolated;
-
-        double targetBearing = getLookaheadBearing(gpsHistory, 2);
-        smoothedBearing ??= targetBearing;
-        double diff = (((targetBearing - smoothedBearing!) + 540) % 360) - 180;
-        double lerpFactor = (0.1 + (diff.abs() / 180) * 0.4).clamp(0.1, 0.6);
-        smoothedBearing = interpolateBearing(smoothedBearing!, targetBearing, lerpFactor);
-
-        await mapboxMap!.setCamera(
-          CameraOptions(
-            center: Point(coordinates: interpolated),
-            zoom: 18,
-            bearing: smoothedBearing,
-            pitch: 50,
-            padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
-          ),
-        );
+      if (t >= 1.0 && smoothedBearing != null) {
+        final predictionDistance = latestSpeed * dt;
+        final predicted = _moveForward(nextGpsPosition!, smoothedBearing!, predictionDistance);
+        currentInterpolated = predicted;
+      } else {
+        final easedT = pow(t, 0.7).toDouble();
+        final lat = lastGpsPosition!.lat * (1 - easedT) + nextGpsPosition!.lat * easedT;
+        final lng = lastGpsPosition!.lng * (1 - easedT) + nextGpsPosition!.lng * easedT;
+        currentInterpolated = Position.named(lat: lat, lng: lng);
       }
 
-      currentInterpolated = interpolated;
+      // --- Corner Handling ---
+      if (smoothedBearing == null) {
+        smoothedBearing = getLookaheadBearing(gpsHistory, 2);
+      } else {
+        final targetBearing = getLookaheadBearing(gpsHistory, 2);
+        if (_isSharpTurn(smoothedBearing!, targetBearing)) {
+          smoothedBearing = interpolateBearing(smoothedBearing!, targetBearing, 0.5);
+        } else {
+          double diff = (((targetBearing - smoothedBearing!) + 540) % 360) - 180;
+          double lerpFactor = (0.2 + (diff.abs() / 180) * 0.6).clamp(0.2, 0.8);
+          smoothedBearing = interpolateBearing(smoothedBearing!, targetBearing, lerpFactor);
+        }
+      }
+
+      if (currentInterpolated != null) {
+        await updateUserMarker(currentInterpolated!.lat as double, currentInterpolated!.lng as double);
+
+        if (_lastMarkerPosition == null ||
+            _calculateDistance(_lastMarkerPosition!, currentInterpolated!) > markerMoveThreshold) {
+          _lastMarkerPosition = currentInterpolated;
+
+          await mapboxMap?.flyTo(
+            CameraOptions(
+              center: Point(coordinates: currentInterpolated!),
+              zoom: 18,
+              bearing: smoothedBearing,
+              pitch: 50,
+              padding: MbxEdgeInsets(top: 450, left: 0, bottom: 50, right: 0),
+            ),
+            MapAnimationOptions(duration: 300, startDelay: 0),
+          );
+        }
+      }
     });
+  }
+
+  bool _isSharpTurn(double from, double to) {
+    final diff = (((to - from) + 540) % 360) - 180;
+    return diff.abs() > 45; // treat >45° as sharp turn
+  }
+
+  Position _moveForward(Position pos, double bearing, double distanceMeters) {
+    const R = 6378137.0;
+    final latRad = pos.lat * pi / 180;
+    final lonRad = pos.lng * pi / 180;
+    final brngRad = bearing * pi / 180;
+
+    final newLat = asin(sin(latRad) * cos(distanceMeters / R) +
+        cos(latRad) * sin(distanceMeters / R) * cos(brngRad));
+    final newLon = lonRad +
+        atan2(sin(brngRad) * sin(distanceMeters / R) * cos(latRad),
+            cos(distanceMeters / R) - sin(latRad) * sin(newLat));
+
+    return Position.named(lat: newLat * 180 / pi, lng: newLon * 180 / pi);
   }
 
   bool _checkIfPassedStep(
