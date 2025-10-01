@@ -31,7 +31,8 @@ class VirtualEscortJourneyController extends GetxController {
   final leaderLat = 0.0.obs;
   final leaderLng = 0.0.obs;
   final sosCount = 0.obs;
-
+  final videoCallMessage = RxnString();
+  final videoCallAlertId = "".obs;
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   late StreamSubscription<BatteryState> _batterySubscription;
 
@@ -100,9 +101,23 @@ class VirtualEscortJourneyController extends GetxController {
     }
   }
 
-  Future<void> initConnection({required bool isLeader,required int memberId}) async {
+  Future<void> initConnection({
+    required bool isLeader,
+    required int memberId,
+  }) async {
     await escortService.initSignalR(isLeader: isLeader, memberId: memberId);
-    if (!isLeader) {
+    if (isLeader) {
+      escortService.hubConnection?.on("ReceiveToken", (args) {
+        if (args == null || args.length < 2) return;
+        final token = args[0] as String;
+        final alertId = args[1].toString();
+        debugPrint("🎯 Leader received SOS token + alertId");
+        debugPrint("🔑 Token: $token");
+        debugPrint("🆔 AlertId: $alertId");
+        videoCallMessage.value = token;
+        videoCallAlertId.value = alertId;
+      });
+    } else {
       escortService.hubConnection?.on("ReceiveLeaderLocation", (args) {
         if (args == null || args.length < 2) return;
         final lat = args[0] as double;
@@ -112,7 +127,9 @@ class VirtualEscortJourneyController extends GetxController {
         final isUserBatteryLow = args[4] as bool;
 
         debugPrint("👀 Observer received leader location: $lat, $lng");
-        debugPrint("📡 GPS: $isGPSAvailable, Internet: $isInternetAvailable, BatteryLow: $isUserBatteryLow");
+        debugPrint(
+          "📡 GPS: $isGPSAvailable, Internet: $isInternetAvailable, BatteryLow: $isUserBatteryLow",
+        );
 
         isGpsUnstable.value = !isGPSAvailable;
         isInternetWeak.value = !isInternetAvailable;
@@ -123,13 +140,25 @@ class VirtualEscortJourneyController extends GetxController {
       });
 
       escortService.hubConnection?.on("ReceiveSos", (args) {
-        if (args == null || args.length < 3) return;
+        if (args == null || args.length < 5) return;
 
         final message = args[0] as String;
         final lat = (args[1] as num).toDouble();
         final lng = (args[2] as num).toDouble();
+        final token = args[3] as String;
+        final alertId = args[4].toString();
 
-        debugPrint("🚨 SOS received: $message at ($lat, $lng)");
+        final sosMessage = message;
+        final sosLat = lat.toStringAsFixed(6);
+        final sosLng = lng.toStringAsFixed(6);
+        final sosToken = token;
+        final sosAlertId = alertId;
+
+        debugPrint("🚨 SOS received");
+        debugPrint("📝 Message: $sosMessage");
+        debugPrint("📍 Location: ($sosLat, $sosLng)");
+        debugPrint("🔑 Token: $sosToken");
+        debugPrint("🆔 AlertId: $sosAlertId");
 
         PopUpModal.instance.showOkOnlyDialogSos(
           title: "Tín hiệu SOS",
@@ -154,10 +183,7 @@ class VirtualEscortJourneyController extends GetxController {
           messageWidget: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                TImages.locationReached,
-                height: 100,
-              ),
+              Image.asset(TImages.locationReached, height: 100),
               const SizedBox(height: 16),
               const Text(
                 "Người tạo hành trình đã đến đích an toàn!",
@@ -252,6 +278,18 @@ class VirtualEscortJourneyController extends GetxController {
       debugPrint("✅ SignalR disconnected");
     } catch (e) {
       debugPrint("❌ Failed to stop SignalR: $e");
+    }
+  }
+
+  Future<void> startVideoCall() async {
+    try {
+      debugPrint("➡️ Calling StartVideoCall hub method...");
+
+      await escortService.hubConnection?.invoke("StartVideoCall");
+
+      debugPrint("✅ StartVideoCall invoked successfully.");
+    } catch (e) {
+      debugPrint("❌ Error calling StartVideoCall: $e");
     }
   }
 }

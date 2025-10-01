@@ -198,11 +198,10 @@ class VirtualEscortScreen extends StatelessWidget {
                     description:
                         'Tự tạo cho mình lộ trình di chuyển và kích hoạt SOS nếu gặp bất trắc',
                     icon: Iconsax.user,
-                    // onTap: () => Get.dialog(
-                    //   CreateVirtualEscortGroupDialog(),
-                    //   barrierDismissible: false,
-                    // ),
-                    onTap: () => Get.to(() =>AgoraVideoCallingScreen()),
+                    onTap: () => Get.dialog(
+                      CreateVirtualEscortGroupDialog(),
+                      barrierDismissible: false,
+                    ),
                     bkgColor: TColors.personalEscortBkg,
                     iconColor: TColors.personalEscortIcon,
                   ),
