@@ -269,58 +269,59 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage:
-                                            (member.avatarUrl.isNotEmpty)
-                                            ? NetworkImage(member.avatarUrl)
-                                            : const AssetImage(
-                                                    TImages.userImageMale,
-                                                  )
-                                                  as ImageProvider,
-                                        backgroundColor: Colors.grey,
-                                        radius: 30,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Column(
-                                        crossAxisAlignment:
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                            backgroundImage: member.avatarUrl.isNotEmpty
+                                                ? NetworkImage(member.avatarUrl)
+                                                : const AssetImage(TImages.userImageMale),
+                                          backgroundColor: Colors.grey,
+                                          radius: 30,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Flexible(
+                                          child: Column(
+                                            crossAxisAlignment:
                                             CrossAxisAlignment.start,
-                                        mainAxisAlignment:
+                                            mainAxisAlignment:
                                             MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            truncateWithEllipsis(
-                                              14,
-                                              member.fullName,
-                                            ),
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.black,
-                                            ),
+                                            children: [
+                                              Text(
+                                                truncateWithEllipsis(
+                                                  14,
+                                                  member.fullName,
+                                                ),
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                               Text(
+                                                 truncateWithEllipsis(
+                                                   18,
+                                                   member.email,
+                                                 ),
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(height: 2),
-                                           Text(
-                                             truncateWithEllipsis(
-                                               18,
-                                               member.email,
-                                             ),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                   Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
+                                          horizontal: 10,
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
@@ -390,8 +391,8 @@ class VirtualEscortGroupDetailPage extends StatelessWidget {
                                                   ),
                                                 ),
                                                 cancel: SizedBox(
-                                                  width: 70,
-                                                  height: 50,
+                                                  width: 60,
+                                                  height: 40,
                                                   child: OutlinedButton(
                                                     style: OutlinedButton.styleFrom(
                                                       side: const BorderSide(color: Colors.red),

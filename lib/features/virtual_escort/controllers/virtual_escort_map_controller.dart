@@ -29,6 +29,7 @@ class VirtualEscortMapController extends GetxController {
   PointAnnotationManager? _customMarkerManager;
   final goongMapTilesKey = dotenv.env['GOONG_MAP_TILES_KEY2']!;
   final goongApiKey = dotenv.env['GOONG_API_KEY2']!;
+  final goongApiKeyBackUp = dotenv.env['GOONG_API_KEY1']!;
   final goongApiKeyLocationSelection = dotenv.env['GOONG_API_KEY1']!;
   final searchController = TextEditingController();
   final RxList<GoongPredictionModel> predictions = <GoongPredictionModel>[].obs;
@@ -61,8 +62,8 @@ class VirtualEscortMapController extends GetxController {
   double latestSpeed = 0.0;
   DateTime? _lastStepUpdateTime;
   Position? _lastMarkerPosition;
-   double gpsUpdateThreshold = 3.0;
-   double markerMoveThreshold = 1.5;
+  double gpsUpdateThreshold = 3.0;
+  double markerMoveThreshold = 1.5;
   var hasArrived = false.obs;
   final rawRouteData = {}.obs;
   PointAnnotation? _observerMarker;
@@ -554,19 +555,27 @@ class VirtualEscortMapController extends GetxController {
       if (mapboxMap == null) return [];
       clearRouteAndMarker();
 
-      final url = Uri.parse(
+      Uri buildUrl(String apiKey) => Uri.parse(
         'https://rsapi.goong.io/v2/direction'
             '?origin=$originLat,$originLng'
             '&destination=$destLat,$destLng'
             '&vehicle=$vehicleType'
             '&alternatives=false'
-            '&api_key=$goongApiKey',
+            '&api_key=$apiKey',
       );
 
-      final response = await http.get(url);
+      Uri url = buildUrl(goongApiKey);
+      var response = await http.get(url);
+
       if (response.statusCode != 200) {
-        debugPrint('❌ Failed to load route: ${response.body}');
-        return [];
+        debugPrint('❌ Primary key failed: ${response.body}');
+        url = buildUrl(goongApiKeyBackUp);
+        response = await http.get(url);
+
+        if (response.statusCode != 200) {
+          debugPrint('❌ Backup key failed: ${response.body}');
+          return [];
+        }
       }
 
       final data = jsonDecode(response.body);

@@ -94,7 +94,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
             });
 
             return AlertDialog(
-              title: Text(_remainingSeconds > 0 ? "Đã đến nơi!" : "🚨 SOS ĐÃ KÍCH HOẠT!"),
+              title: Text(_remainingSeconds > 0 ? "📍 Đã đến nơi!" : "🚨 SOS ĐÃ KÍCH HOẠT!"),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,

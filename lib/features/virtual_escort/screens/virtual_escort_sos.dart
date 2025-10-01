@@ -9,6 +9,7 @@ import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../controllers/virtual_escort_journey_controller.dart';
+import 'agora_video_calling.dart';
 
 class VirtualEscortSosScreen extends StatefulWidget {
   const VirtualEscortSosScreen({super.key});
@@ -21,8 +22,7 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
-  // 🔑 control state of the second card
-  bool membersNotified = true; // set to false to "grey out"
+  bool membersNotified = true;
 
   @override
   void initState() {
@@ -42,7 +42,7 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
   @override
   Widget build(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
-
+    final escortController = VirtualEscortJourneyController.instance;
     return Scaffold(
       backgroundColor: TColors.lightGrey,
       appBar: AppBar(
@@ -98,12 +98,12 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
                 ),
                 GestureDetector(
                   onTap: () {
-                    final controller = VirtualEscortJourneyController.instance;
-                    controller.sendSosSignal();
+                    escortController.sendSosSignal();
 
                     PopUpModal.instance.showOkOnlyDialog(
                       title: "SOS đã gửi",
-                      message: "Tín hiệu khẩn cấp đã được gửi tới các thành viên trong nhóm.",
+                      message:
+                          "Tín hiệu khẩn cấp đã được gửi tới các thành viên trong nhóm.",
                     );
                   },
                   child: Container(
@@ -150,11 +150,11 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                // First Card: Call Emergency
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      // TODO: Call emergency logic
+                      escortController.startVideoCall();
+                      Get.to(() => AgoraVideoCallingScreen());
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(

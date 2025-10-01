@@ -73,7 +73,7 @@ class _VirtualEscortObserverScreenState
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),
@@ -153,7 +153,71 @@ class _VirtualEscortObserverScreenState
               ),
             ),
           ),
+
+          Positioned(
+            top: 80,
+            right: 12,
+            child: Obx(() {
+              final message = journeyController.videoCallMessage.value;
+              if (message == null) return const SizedBox.shrink();
+
+              return buildSidebarAlert(
+                icon: Icons.video_call,
+                message: message,
+                // onTap: () {
+                //   // 👉 handle navigation to video call screen
+                //   debugPrint("🎥 Open video call with AlertId: ${journeyController.videoCallAlertId.value}");
+                //   Get.to(() => VideoCallScreen(
+                //     alertId: journeyController.videoCallAlertId.value,
+                //   ));
+                // },
+                onTap: () {},
+              );
+            }),
+          ),
+
         ],
+      ),
+    );
+  }
+  Widget buildSidebarAlert({
+    required IconData icon,
+    required String message,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 3,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: TColors.error),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
