@@ -158,7 +158,7 @@ class _VirtualEscortObserverScreenState
             top: 80,
             right: 12,
             child: Obx(() {
-              final message = journeyController.videoCallMessage.value;
+              final message = journeyController.videoCallToken.value;
               if (message == null) return const SizedBox.shrink();
 
               return buildSidebarAlert(

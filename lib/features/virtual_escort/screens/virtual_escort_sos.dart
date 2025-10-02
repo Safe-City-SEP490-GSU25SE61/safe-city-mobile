@@ -70,7 +70,6 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
             ),
           ),
 
-          // 🔹 SOS Ripple Button
           Center(
             child: Stack(
               alignment: Alignment.center,
@@ -154,7 +153,6 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
                   child: InkWell(
                     onTap: () {
                       escortController.startVideoCall();
-                      Get.to(() => AgoraVideoCallingScreen());
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -173,6 +171,7 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
+                              color: Colors.black
                             ),
                           ),
                         ],

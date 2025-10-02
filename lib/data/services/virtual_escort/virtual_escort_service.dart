@@ -616,7 +616,11 @@ class VirtualEscortService {
       request.fields['GroupId'] = groupId.toString();
       request.fields['RawJson'] = rawJson;
       request.fields['Vehicle'] = vehicle;
-      request.fields['WatcherIds'] = watcherIds.isNotEmpty ? watcherIds.join(',') : "0";
+      for (var id in watcherIds) {
+        request.files.add(
+          http.MultipartFile.fromString('WatcherIds', id.toString()),
+        );
+      }
 
       var streamedResponse = await request.send().timeout(
         const Duration(seconds: 20),
@@ -652,6 +656,55 @@ class VirtualEscortService {
     } catch (e) {
       if (kDebugMode) print("❌ Error creating escort: $e");
       return {"success": false, "message": "Exception: $e"};
+    }
+  }
+
+  Future<Map<String, dynamic>> joinWatcher(int journeyId) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {
+        "success": false,
+        "message": "No access token found",
+      };
+    }
+
+    try {
+      final uri = Uri.parse('${apiConnection}virtual-escorts/$journeyId/watchers/join');
+      final response = await client.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (kDebugMode) {
+        print("Join Watcher response: ${response.statusCode} -> ${response.body}");
+      }
+
+      final jsonData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          "success": true,
+          "channelName": jsonData["channelName"],
+          "token": jsonData["token"],
+        };
+      } else {
+        return {
+          "success": false,
+          "message": jsonData["message"] ?? "Failed to join watcher",
+          "errors": jsonData["errors"] ?? {},
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error joining watcher: $e");
+      }
+      return {
+        "success": false,
+        "message": "Exception occurred: $e",
+      };
     }
   }
 }

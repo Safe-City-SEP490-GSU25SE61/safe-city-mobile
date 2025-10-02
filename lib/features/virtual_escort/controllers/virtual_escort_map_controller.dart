@@ -1587,22 +1587,17 @@ class VirtualEscortMapController extends GetxController {
     try {
       final cameraState = await mapboxMap!.getCameraState();
       final bearing = cameraState.bearing;
-      debugPrint('📍 Updating marker to: $lat, $lng with bearing: $bearing');
-
       final updatedFeature = Feature(
         geometry: Point(coordinates: Position(lng, lat)),
         properties: {
           "bearing": bearing,
         }, id: "user_marker",
       );
-
       await mapboxMap!.style.updateGeoJSONSourceFeatures(
         'navigation-marker-source',
         'user_marker_update',
         [updatedFeature],
       );
-
-      debugPrint('✅ Marker updated successfully');
     } catch (e) {
       debugPrint('❌ Failed to update user marker: $e');
       final sources = await mapboxMap!.style.getStyleSources();

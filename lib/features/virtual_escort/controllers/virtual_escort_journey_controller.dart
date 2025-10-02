@@ -12,6 +12,8 @@ import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../data/services/virtual_escort/virtual_escort_service.dart';
 import '../../../navigation_dart.dart';
 import '../../../utils/constants/image_strings.dart';
+import '../../../utils/popups/loaders.dart';
+import '../screens/agora_video_calling.dart';
 
 class VirtualEscortJourneyController extends GetxController {
   static VirtualEscortJourneyController get instance => Get.find();
@@ -31,8 +33,9 @@ class VirtualEscortJourneyController extends GetxController {
   final leaderLat = 0.0.obs;
   final leaderLng = 0.0.obs;
   final sosCount = 0.obs;
-  final videoCallMessage = RxnString();
+  final videoCallToken = RxnString();
   final videoCallAlertId = "".obs;
+  final videoCallChannelName = "".obs;
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   late StreamSubscription<BatteryState> _batterySubscription;
 
@@ -108,13 +111,19 @@ class VirtualEscortJourneyController extends GetxController {
     await escortService.initSignalR(isLeader: isLeader, memberId: memberId);
     if (isLeader) {
       escortService.hubConnection?.on("ReceiveToken", (args) {
-        if (args == null || args.length < 2) return;
+        if (args == null || args.length < 3) return;
+
         final token = args[0] as String;
-        final alertId = args[1].toString();
-        debugPrint("🎯 Leader received SOS token + alertId");
+        final channelName = args[1] as String;
+        final alertId = args[2].toString();
+
+        debugPrint("🎯 Leader received SOS token + channelName + alertId");
         debugPrint("🔑 Token: $token");
+        debugPrint("📡 ChannelName: $channelName");
         debugPrint("🆔 AlertId: $alertId");
-        videoCallMessage.value = token;
+
+        videoCallToken.value = token;
+        videoCallChannelName.value = channelName;
         videoCallAlertId.value = alertId;
       });
     } else {
@@ -140,25 +149,19 @@ class VirtualEscortJourneyController extends GetxController {
       });
 
       escortService.hubConnection?.on("ReceiveSos", (args) {
-        if (args == null || args.length < 5) return;
+        if (args == null || args.length < 3) return;
 
         final message = args[0] as String;
         final lat = (args[1] as num).toDouble();
         final lng = (args[2] as num).toDouble();
-        final token = args[3] as String;
-        final alertId = args[4].toString();
 
         final sosMessage = message;
         final sosLat = lat.toStringAsFixed(6);
         final sosLng = lng.toStringAsFixed(6);
-        final sosToken = token;
-        final sosAlertId = alertId;
 
         debugPrint("🚨 SOS received");
         debugPrint("📝 Message: $sosMessage");
         debugPrint("📍 Location: ($sosLat, $sosLng)");
-        debugPrint("🔑 Token: $sosToken");
-        debugPrint("🆔 AlertId: $sosAlertId");
 
         PopUpModal.instance.showOkOnlyDialogSos(
           title: "Tín hiệu SOS",
@@ -167,6 +170,46 @@ class VirtualEscortJourneyController extends GetxController {
           lng: lng,
           onOk: () {
             VirtualEscortMapController.instance.updateObserverMarker(lat, lng);
+          },
+        );
+      });
+
+      escortService.hubConnection?.on("ReceiveVideoCall", (args) {
+        if (args == null || args.length < 2) return;
+
+        final message = args[0] as String;
+        final alertId = args[1].toString();
+
+        debugPrint("📞 Video call started by leader");
+        debugPrint("📝 Message: $message");
+        debugPrint("🆔 AlertId: $alertId");
+
+        PopUpModal.instance.showOkOnlyDialogCall(
+          title: "Cuộc gọi khẩn cấp",
+          message: message,
+          alertId: alertId,
+          onJoinCall: () async {
+            final result = await escortService.joinWatcher(int.parse(alertId));
+
+            if (result["success"] == true) {
+              final channelName = result["channelName"];
+              final token = result["token"];
+
+              Get.to(
+                () => AgoraVideoCallingScreen(
+                  token: token,
+                  channelName: channelName,
+                  userId: 0,
+                  isLeader: false,
+                ),
+              );
+            } else {
+              debugPrint("❌ Failed to join watcher: ${result["message"]}");
+              TLoaders.warningSnackBar(
+                message: "Không thể tham gia cuộc gọi",
+                title: "Lỗi",
+              );
+            }
           },
         );
       });
@@ -231,7 +274,7 @@ class VirtualEscortJourneyController extends GetxController {
     });
   }
 
-  Future<void> sendSosSignal() async {
+  Future<void> sendSosSignal({bool isVideoCall = false}) async {
     try {
       final position = await geo.Geolocator.getCurrentPosition(
         locationSettings: const geo.LocationSettings(
@@ -245,7 +288,7 @@ class VirtualEscortJourneyController extends GetxController {
 
       await escortService.hubConnection?.invoke(
         "SendSos",
-        args: [lat, lng, DateTime.now().toUtc().toIso8601String()],
+        args: [lat, lng, DateTime.now().toUtc().toIso8601String(), isVideoCall],
       );
       sosCount.value++;
       debugPrint("📢 SOS sent: $lat, $lng");
@@ -263,7 +306,8 @@ class VirtualEscortJourneyController extends GetxController {
   }
 
   Future<void> stopSendingLocation({bool isLeader = false}) async {
-    if (isLeader && escortService.hubConnection?.state == HubConnectionState.Connected) {
+    if (isLeader &&
+        escortService.hubConnection?.state == HubConnectionState.Connected) {
       try {
         await escortService.hubConnection?.invoke("EndJourney");
         debugPrint("🏁 Leader ended journey on server");
@@ -283,13 +327,27 @@ class VirtualEscortJourneyController extends GetxController {
 
   Future<void> startVideoCall() async {
     try {
-      debugPrint("➡️ Calling StartVideoCall hub method...");
-
+      await sendSosSignal(isVideoCall: true);
       await escortService.hubConnection?.invoke("StartVideoCall");
-
+      Get.to(
+        () => AgoraVideoCallingScreen(
+          token: videoCallToken.value,
+          channelName: videoCallChannelName.value,
+          userId: 0,
+          isLeader: true,
+        ),
+      );
       debugPrint("✅ StartVideoCall invoked successfully.");
     } catch (e) {
       debugPrint("❌ Error calling StartVideoCall: $e");
+
+      final error = e.toString();
+      if (error.contains("No active SOS alert")) {
+        Get.snackbar(
+          "Thông báo",
+          "Bạn cần gửi tín hiệu SOS trước khi gọi video.",
+        );
+      }
     }
   }
 }
