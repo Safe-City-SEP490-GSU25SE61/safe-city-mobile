@@ -14,6 +14,7 @@ class AgoraVideoCallingScreen extends StatefulWidget {
   final int userId;
   final bool isLeader;
   final int? leaderUid;
+  final Map<int, String> uidToName;
 
   const AgoraVideoCallingScreen({
     super.key,
@@ -22,6 +23,7 @@ class AgoraVideoCallingScreen extends StatefulWidget {
     required this.userId,
     this.isLeader = false,
     this.leaderUid,
+    required this.uidToName,
   });
 
   @override
@@ -284,7 +286,7 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
         ? AgoraVideoView(
       controller: VideoViewController(
         rtcEngine: _engine!,
-        canvas: VideoCanvas(uid: widget.userId),
+        canvas: VideoCanvas(uid: 0),
       ),
     )
         : Center(
@@ -326,7 +328,9 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
           else
             Center(
               child: Text(
-                isLeaderTile ? "Leader (UID $uid)" : "UID $uid\n(Camera tắt)",
+                isLeaderTile
+                    ? (widget.uidToName[uid] ?? "")
+                    : "${widget.uidToName[uid] ?? ""}\n(Camera tắt)",
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white),
               ),
@@ -342,7 +346,7 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                "UID $uid",
+                widget.uidToName[uid] ?? "Thành viên",
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),

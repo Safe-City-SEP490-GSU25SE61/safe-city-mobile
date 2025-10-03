@@ -689,6 +689,7 @@ class VirtualEscortService {
           "success": true,
           "channelName": jsonData["channelName"],
           "token": jsonData["token"],
+          "uid": jsonData["uid"],
         };
       } else {
         return {
