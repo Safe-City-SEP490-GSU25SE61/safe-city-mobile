@@ -2,7 +2,6 @@
 import 'package:get/get.dart';
 
 import '../../../../utils/constants/colors.dart';
-import '../../../../utils/helpers/helper_functions.dart';
 import '../../../../utils/validators/validation.dart';
 import '../../controllers/virtual_escort_group_controller.dart';
 import 'location_sharing_checkbox.dart';
@@ -14,7 +13,6 @@ class CreateVirtualEscortGroupDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<VirtualEscortGroupController>();
     final createGroupFormKey = GlobalKey<FormState>();
-    final dark = THelperFunctions.isDarkMode(context);
     return Dialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
