@@ -2,6 +2,7 @@
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:get/get.dart';
@@ -222,6 +223,8 @@ class VirtualEscortJourneyController extends GetxController {
         debugPrint("🆔 AlertId: $alertId");
         debugPrint("👥 Watchers in this call: $uidToName");
 
+        videoCallAlertId.value = alertId;
+
         if (isDialogOpen) return;
         isDialogOpen = true;
         PopUpModal.instance.showOkOnlyDialogCall(
@@ -407,6 +410,99 @@ class VirtualEscortJourneyController extends GetxController {
       debugPrint("✅ StartVideoCall invoked successfully.");
     } catch (e) {
       debugPrint("❌ Error calling StartVideoCall: $e");
+    }
+  }
+
+  Future<void> leaveSosVideoCallingLeader() async {
+    try {
+      TFullScreenLoader.openLoadingDialog(
+        "Đang thoát cuộc gọi...",
+        TImages.loadingCircle,
+      );
+
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        TLoaders.warningSnackBar(
+          title: "Mất kết nối",
+          message: "Vui lòng kiểm tra kết nối Internet của bạn",
+        );
+        return;
+      }
+
+      final result = await escortService.leaveCallLeader(
+        int.parse(videoCallAlertId.value),
+      );
+
+      TFullScreenLoader.stopLoading();
+
+      if (result["success"] == true) {
+        Get.back();
+        TLoaders.successSnackBar(
+          title: "Thành công",
+          message: "Đã rời khỏi cuộc gọi",
+        );
+      } else {
+        TLoaders.warningSnackBar(
+          title: "Thất bại",
+          message: "Xảy ra lỗi khi rời khỏi cuộc gọi",
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("❌ Error ending journey: $e");
+
+      TFullScreenLoader.stopLoading();
+      TLoaders.errorSnackBar(
+        title: "Lỗi",
+        message: "Đã xảy ra sự cố, vui lòng thử lại",
+      );
+    }
+  }
+
+  Future<void> leaveSosVideoCallingObserver() async {
+    try {
+      TFullScreenLoader.openLoadingDialog(
+        "Đang thoát cuộc gọi...",
+        TImages.loadingCircle,
+      );
+
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        TLoaders.warningSnackBar(
+          title: "Mất kết nối",
+          message: "Vui lòng kiểm tra kết nối Internet của bạn",
+        );
+        return;
+      }
+
+      final result = await escortService.leaveCallObserver(
+        int.parse(videoCallAlertId.value),
+      );
+
+      TFullScreenLoader.stopLoading();
+
+      if (result["success"] == true) {
+        Get.back();
+
+        TLoaders.successSnackBar(
+          title: "Thành công",
+          message: "Đã rời khỏi cuộc gọi",
+        );
+      } else {
+        TLoaders.warningSnackBar(
+          title: "Thất bại",
+          message: "Xảy ra lỗi khi rời khỏi cuộc gọi",
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("❌ Error leaving watcher: $e");
+
+      TFullScreenLoader.stopLoading();
+      TLoaders.errorSnackBar(
+        title: "Lỗi",
+        message: "Đã xảy ra sự cố, vui lòng thử lại",
+      );
     }
   }
 }

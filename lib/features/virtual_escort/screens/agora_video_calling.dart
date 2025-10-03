@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/popups/loaders.dart';
 import '../../personalization/controllers/profile/user_profile_controller.dart';
+import '../controllers/virtual_escort_journey_controller.dart';
 
 class AgoraVideoCallingScreen extends StatefulWidget {
   final String? token;
@@ -37,15 +38,13 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
   bool engineInitialize = false;
   final List<int> remoteUserUids = [];
   final Map<int, bool> remoteVideoMuted = {};
-
   final agoraAppId = dotenv.env['AGORA_APP_ID']!;
   late String agoraToken;
   late String agoraChannelName;
   late int userId;
-
   bool isMicOn = true;
   bool isLocalCameraOn = true;
-
+  final escortController = Get.put(VirtualEscortJourneyController());
   final userController = Get.put(UserProfileController());
 
   @override
@@ -97,16 +96,21 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
           });
         },
         onUserOffline:
-            (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          debugPrint("Remote user $remoteUid left");
-          setState(() {
-            remoteUserUids.remove(remoteUid);
-            remoteVideoMuted.remove(remoteUid);
-          });
-        },
-        onUserMuteVideo:
-            (RtcConnection connection, int remoteUid, bool muted) {
-          debugPrint("Remote user $remoteUid video ${muted ? "muted" : "unmuted"}");
+            (
+              RtcConnection connection,
+              int remoteUid,
+              UserOfflineReasonType reason,
+            ) {
+              debugPrint("Remote user $remoteUid left");
+              setState(() {
+                remoteUserUids.remove(remoteUid);
+                remoteVideoMuted.remove(remoteUid);
+              });
+            },
+        onUserMuteVideo: (RtcConnection connection, int remoteUid, bool muted) {
+          debugPrint(
+            "Remote user $remoteUid video ${muted ? "muted" : "unmuted"}",
+          );
           setState(() {
             remoteVideoMuted[remoteUid] = muted;
           });
@@ -149,7 +153,8 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     if (cameraStatus.isPermanentlyDenied) {
       return TLoaders.warningSnackBar(
         title: 'Không thành công',
-        message: 'Quyền Camera đã bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.',
+        message:
+            'Quyền Camera đã bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.',
       );
     }
 
@@ -167,7 +172,8 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     if (micStatus.isPermanentlyDenied) {
       return TLoaders.warningSnackBar(
         title: 'Không thành công',
-        message: 'Quyền Micro đã bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.',
+        message:
+            'Quyền Micro đã bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.',
       );
     }
   }
@@ -185,7 +191,9 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     final user = userController.user.value;
     final fullName = user.fullName;
     List<int> observersOrdered = List.from(remoteUserUids);
-    if (!widget.isLeader && widget.leaderUid != null && observersOrdered.contains(widget.leaderUid)) {
+    if (!widget.isLeader &&
+        widget.leaderUid != null &&
+        observersOrdered.contains(widget.leaderUid)) {
       observersOrdered.remove(widget.leaderUid);
       observersOrdered.insert(0, widget.leaderUid!);
     }
@@ -205,9 +213,14 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
             decoration: BoxDecoration(
               color: Colors.black,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: widget.isLeader ? Colors.green : Colors.blueGrey, width: 2),
+              border: Border.all(
+                color: widget.isLeader ? Colors.green : Colors.blueGrey,
+                width: 2,
+              ),
             ),
-            child: widget.isLeader ? _buildLocalVideo(fullName) : _buildSelfAsObserver(fullName),
+            child: widget.isLeader
+                ? _buildLocalVideo(fullName)
+                : _buildSelfAsObserver(fullName),
           ),
 
           // CONTROLS
@@ -241,6 +254,11 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
                 ),
                 GestureDetector(
                   onTap: () async {
+                    if (widget.isLeader == true) {
+                      await escortController.leaveSosVideoCallingLeader();
+                    } else {
+                      await escortController.leaveSosVideoCallingObserver();
+                    }
                     await _engine?.leaveChannel();
                     await _engine?.stopPreview();
                     await _engine?.release();
@@ -251,11 +269,7 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
                       remoteVideoMuted.clear();
                     });
                   },
-                  child: _roundButton(
-                    Iconsax.call,
-                    Colors.white,
-                    Colors.red,
-                  ),
+                  child: _roundButton(Iconsax.call, Colors.white, Colors.red),
                 ),
               ],
             ),
@@ -284,21 +298,21 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
   Widget _buildLocalVideo(String name) {
     return localUserJoined && isLocalCameraOn
         ? AgoraVideoView(
-      controller: VideoViewController(
-        rtcEngine: _engine!,
-        canvas: VideoCanvas(uid: 0),
-      ),
-    )
+            controller: VideoViewController(
+              rtcEngine: _engine!,
+              canvas: VideoCanvas(uid: 0),
+            ),
+          )
         : Center(
-      child: Text(
-        "$name (Bạn)",
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+            child: Text(
+              "$name (Bạn)",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
   }
 
   /// For observers: big self view (same as local view, kept as separate method for clarity)
@@ -312,7 +326,10 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
       decoration: BoxDecoration(
         color: muted ? Colors.black54 : Colors.black,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isLeaderTile ? Colors.green : Colors.transparent, width: 2),
+        border: Border.all(
+          color: isLeaderTile ? Colors.green : Colors.transparent,
+          width: 2,
+        ),
       ),
       child: Stack(
         fit: StackFit.expand,
@@ -365,7 +382,11 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
       child: Center(
         child: Text(
           "+$extra",
-          style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -386,7 +407,9 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
 
     // If more than 4 participants, show first 3 and a +N tile.
     final bool needMoreTile = total > 4;
-    final List<int> toShow = needMoreTile ? observers.sublist(0, 3) : observers.toList();
+    final List<int> toShow = needMoreTile
+        ? observers.sublist(0, 3)
+        : observers.toList();
     final int itemCount = toShow.length + (needMoreTile ? 1 : 0);
 
     return GridView.count(
@@ -429,4 +452,3 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     );
   }
 }
-

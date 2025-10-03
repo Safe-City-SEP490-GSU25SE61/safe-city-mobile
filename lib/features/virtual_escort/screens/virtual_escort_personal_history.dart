@@ -161,7 +161,7 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: item.watchers.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                                  separatorBuilder: (_, _) => const SizedBox(width: 6),
                                   itemBuilder: (context, i) {
                                     final watcher = item.watchers[i];
                                     return Container(

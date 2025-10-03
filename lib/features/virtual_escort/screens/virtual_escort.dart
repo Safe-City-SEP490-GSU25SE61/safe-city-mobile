@@ -16,7 +16,6 @@ import '../../../utils/constants/colors.dart';
 import '../../../utils/formatters/formatter.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../../../utils/popups/loaders.dart';
-import 'agora_video_calling.dart';
 import '../controllers/virtual_escort_group_controller.dart';
 
 class VirtualEscortScreen extends StatelessWidget {

@@ -120,7 +120,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                             ),
                             prefixIcon: const Icon(Iconsax.category),
                           ),
-                          value: blogController.selectedCategory.value,
+                          initialValue: blogController.selectedCategory.value,
                           items: blogController.blogTypeCategories,
                           onChanged: (value) {
                             blogController.selectedCategory.value = value;

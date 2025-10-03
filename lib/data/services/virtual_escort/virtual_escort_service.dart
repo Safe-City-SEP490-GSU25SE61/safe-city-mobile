@@ -708,4 +708,86 @@ class VirtualEscortService {
       };
     }
   }
+
+  Future<Map<String, dynamic>> leaveCallObserver(int sosAlertId) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+
+    try {
+      final uri = Uri.parse('${apiConnection}virtual-escorts/$sosAlertId/watchers/leave');
+      final response = await client.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (kDebugMode) {
+        print("Leave Watcher response: ${response.statusCode} -> ${response.body}");
+      }
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": true,
+          "message": jsonData["message"] ?? "Đã rời khỏi cuộc gọi",
+        };
+      } else {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": false,
+          "message": jsonData["message"] ?? "Xảy ra lỗi khi rời khỏi cuộc gọi",
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error leaving calling: $e");
+      }
+      return {"success": false, "message": "Exception occurred: $e"};
+    }
+  }
+
+  Future<Map<String, dynamic>>  leaveCallLeader(int sosAlertId) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      return {"success": false, "message": "No access token found"};
+    }
+
+    try {
+      final uri = Uri.parse('${apiConnection}virtual-escorts/$sosAlertId/end');
+      final response = await client.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (kDebugMode) {
+        print("End Journey response: ${response.statusCode} -> ${response.body}");
+      }
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": true,
+          "message": jsonData["message"] ?? "Đã rời khỏi cuộc gọi",
+        };
+      } else {
+        final jsonData = jsonDecode(response.body);
+        return {
+          "success": false,
+          "message": jsonData["message"] ?? "Xảy ra lỗi khi rời khỏi cuộc gọi",
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error leaving calling: $e");
+      }
+      return {"success": false, "message": "Exception occurred: $e"};
+    }
+  }
 }

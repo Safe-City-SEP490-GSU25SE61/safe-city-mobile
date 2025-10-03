@@ -69,7 +69,7 @@ class _CustomDropdownStatusState extends State<CustomDropdownStatus> {
                 dropdownColor: dark ? Colors.black87 : Colors.white,
                 style: TextStyle(color: dark ? Colors.white : Colors.black),
                 iconEnabledColor: dark ? Colors.white : Colors.black,
-                value: tempStatus,
+                initialValue: tempStatus,
                 items: statusOptions.map((status) {
                   return DropdownMenuItem(
                     value: status,
@@ -103,7 +103,7 @@ class _CustomDropdownStatusState extends State<CustomDropdownStatus> {
                 dropdownColor: dark ? Colors.black87 : Colors.white,
                 style: TextStyle(color: dark ? Colors.white : Colors.black),
                 iconEnabledColor: dark ? Colors.white : Colors.black,
-                value: tempTime,
+                initialValue: tempTime,
                 items: timeOptions.map((range) {
                   return DropdownMenuItem(
                     value: range,

@@ -146,7 +146,7 @@ class IncidentReportScreen extends StatelessWidget {
                         ),
                         prefixIcon: Icon(Iconsax.category),
                       ),
-                      value: reportController.selectedCategory.value,
+                      initialValue: reportController.selectedCategory.value,
                       items: reportController.reportCategories,
                       onChanged: (value) {
                         reportController.selectedCategory.value = value;
@@ -186,7 +186,7 @@ class IncidentReportScreen extends StatelessWidget {
                         ),
                         prefixIcon: Icon(Iconsax.activity),
                       ),
-                      value: reportController.selectedSubCategory.value,
+                      initialValue: reportController.selectedSubCategory.value,
                       items: reportController.reportSubCategories,
                       onChanged: reportController.selectedCategory.value == null
                           ? null
@@ -227,7 +227,7 @@ class IncidentReportScreen extends StatelessWidget {
                         ),
                         prefixIcon: Icon(Iconsax.warning_2),
                       ),
-                      value: reportController.selectedPriority.value,
+                      initialValue: reportController.selectedPriority.value,
                       items: reportController.reportPriorities,
                       onChanged:
                           (reportController.selectedCategory.value != null &&

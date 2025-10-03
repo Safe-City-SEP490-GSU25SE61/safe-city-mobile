@@ -116,7 +116,7 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                     Expanded(
                       child: Obx(() {
                         return DropdownButtonFormField<String>(
-                          value: mapController.estimatedTime.value.isNotEmpty
+                          initialValue: mapController.estimatedTime.value.isNotEmpty
                               ? mapController.estimatedTime.value
                               : null,
                           items: mapController.durationOptions
