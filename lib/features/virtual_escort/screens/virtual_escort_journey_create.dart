@@ -277,6 +277,12 @@ class VirtualEscortJourneyCreate extends StatelessWidget {
                         final distance = mapController.routeDistanceText.value.isEmpty
                             ? '...'
                             : mapController.routeDistanceText.value;
+
+                        await secureStorage.write(
+                          key: 'observer_count',
+                          value: selectedWatcherIds.length.toString(),
+                        );
+
                         Get.to(
                           () => VirtualEscortJourneyStart(
                             originLat: originPos.lat.toDouble(),
