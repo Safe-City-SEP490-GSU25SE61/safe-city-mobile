@@ -189,8 +189,37 @@ class VirtualEscortJourneyController extends GetxController {
         if (isDialogOpen) return;
         isDialogOpen = true;
         PopUpModal.instance.showOkOnlyDialogSos(
-          title: "Tín hiệu SOS",
-          message: "Người dùng đã gửi tín hiệu SOS!",
+          title: "Tín hiệu SOS Chủ hành trình",
+          message: sosMessage,
+          lat: lat,
+          lng: lng,
+          onOk: () {
+            isDialogOpen = false;
+            VirtualEscortMapController.instance.updateObserverMarker(lat, lng);
+          },
+        );
+      });
+
+      escortService.hubConnection?.on("ReceivePassiveSos", (args) {
+        if (args == null || args.length < 3) return;
+
+        final message = args[0] as String;
+        final lat = (args[1] as num).toDouble();
+        final lng = (args[2] as num).toDouble();
+
+        final sosMessage = message;
+        final sosLat = lat.toStringAsFixed(6);
+        final sosLng = lng.toStringAsFixed(6);
+
+        debugPrint("⚠️ Passive SOS received");
+        debugPrint("📝 Message: $sosMessage");
+        debugPrint("📍 Location: ($sosLat, $sosLng)");
+
+        if (isDialogOpen) return;
+        isDialogOpen = true;
+        PopUpModal.instance.showOkOnlyDialogSos(
+          title: "Tín hiệu SOS từ Hệ thống",
+          message: "$sosMessage\n Hệ thống tự động phát SOS do không nhận được phản hồi từ người dùng.",
           lat: lat,
           lng: lng,
           onOk: () {
@@ -323,7 +352,7 @@ class VirtualEscortJourneyController extends GetxController {
     });
   }
 
-  Future<void> sendSosSignal({bool isVideoCall = false}) async {
+  Future<void> sendSosSignal({bool isVideoCall = false,bool isPassiveCall =false}) async {
     try {
       final position = await geo.Geolocator.getCurrentPosition(
         locationSettings: const geo.LocationSettings(
@@ -337,7 +366,7 @@ class VirtualEscortJourneyController extends GetxController {
 
       await escortService.hubConnection?.invoke(
         "SendSos",
-        args: [lat, lng, DateTime.now().toUtc().toIso8601String(), isVideoCall],
+        args: [lat, lng, DateTime.now().toUtc().toIso8601String(), isVideoCall,isPassiveCall],
       );
       sosCount.value++;
       debugPrint("📢 SOS sent: $lat, $lng");
