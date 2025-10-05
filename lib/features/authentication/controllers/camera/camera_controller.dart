@@ -124,9 +124,10 @@ class UserIdCameraController extends GetxController {
           jsonData['message'] == 'Successfully scanned identity card') {
         final data = UserIdentityModel.fromJson(jsonData['data']);
 
-        // Check if scanned side matches expected side
-        final expectedSide = isFront ? 'cc_front' : 'cc_back';
-        if (data.cardSideType != expectedSide) {
+        final expectedSides = isFront
+            ? ['cc_front', 'chip_front']
+            : ['cc_back', 'chip_back'];
+        if (!expectedSides.contains(data.cardSideType)) {
           TLoaders.warningSnackBar(
             title: 'Sai mặt CCCD',
             message:

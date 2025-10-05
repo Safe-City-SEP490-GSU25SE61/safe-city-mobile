@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:safe_city_mobile/utils/constants/text_strings.dart';
@@ -20,8 +21,9 @@ class VirtualEscortSosScreen extends StatefulWidget {
 class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-
   bool membersNotified = true;
+  final secureStorage = const FlutterSecureStorage();
+  int observerCount = 0;
 
   @override
   void initState() {
@@ -30,6 +32,15 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+
+    loadObserverCount();
+  }
+
+  Future<void> loadObserverCount() async {
+    final storedCount = await secureStorage.read(key: 'observer_count');
+    setState(() {
+      observerCount = int.tryParse(storedCount ?? '0') ?? 0;
+    });
   }
 
   @override
@@ -170,7 +181,7 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black
+                              color: Colors.black,
                             ),
                           ),
                         ],
@@ -216,7 +227,7 @@ class _VirtualEscortSosScreenState extends State<VirtualEscortSosScreen>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                "12 Người nhận",
+                                "$observerCount Người nhận",
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
