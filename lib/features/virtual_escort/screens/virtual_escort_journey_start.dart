@@ -73,7 +73,9 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
         return StatefulBuilder(
           builder: (context, setState) {
             _countdownTimer?.cancel();
-            _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+            _countdownTimer = Timer.periodic(const Duration(seconds: 1), (
+              timer,
+            ) {
               if (_remainingSeconds > 0) {
                 setState(() {
                   _remainingSeconds--;
@@ -85,7 +87,10 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                 if (_remainingSeconds == 0 && !_sosTriggered) {
                   _sosTriggered = true;
                   final controller = VirtualEscortJourneyController.instance;
-                  controller.sendSosSignal();
+                  controller.sendSosSignal(
+                    isPassiveCall: true,
+                    isVideoCall: false,
+                  );
                   setState(() {});
                 }
               } else {
@@ -94,7 +99,11 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
             });
 
             return AlertDialog(
-              title: Text(_remainingSeconds > 0 ? "📍 Đã đến nơi!" : "🚨 SOS ĐÃ KÍCH HOẠT!"),
+              title: Text(
+                _remainingSeconds > 0
+                    ? "📍 Đã đến nơi!"
+                    : "🚨 SOS ĐÃ KÍCH HOẠT!",
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +115,8 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: "SOS sẽ tự động kích hoạt nếu bạn không phản hồi sau ",
+                            text:
+                                "SOS sẽ tự động kích hoạt nếu bạn không phản hồi sau ",
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.w600,
@@ -132,7 +142,10 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                   if (_remainingSeconds == 0)
                     const Text(
                       "SOS đã được kích hoạt tự động. Vui lòng kết thúc hành trình để hủy!",
-                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                 ],
               ),
@@ -148,14 +161,16 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                       if (biometricEnabled != 'true') {
                         TLoaders.warningSnackBar(
                           title: 'Tính năng chưa được bật',
-                          message: 'Vui lòng bật tính năng sinh trắc học để tiếp tục.',
+                          message:
+                              'Vui lòng bật tính năng sinh trắc học để tiếp tục.',
                         );
                         return;
                       }
 
                       final auth = LocalAuthentication();
                       final didConfirm = await auth.authenticate(
-                        localizedReason: 'Xác thực vân tay để xác nhận hành động',
+                        localizedReason:
+                            'Xác thực vân tay để xác nhận hành động',
                         options: const AuthenticationOptions(
                           biometricOnly: true,
                           stickyAuth: true,
@@ -165,7 +180,7 @@ class VirtualEscortJourneyStartScreen extends State<VirtualEscortJourneyStart> {
                       if (didConfirm) {
                         journeyController.stopSendingLocation(isLeader: true);
                         Get.to(
-                              () => VirtualEscortJourneyEnd(
+                          () => VirtualEscortJourneyEnd(
                             duration: widget.estimatedTime,
                             distance: widget.routeDistance,
                             sosCount: journeyController.sosCount.value,

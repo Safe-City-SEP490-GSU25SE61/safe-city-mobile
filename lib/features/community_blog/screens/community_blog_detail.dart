@@ -1,5 +1,6 @@
 ﻿import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -67,7 +68,9 @@ class BlogDetailScreen extends StatelessWidget {
             isPremium: false,
           ),
         );
-        print('DEBUG: Blog mediaUrls = ${blog.mediaUrls}');
+        if (kDebugMode) {
+          print('DEBUG: Blog mediaUrls = ${blog.mediaUrls}');
+        }
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),

@@ -45,15 +45,21 @@ class _CancelReportModalState extends State<CancelReportModal> {
             ),
             const SizedBox(height: 12),
             ...reasons.map(
-              (reason) => RadioListTile<String>(
-                title: Text(reason, style: TextStyle(color: Colors.black)),
-                value: reason,
+              (reason) => RadioGroup<String>(
                 groupValue: selectedReason,
                 onChanged: (value) {
                   setState(() {
                     selectedReason = value!;
                   });
                 },
+                child: Column(
+                  children: reasons.map((reason) {
+                    return RadioListTile<String>(
+                      title: Text(reason, style: TextStyle(color: Colors.black)),
+                      value: reason,
+                    );
+                  }).toList(),
+                ),
               ),
             ),
             if (selectedReason == 'Khác')

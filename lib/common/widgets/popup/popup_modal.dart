@@ -13,6 +13,7 @@ import '../../../utils/constants/image_strings.dart';
 
 class PopUpModal {
   PopUpModal._internal();
+
   static final PopUpModal instance = PopUpModal._internal();
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
@@ -25,7 +26,8 @@ class PopUpModal {
     Get.defaultDialog(
       title: title,
       contentPadding: const EdgeInsets.all(TSizes.mediumLargeSpace),
-      content: messageWidget ??
+      content:
+          messageWidget ??
           Text(
             message ?? "",
             textAlign: TextAlign.center,
@@ -83,9 +85,7 @@ class PopUpModal {
                 Text(
                   "Vị trí: ($lat, $lng)",
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(fontSize: 14),
                 ),
               ],
               const SizedBox(height: 12),
@@ -121,7 +121,70 @@ class PopUpModal {
     );
   }
 
-  void showConfirmCancelDialog({required String title,
+  void showOkOnlyDialogCall({
+    required String title,
+    String? message,
+    String? alertId,
+    VoidCallback? onJoinCall,
+    VoidCallback? onCancel,
+  }) {
+    Get.defaultDialog(
+      title: title,
+      contentPadding: const EdgeInsets.all(16),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Lottie.asset(
+            TImages.callingSOS,
+            height: 120,
+            repeat: true,
+            animate: true,
+          ),
+          const SizedBox(height: 12),
+
+          Text(
+            message ?? "Có cuộc gọi SOS khẩn cấp!",
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+      confirm: SizedBox(
+        width: 120,
+        height: 50,
+        child: ElevatedButton.icon(
+          icon: const Icon(Iconsax.call, color: Colors.white),
+          onPressed: () {
+            Get.back();
+            if (onJoinCall != null) onJoinCall();
+          },
+          label: const Text("Tham gia"),
+        ),
+      ),
+      cancel: SizedBox(
+        width: 120,
+        height: 50,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Colors.red),
+            foregroundColor: Colors.red,
+          ),
+          onPressed: () {
+            Get.back();
+            if (onCancel != null) onCancel();
+          },
+          child: const Text('Hủy bỏ'),
+        ),
+      ),
+    );
+  }
+
+  void showConfirmCancelDialog({
+    required String title,
     required String message,
     required String storageKey,
     VoidCallback? onConfirm,
@@ -150,7 +213,7 @@ class PopUpModal {
               style: const TextStyle(fontSize: 14, height: 1.4),
             ),
             Obx(
-                  () => Row(
+              () => Row(
                 children: [
                   Checkbox(
                     value: doNotShowAgain.value,
@@ -236,7 +299,7 @@ class PopUpModal {
       titleStyle: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Colors.black
+        color: Colors.black,
       ),
       contentPadding: const EdgeInsets.all(16),
       barrierDismissible: true,
@@ -247,7 +310,11 @@ class PopUpModal {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, height: 1.4,color: Colors.black),
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: Colors.black,
+            ),
           ),
           const SizedBox(height: 20),
 
@@ -312,5 +379,3 @@ class PopUpModal {
     );
   }
 }
-
-

@@ -17,7 +17,6 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
     required this.groupId,
   });
 
-
   Future<void> _handleRefresh(VirtualEscortGroupController controller) async {
     await controller.fetchGroupDetail(groupId);
     await controller.fetchPendingRequests(groupId);
@@ -27,7 +26,6 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = VirtualEscortGroupController.instance;
     final dark = THelperFunctions.isDarkMode(context);
-
     return Scaffold(
       backgroundColor: dark ? TColors.black : TColors.lightGrey,
       appBar: const TAppBar(
@@ -77,7 +75,8 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             const Tooltip(
-                              message: "Đây là mã mời thành viên vào nhóm của bạn",
+                              message:
+                                  "Đây là mã mời thành viên vào nhóm của bạn",
                               child: Icon(
                                 Icons.help_outline,
                                 size: 16,
@@ -113,7 +112,10 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                               IconButton(
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
-                                icon: Icon(Iconsax.copy, color: TColors.primary),
+                                icon: Icon(
+                                  Iconsax.copy,
+                                  color: TColors.primary,
+                                ),
                                 onPressed: () {
                                   Clipboard.setData(
                                     ClipboardData(text: group.groupCode),
@@ -130,73 +132,94 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
               ),
 
               /// Auto approve / receive request card
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Card(
-                  color: TColors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Tự động phê duyệt\nTự động chấp nhận các yêu cầu tham gia nhóm",
-                                style: TextStyle(fontSize: 12, color: Colors.black87),
+              if (group.isLeader)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Card(
+                    color: TColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  "Tự động phê duyệt\nTự động chấp nhận các yêu cầu tham gia nhóm",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black87,
+                                  ),
+                                ),
                               ),
-                            ),
-                            Obx(() => Switch(
-                              value: controller.groupDetail.value?.autoApprove ?? false,
-                              activeColor: TColors.primary,
-                              onChanged: (val) {
-                                final group = controller.groupDetail.value;
-                                if (group == null) return;
-                                controller.updateGroupSettings(
-                                  groupCode: group.groupCode,
-                                  autoApprove: val,
-                                  receiveRequest: group.receiveRequest,
-                                );
-                              },
-                            )),
-                          ],
-                        ),
-                        const Divider(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Nhận yêu cầu tham gia\nCho phép thành viên gửi yêu cầu tham gia nhóm",
-                                style: TextStyle(fontSize: 12, color: Colors.black87),
+                              Obx(
+                                () => Switch(
+                                  value:
+                                      controller
+                                          .groupDetail
+                                          .value
+                                          ?.autoApprove ??
+                                      false,
+                                  activeThumbColor: TColors.primary,
+                                  onChanged: (val) {
+                                    final group = controller.groupDetail.value;
+                                    if (group == null) return;
+                                    controller.updateGroupSettings(
+                                      groupCode: group.groupCode,
+                                      autoApprove: val,
+                                      receiveRequest: group.receiveRequest,
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                            Obx(() => Switch(
-                              value: controller.groupDetail.value?.receiveRequest ?? false,
-                              activeColor: TColors.primary,
-                              onChanged: (val) {
-                                final group = controller.groupDetail.value;
-                                if (group == null) return;
-                                controller.updateGroupSettings(
-                                  groupCode: group.groupCode,
-                                  autoApprove: group.autoApprove,
-                                  receiveRequest: val,
-                                );
-                              },
-                            )),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                          const Divider(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  "Nhận yêu cầu tham gia\nCho phép thành viên gửi yêu cầu tham gia nhóm",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              Obx(
+                                () => Switch(
+                                  value:
+                                      controller
+                                          .groupDetail
+                                          .value
+                                          ?.receiveRequest ??
+                                      false,
+                                  activeThumbColor: TColors.primary,
+                                  onChanged: (val) {
+                                    final group = controller.groupDetail.value;
+                                    if (group == null) return;
+                                    controller.updateGroupSettings(
+                                      groupCode: group.groupCode,
+                                      autoApprove: group.autoApprove,
+                                      receiveRequest: val,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
               /// Pending requests
               Obx(() {
@@ -212,7 +235,11 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(left: 10, right: 10, bottom: 20),
+                  padding: const EdgeInsets.only(
+                    left: 10,
+                    right: 10,
+                    bottom: 20,
+                  ),
                   itemCount: controller.pendingRequests.length,
                   itemBuilder: (context, index) {
                     final req = controller.pendingRequests[index];
@@ -234,42 +261,50 @@ class VirtualEscortGroupPendingRequestScreen extends StatelessWidget {
                           "Yêu cầu lúc: ${DateFormat('dd/MM/yyyy HH:mm').format(req.requestedAt)}",
                           style: const TextStyle(color: Colors.black),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                controller.verifyMemberRequest(
-                                  groupId: groupId,
-                                  requestId: req.id,
-                                  approve: true,
-                                );
-                              },
-                              icon: const Icon(Icons.check, color: Colors.white),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                shape: const CircleBorder(),
-                                padding: const EdgeInsets.all(10),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              onPressed: () {
-                                controller.verifyMemberRequest(
-                                  groupId: groupId,
-                                  requestId: req.id,
-                                  approve: false,
-                                );
-                              },
-                              icon: const Icon(Icons.close, color: Colors.white),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                shape: const CircleBorder(),
-                                padding: const EdgeInsets.all(10),
-                              ),
-                            ),
-                          ],
-                        ),
+                        trailing: group.isLeader
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      controller.verifyMemberRequest(
+                                        groupId: groupId,
+                                        requestId: req.id,
+                                        approve: true,
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      shape: const CircleBorder(),
+                                      padding: const EdgeInsets.all(10),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    onPressed: () {
+                                      controller.verifyMemberRequest(
+                                        groupId: groupId,
+                                        requestId: req.id,
+                                        approve: false,
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      shape: const CircleBorder(),
+                                      padding: const EdgeInsets.all(10),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : null,
                       ),
                     );
                   },

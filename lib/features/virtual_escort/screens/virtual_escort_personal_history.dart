@@ -62,7 +62,9 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
 
               return Card(
                 color: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
                   padding: const EdgeInsets.all(14),
@@ -72,7 +74,11 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
                       /// Left timeline (pickup → destination)
                       Column(
                         children: [
-                          Icon(Icons.location_on, color: TColors.primary, size: 20),
+                          Icon(
+                            Icons.location_on,
+                            color: TColors.primary,
+                            size: 20,
+                          ),
                           Container(
                             width: 2,
                             height: 40,
@@ -86,7 +92,11 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
                             color: Colors.grey.shade300,
                           ),
                           if (item.watchers.isNotEmpty)
-                            Icon(Iconsax.timer_1, color: TColors.accent, size: 20),
+                            Icon(
+                              Iconsax.timer_1,
+                              color: TColors.accent,
+                              size: 20,
+                            ),
 
                           Container(
                             width: 2,
@@ -108,31 +118,45 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
                             Text(
                               item.startLocation,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold, color: Colors.black),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const Text("Điểm bắt đầu",
-                                style: TextStyle(color: Colors.black54, fontSize: 12)),
+                            const Text(
+                              "Điểm bắt đầu",
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(height: 12),
 
                             /// End Location
                             Text(
                               item.endLocation,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold, color: Colors.black),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const Text("Đích đến",
-                                style: TextStyle(color: Colors.black54, fontSize: 12)),
+                            const Text(
+                              "Đích đến",
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                              ),
+                            ),
 
                             const SizedBox(height: 16),
                             Row(
                               children: [
                                 Text(
                                   "${DateFormat("dd/MM/yy HH:mm").format(item.startTime)} → "
-                                      "${DateFormat("dd/MM/yy HH:mm").format(item.endTime)}",
+                                  "${DateFormat("dd/MM/yy HH:mm").format(item.endTime)}",
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -161,12 +185,15 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: item.watchers.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(width: 6),
                                   itemBuilder: (context, i) {
                                     final watcher = item.watchers[i];
                                     return Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 6),
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: TColors.infoContainer,
                                         borderRadius: BorderRadius.circular(8),
@@ -188,20 +215,23 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
                         ),
                       ),
 
-                      /// Right side info (status & duration)
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Container(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: TColors.successContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              item.status == "Completed" ? "Hoàn thành" : item.status,
+                              item.status == "Completed"
+                                  ? "Hoàn thành"
+                                  : item.status,
                               style: TextStyle(
                                 color: TColors.success,
                                 fontWeight: FontWeight.bold,
@@ -210,12 +240,61 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: TColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _mapVehicleToIcon(item.vehicle),
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _mapVehicleToLabel(item.vehicle),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 30),
                           Text(
                             "${item.endTime.difference(item.startTime).inMinutes} phút",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
+                          ),
+                          const SizedBox(height: 26),
+                          Row(
+                            children: [
+                              Text(
+                                _formatDistance(item.distanceInMeters),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: TColors.groupEscortIcon,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Iconsax.routing,
+                                color: Colors.black87,
+                                size: 22,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -228,5 +307,48 @@ class VirtualEscortPersonalHistoryScreen extends StatelessWidget {
         );
       }),
     );
+  }
+}
+
+String _mapVehicleToLabel(String vehicle) {
+  switch (vehicle.toLowerCase()) {
+    case 'car':
+      return "Xe hơi";
+    case 'bike':
+      return "Xe máy";
+    case 'truck':
+      return "Xe tải";
+    case 'taxi':
+      return "Taxi";
+    case 'hd':
+      return "Xe HD";
+    default:
+      return "Khác";
+  }
+}
+
+IconData _mapVehicleToIcon(String vehicle) {
+  switch (vehicle.toLowerCase()) {
+    case 'car':
+      return Icons.directions_car;
+    case 'bike':
+      return Icons.pedal_bike;
+    case 'truck':
+      return Icons.local_shipping;
+    case 'taxi':
+      return Icons.local_taxi;
+    case 'hd':
+      return Icons.directions_bus;
+    default:
+      return Icons.directions_car_filled;
+  }
+}
+
+String _formatDistance(int meters) {
+  if (meters >= 1000) {
+    double km = meters / 1000;
+    return "${km.toStringAsFixed(1)} km";
+  } else {
+    return "$meters m";
   }
 }

@@ -30,6 +30,7 @@ class EscortGroup {
   final String endLocation;
   final DateTime startTime;
   final DateTime endTime;
+  final int distanceInMeters;
   final String vehicle;
   final String status;
   final List<Watcher> watchers;
@@ -43,6 +44,7 @@ class EscortGroup {
     required this.vehicle,
     required this.status,
     required this.watchers,
+    required this.distanceInMeters,
   });
 
   factory EscortGroup.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class EscortGroup {
       startTime: DateTime.parse(json['startTime']),
       endTime: DateTime.parse(json['endTime']),
       vehicle: json['vehicle'] ?? '',
+      distanceInMeters: json['distanceInMeters'] ?? 0,
       status: json['status'] ?? '',
       watchers: (json['watchers'] as List<dynamic>)
           .map((e) => Watcher.fromJson(e))
@@ -67,6 +70,7 @@ class EscortGroup {
       "endLocation": endLocation,
       "startTime": startTime.toIso8601String(),
       "endTime": endTime.toIso8601String(),
+      "distanceInMeters": distanceInMeters,
       "vehicle": vehicle,
       "status": status,
       "watchers": watchers.map((e) => e.toJson()).toList(),

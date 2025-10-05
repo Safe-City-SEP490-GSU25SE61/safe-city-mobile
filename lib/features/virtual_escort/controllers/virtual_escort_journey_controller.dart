@@ -2,6 +2,7 @@
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:get/get.dart';
@@ -12,6 +13,10 @@ import '../../../common/widgets/popup/popup_modal.dart';
 import '../../../data/services/virtual_escort/virtual_escort_service.dart';
 import '../../../navigation_dart.dart';
 import '../../../utils/constants/image_strings.dart';
+import '../../../utils/helpers/network_manager.dart';
+import '../../../utils/popups/full_screen_loader.dart';
+import '../../../utils/popups/loaders.dart';
+import '../screens/agora_video_calling.dart';
 
 class VirtualEscortJourneyController extends GetxController {
   static VirtualEscortJourneyController get instance => Get.find();
@@ -31,10 +36,14 @@ class VirtualEscortJourneyController extends GetxController {
   final leaderLat = 0.0.obs;
   final leaderLng = 0.0.obs;
   final sosCount = 0.obs;
-  final videoCallMessage = RxnString();
+  final videoCallToken = RxnString();
   final videoCallAlertId = "".obs;
+  final videoCallChannelName = "".obs;
+  final uidToName = <int, String>{}.obs;
+  late int leaderUid;
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   late StreamSubscription<BatteryState> _batterySubscription;
+  bool isDialogOpen = false;
 
   @override
   void onInit() {
@@ -108,13 +117,36 @@ class VirtualEscortJourneyController extends GetxController {
     await escortService.initSignalR(isLeader: isLeader, memberId: memberId);
     if (isLeader) {
       escortService.hubConnection?.on("ReceiveToken", (args) {
-        if (args == null || args.length < 2) return;
+        if (args == null || args.length < 5) return;
+
         final token = args[0] as String;
-        final alertId = args[1].toString();
-        debugPrint("🎯 Leader received SOS token + alertId");
+        final channelName = args[1] as String;
+        final alertId = args[2].toString();
+        final uid = args[3] as int;
+        final watchers = args[4] as List<dynamic>;
+
+        uidToName.clear();
+        for (var w in watchers) {
+          if (w is Map) {
+            final key = w["key"];
+            final value = w["value"];
+            if (key != null && value != null) {
+              uidToName[int.parse(key.toString())] = value.toString();
+            }
+          }
+        }
+
+        debugPrint("🎯 Leader received SOS token + channelName + alertId");
         debugPrint("🔑 Token: $token");
+        debugPrint("📡 ChannelName: $channelName");
         debugPrint("🆔 AlertId: $alertId");
-        videoCallMessage.value = token;
+        for (final entry in uidToName.entries) {
+          debugPrint("👤 Member UID: ${entry.key}, Name: ${entry.value}");
+        }
+
+        leaderUid = uid;
+        videoCallToken.value = token;
+        videoCallChannelName.value = channelName;
         videoCallAlertId.value = alertId;
       });
     } else {
@@ -140,33 +172,122 @@ class VirtualEscortJourneyController extends GetxController {
       });
 
       escortService.hubConnection?.on("ReceiveSos", (args) {
-        if (args == null || args.length < 5) return;
+        if (args == null || args.length < 3) return;
 
         final message = args[0] as String;
         final lat = (args[1] as num).toDouble();
         final lng = (args[2] as num).toDouble();
-        final token = args[3] as String;
-        final alertId = args[4].toString();
 
         final sosMessage = message;
         final sosLat = lat.toStringAsFixed(6);
         final sosLng = lng.toStringAsFixed(6);
-        final sosToken = token;
-        final sosAlertId = alertId;
 
         debugPrint("🚨 SOS received");
         debugPrint("📝 Message: $sosMessage");
         debugPrint("📍 Location: ($sosLat, $sosLng)");
-        debugPrint("🔑 Token: $sosToken");
-        debugPrint("🆔 AlertId: $sosAlertId");
 
+        if (isDialogOpen) return;
+        isDialogOpen = true;
         PopUpModal.instance.showOkOnlyDialogSos(
-          title: "Tín hiệu SOS",
-          message: "Người dùng đã gửi tín hiệu SOS!",
+          title: "Tín hiệu SOS Chủ hành trình",
+          message: sosMessage,
           lat: lat,
           lng: lng,
           onOk: () {
+            isDialogOpen = false;
             VirtualEscortMapController.instance.updateObserverMarker(lat, lng);
+          },
+        );
+      });
+
+      escortService.hubConnection?.on("ReceivePassiveSos", (args) {
+        if (args == null || args.length < 3) return;
+
+        final message = args[0] as String;
+        final lat = (args[1] as num).toDouble();
+        final lng = (args[2] as num).toDouble();
+
+        final sosMessage = message;
+        final sosLat = lat.toStringAsFixed(6);
+        final sosLng = lng.toStringAsFixed(6);
+
+        debugPrint("⚠️ Passive SOS received");
+        debugPrint("📝 Message: $sosMessage");
+        debugPrint("📍 Location: ($sosLat, $sosLng)");
+
+        if (isDialogOpen) return;
+        isDialogOpen = true;
+        PopUpModal.instance.showOkOnlyDialogSos(
+          title: "Tín hiệu SOS từ Hệ thống",
+          message: "$sosMessage\n Hệ thống tự động phát SOS do không nhận được phản hồi từ người dùng.",
+          lat: lat,
+          lng: lng,
+          onOk: () {
+            isDialogOpen = false;
+            VirtualEscortMapController.instance.updateObserverMarker(lat, lng);
+          },
+        );
+      });
+
+      escortService.hubConnection?.on("ReceiveVideoCall", (args) {
+        if (args == null || args.length < 3) return;
+
+        final message = args[0] as String;
+        final alertId = args[1].toString();
+        final watchers = args[2] as List<dynamic>;
+
+        uidToName.clear();
+        for (var w in watchers) {
+          if (w is Map) {
+            final key = w["key"];
+            final value = w["value"];
+            if (key != null && value != null) {
+              uidToName[int.parse(key.toString())] = value.toString();
+            }
+          }
+        }
+
+        debugPrint("📞 Video call started by leader");
+        debugPrint("📝 Message: $message");
+        debugPrint("🆔 AlertId: $alertId");
+        debugPrint("👥 Watchers in this call: $uidToName");
+
+        videoCallAlertId.value = alertId;
+
+        if (isDialogOpen) return;
+        isDialogOpen = true;
+        PopUpModal.instance.showOkOnlyDialogCall(
+          title: "Cuộc gọi khẩn cấp",
+          message: message,
+          alertId: alertId,
+          onJoinCall: () async {
+            isDialogOpen = false;
+            final result = await escortService.joinWatcher(int.parse(alertId));
+
+            if (result["success"] == true) {
+              final channelName = result["channelName"];
+              final token = result["token"];
+              final uid = result["uid"];
+
+              Get.to(
+                () => AgoraVideoCallingScreen(
+                  token: token,
+                  channelName: channelName,
+                  userId: uid,
+                  isLeader: false,
+                  uidToName: uidToName,
+                ),
+              );
+            } else {
+              debugPrint("❌ Failed to join watcher: ${result["message"]}");
+              TLoaders.warningSnackBar(
+                message: "Không thể tham gia cuộc gọi",
+                title: "Lỗi",
+              );
+            }
+          },
+          onCancel: () {
+            isDialogOpen = false;
           },
         );
       });
@@ -231,7 +352,7 @@ class VirtualEscortJourneyController extends GetxController {
     });
   }
 
-  Future<void> sendSosSignal() async {
+  Future<void> sendSosSignal({bool isVideoCall = false,bool isPassiveCall =false}) async {
     try {
       final position = await geo.Geolocator.getCurrentPosition(
         locationSettings: const geo.LocationSettings(
@@ -245,7 +366,7 @@ class VirtualEscortJourneyController extends GetxController {
 
       await escortService.hubConnection?.invoke(
         "SendSos",
-        args: [lat, lng, DateTime.now().toUtc().toIso8601String()],
+        args: [lat, lng, DateTime.now().toUtc().toIso8601String(), isVideoCall,isPassiveCall],
       );
       sosCount.value++;
       debugPrint("📢 SOS sent: $lat, $lng");
@@ -263,7 +384,8 @@ class VirtualEscortJourneyController extends GetxController {
   }
 
   Future<void> stopSendingLocation({bool isLeader = false}) async {
-    if (isLeader && escortService.hubConnection?.state == HubConnectionState.Connected) {
+    if (isLeader &&
+        escortService.hubConnection?.state == HubConnectionState.Connected) {
       try {
         await escortService.hubConnection?.invoke("EndJourney");
         debugPrint("🏁 Leader ended journey on server");
@@ -283,13 +405,133 @@ class VirtualEscortJourneyController extends GetxController {
 
   Future<void> startVideoCall() async {
     try {
-      debugPrint("➡️ Calling StartVideoCall hub method...");
+      TFullScreenLoader.openLoadingDialog(
+        "Đang tạo cuộc gọi...",
+        TImages.loadingCircle,
+      );
 
-      await escortService.hubConnection?.invoke("StartVideoCall");
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        return;
+      }
 
+      await sendSosSignal(isVideoCall: true);
+
+      final watchersList = uidToName.entries
+          .map((entry) => {"key": entry.key, "value": entry.value})
+          .toList();
+
+      await escortService.hubConnection?.invoke(
+        "StartVideoCall",
+        args: [watchersList],
+      );
+      TFullScreenLoader.stopLoading();
+      Get.to(
+        () => AgoraVideoCallingScreen(
+          token: videoCallToken.value,
+          channelName: videoCallChannelName.value,
+          userId: leaderUid,
+          isLeader: true,
+          uidToName: uidToName,
+        ),
+      );
       debugPrint("✅ StartVideoCall invoked successfully.");
     } catch (e) {
       debugPrint("❌ Error calling StartVideoCall: $e");
+    }
+  }
+
+  Future<void> leaveSosVideoCallingLeader() async {
+    try {
+      TFullScreenLoader.openLoadingDialog(
+        "Đang thoát cuộc gọi...",
+        TImages.loadingCircle,
+      );
+
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        TLoaders.warningSnackBar(
+          title: "Mất kết nối",
+          message: "Vui lòng kiểm tra kết nối Internet của bạn",
+        );
+        return;
+      }
+
+      final result = await escortService.leaveCallLeader(
+        int.parse(videoCallAlertId.value),
+      );
+
+      TFullScreenLoader.stopLoading();
+
+      if (result["success"] == true) {
+        Get.back();
+        TLoaders.successSnackBar(
+          title: "Thành công",
+          message: "Đã rời khỏi cuộc gọi",
+        );
+      } else {
+        TLoaders.warningSnackBar(
+          title: "Thất bại",
+          message: "Xảy ra lỗi khi rời khỏi cuộc gọi",
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("❌ Error ending journey: $e");
+
+      TFullScreenLoader.stopLoading();
+      TLoaders.errorSnackBar(
+        title: "Lỗi",
+        message: "Đã xảy ra sự cố, vui lòng thử lại",
+      );
+    }
+  }
+
+  Future<void> leaveSosVideoCallingObserver() async {
+    try {
+      TFullScreenLoader.openLoadingDialog(
+        "Đang thoát cuộc gọi...",
+        TImages.loadingCircle,
+      );
+
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        TFullScreenLoader.stopLoading();
+        TLoaders.warningSnackBar(
+          title: "Mất kết nối",
+          message: "Vui lòng kiểm tra kết nối Internet của bạn",
+        );
+        return;
+      }
+
+      final result = await escortService.leaveCallObserver(
+        int.parse(videoCallAlertId.value),
+      );
+
+      TFullScreenLoader.stopLoading();
+
+      if (result["success"] == true) {
+        Get.back();
+
+        TLoaders.successSnackBar(
+          title: "Thành công",
+          message: "Đã rời khỏi cuộc gọi",
+        );
+      } else {
+        TLoaders.warningSnackBar(
+          title: "Thất bại",
+          message: "Xảy ra lỗi khi rời khỏi cuộc gọi",
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("❌ Error leaving watcher: $e");
+
+      TFullScreenLoader.stopLoading();
+      TLoaders.errorSnackBar(
+        title: "Lỗi",
+        message: "Đã xảy ra sự cố, vui lòng thử lại",
+      );
     }
   }
 }

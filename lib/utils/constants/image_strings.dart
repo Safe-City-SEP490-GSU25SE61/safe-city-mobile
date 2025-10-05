@@ -71,6 +71,7 @@ class TImages {
   //--Virtual Escort Images
   static const String virtualEscortBkg = "assets/images/virtual_escort/virtual-escort-tracking.json";
   static const String emptyBoxImage = "assets/images/default_avatar/empty_box.png";
+  static const String callingSOS = "assets/images/status/calling.json";
 
   //--Dotted Grid Fade
   static const String dottedGridFade = "assets/icons/dotted-grid-fade.png";

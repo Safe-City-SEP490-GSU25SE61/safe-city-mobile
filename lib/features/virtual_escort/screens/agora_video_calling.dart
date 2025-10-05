@@ -1,13 +1,31 @@
 ﻿import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../common/widgets/appbar/appbar.dart';
 import '../../../utils/popups/loaders.dart';
+import '../../personalization/controllers/profile/user_profile_controller.dart';
+import '../controllers/virtual_escort_journey_controller.dart';
 
 class AgoraVideoCallingScreen extends StatefulWidget {
-  const AgoraVideoCallingScreen({super.key});
+  final String? token;
+  final String? channelName;
+  final int userId;
+  final bool isLeader;
+  final int? leaderUid;
+  final Map<int, String> uidToName;
+
+  const AgoraVideoCallingScreen({
+    super.key,
+    required this.token,
+    required this.channelName,
+    required this.userId,
+    this.isLeader = false,
+    this.leaderUid,
+    required this.uidToName,
+  });
 
   @override
   State<AgoraVideoCallingScreen> createState() =>
@@ -17,17 +35,24 @@ class AgoraVideoCallingScreen extends StatefulWidget {
 class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
   RtcEngine? _engine;
   bool localUserJoined = false;
-  int? remoteUserUid;
   bool engineInitialize = false;
+  final List<int> remoteUserUids = [];
+  final Map<int, bool> remoteVideoMuted = {};
   final agoraAppId = dotenv.env['AGORA_APP_ID']!;
-  final agoraToken = dotenv.env['AGORA_TOKEN']!;
-  final agoraChannelName = dotenv.env['AGORA_CHANNEL']!;
+  late String agoraToken;
+  late String agoraChannelName;
+  late int userId;
   bool isMicOn = true;
-  bool isCameraOn = true;
+  bool isLocalCameraOn = true;
+  final escortController = Get.put(VirtualEscortJourneyController());
+  final userController = Get.put(UserProfileController());
 
   @override
   void initState() {
     super.initState();
+    agoraToken = widget.token!;
+    agoraChannelName = widget.channelName!;
+    userId = widget.userId;
     _initAgora();
   }
 
@@ -35,7 +60,8 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     await joinChannel();
     setState(() {
       localUserJoined = false;
-      remoteUserUid = null;
+      remoteUserUids.clear();
+      remoteVideoMuted.clear();
     });
   }
 
@@ -45,7 +71,7 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     await _engine!.initialize(
       RtcEngineContext(
         appId: agoraAppId,
-        channelProfile: ChannelProfileType.channelProfileCommunication,
+        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
       ),
     );
     await _engine?.enableVideo();
@@ -62,7 +88,12 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
           debugPrint("Remote user $remoteUid joined");
-          setState(() => remoteUserUid = remoteUid);
+          if (remoteUid == widget.userId) return;
+          setState(() {
+            if (!remoteUserUids.contains(remoteUid)) {
+              remoteUserUids.add(remoteUid);
+            }
+          });
         },
         onUserOffline:
             (
@@ -71,8 +102,19 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
               UserOfflineReasonType reason,
             ) {
               debugPrint("Remote user $remoteUid left");
-              setState(() => remoteUserUid = null);
+              setState(() {
+                remoteUserUids.remove(remoteUid);
+                remoteVideoMuted.remove(remoteUid);
+              });
             },
+        onUserMuteVideo: (RtcConnection connection, int remoteUid, bool muted) {
+          debugPrint(
+            "Remote user $remoteUid video ${muted ? "muted" : "unmuted"}",
+          );
+          setState(() {
+            remoteVideoMuted[remoteUid] = muted;
+          });
+        },
       ),
     );
   }
@@ -85,20 +127,15 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     await _engine?.joinChannel(
       token: agoraToken,
       channelId: agoraChannelName,
-      options: const ChannelMediaOptions(
+      options: ChannelMediaOptions(
         autoSubscribeVideo: true,
         autoSubscribeAudio: true,
         publishCameraTrack: true,
         publishMicrophoneTrack: true,
         clientRoleType: ClientRoleType.clientRoleBroadcaster,
       ),
-      uid: 0,
+      uid: userId,
     );
-  }
-
-  String generateChannelName(String ownerId) {
-    final timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
-    return "SOS_Video_Calling_${ownerId}_$timestamp";
   }
 
   Future<void> requestCameraAndMicPermissions() async {
@@ -142,7 +179,25 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
   }
 
   @override
+  void dispose() {
+    _engine?.leaveChannel();
+    _engine?.stopPreview();
+    _engine?.release();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final user = userController.user.value;
+    final fullName = user.fullName;
+    List<int> observersOrdered = List.from(remoteUserUids);
+    if (!widget.isLeader &&
+        widget.leaderUid != null &&
+        observersOrdered.contains(widget.leaderUid)) {
+      observersOrdered.remove(widget.leaderUid);
+      observersOrdered.insert(0, widget.leaderUid!);
+    }
+
     return Scaffold(
       appBar: const TAppBar(
         title: Text('Cuộc gọi khẩn cấp hành trình'),
@@ -150,80 +205,77 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
       ),
       body: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 300,
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green, width: 2),
-                ),
-                child: localUserJoined
-                    ? AgoraVideoView(
-                        controller: VideoViewController(
-                          rtcEngine: _engine!,
-                          canvas: VideoCanvas(uid: 0),
-                        ),
-                      )
-                    : const Center(
-                        child: Text(
-                          "Chủ phòng (Bạn)",
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ),
+          // TOP: Big video (local) — leader or observer's own big view
+          Container(
+            width: double.infinity,
+            height: 300,
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: widget.isLeader ? Colors.green : Colors.blueGrey,
+                width: 2,
               ),
-
-              Positioned(
-                bottom: 16,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _toggleButton(
-                      isOn: isMicOn,
-                      icon: Iconsax.microphone,
-                      onTap: () => setState(() => isMicOn = !isMicOn),
-                    ),
-                    _toggleButton(
-                      isOn: isCameraOn,
-                      icon: Iconsax.video,
-                      onTap: () => setState(() => isCameraOn = !isCameraOn),
-                    ),
-                    _toggleButton(
-                      isOn: isCameraOn,
-                      icon: Iconsax.refresh,
-                      onTap: () async {
-                        await _engine!.switchCamera();
-                      },
-                    ),
-                    GestureDetector(
-                      onTap: () async {
-                        await _engine?.leaveChannel();
-                        await _engine?.stopPreview();
-                        await _engine?.release();
-                        engineInitialize = false;
-                        setState(() {
-                          localUserJoined = false;
-                          remoteUserUid = null;
-                        });
-                      },
-                      child: _roundButton(
-                        Iconsax.call,
-                        Colors.white,
-                        Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
+            child: widget.isLeader
+                ? _buildLocalVideo(fullName)
+                : _buildSelfAsObserver(fullName),
           ),
 
-          // === BOTTOM: Observers Box ===
+          // CONTROLS
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _toggleButton(
+                  isOn: isMicOn,
+                  icon: Iconsax.microphone,
+                  onTap: () async {
+                    setState(() => isMicOn = !isMicOn);
+                    await _engine?.muteLocalAudioStream(!isMicOn);
+                  },
+                ),
+                _toggleButton(
+                  isOn: isLocalCameraOn,
+                  icon: Iconsax.video,
+                  onTap: () async {
+                    setState(() => isLocalCameraOn = !isLocalCameraOn);
+                    await _engine?.muteLocalVideoStream(!isLocalCameraOn);
+                  },
+                ),
+                _toggleButton(
+                  isOn: isLocalCameraOn,
+                  icon: Iconsax.refresh,
+                  onTap: () async {
+                    await _engine!.switchCamera();
+                  },
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    if (widget.isLeader == true) {
+                      await escortController.leaveSosVideoCallingLeader();
+                    } else {
+                      await escortController.leaveSosVideoCallingObserver();
+                    }
+                    await _engine?.leaveChannel();
+                    await _engine?.stopPreview();
+                    await _engine?.release();
+                    engineInitialize = false;
+                    setState(() {
+                      localUserJoined = false;
+                      remoteUserUids.clear();
+                      remoteVideoMuted.clear();
+                    });
+                  },
+                  child: _roundButton(Iconsax.call, Colors.white, Colors.red),
+                ),
+              ],
+            ),
+          ),
+
+          // BOTTOM: observers grid
           Expanded(
             child: Container(
               width: double.infinity,
@@ -234,35 +286,7 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.blueGrey, width: 1),
               ),
-              child: remoteUserUid != null
-                  ? AgoraVideoView(
-                      controller: VideoViewController.remote(
-                        rtcEngine: _engine!,
-                        canvas: VideoCanvas(uid: remoteUserUid),
-                        connection: RtcConnection(channelId: agoraChannelName),
-                      ),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          "Người giám sát:",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Expanded(
-                          child: Center(
-                            child: Text(
-                              "Chưa có người giám sát nào",
-                              style: TextStyle(color: Colors.black54),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              child: _buildObserversGrid(observersOrdered),
             ),
           ),
         ],
@@ -270,7 +294,141 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     );
   }
 
-  /// Toggle button for mic & camera
+  /// Build local (big) video
+  Widget _buildLocalVideo(String name) {
+    return localUserJoined && isLocalCameraOn
+        ? AgoraVideoView(
+            controller: VideoViewController(
+              rtcEngine: _engine!,
+              canvas: VideoCanvas(uid: 0),
+            ),
+          )
+        : Center(
+            child: Text(
+              "$name (Bạn)",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+  }
+
+  /// For observers: big self view (same as local view, kept as separate method for clarity)
+  Widget _buildSelfAsObserver(String name) => _buildLocalVideo(name);
+
+  /// Build a remote participant tile (video or fallback when camera muted)
+  Widget _buildRemoteTile(int uid, {bool highlightLeader = false}) {
+    final muted = remoteVideoMuted[uid] ?? false;
+    final isLeaderTile = widget.leaderUid != null && widget.leaderUid == uid;
+    return Container(
+      decoration: BoxDecoration(
+        color: muted ? Colors.black54 : Colors.black,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isLeaderTile ? Colors.green : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (!muted)
+            AgoraVideoView(
+              controller: VideoViewController.remote(
+                rtcEngine: _engine!,
+                canvas: VideoCanvas(uid: uid),
+                connection: RtcConnection(channelId: agoraChannelName),
+              ),
+            )
+          else
+            Center(
+              child: Text(
+                isLeaderTile
+                    ? (widget.uidToName[uid] ?? "")
+                    : "${widget.uidToName[uid] ?? ""}\n(Camera tắt)",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          // small uid label
+          Positioned(
+            left: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                widget.uidToName[uid] ?? "Thành viên",
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoreTile(int extra) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          "+$extra",
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Observers grid: show max 4 squares; if more than 4 show "+N" in 4th square.
+  Widget _buildObserversGrid(List<int> observers) {
+    final total = observers.length;
+
+    if (total == 0) {
+      return const Center(
+        child: Text(
+          "Chưa có thành viên nào",
+          style: TextStyle(color: Colors.black54),
+        ),
+      );
+    }
+
+    // If more than 4 participants, show first 3 and a +N tile.
+    final bool needMoreTile = total > 4;
+    final List<int> toShow = needMoreTile
+        ? observers.sublist(0, 3)
+        : observers.toList();
+    final int itemCount = toShow.length + (needMoreTile ? 1 : 0);
+
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      children: List.generate(itemCount, (index) {
+        if (index < toShow.length) {
+          final uid = toShow[index];
+          return _buildRemoteTile(uid);
+        } else {
+          final extra = total - 3;
+          return _buildMoreTile(extra);
+        }
+      }),
+    );
+  }
+
+  /// Toggle button for mic & camera (kept same style as you had)
   Widget _toggleButton({
     required bool isOn,
     required IconData icon,
@@ -286,7 +444,6 @@ class _AgoraVideoCallingScreenState extends State<AgoraVideoCallingScreen> {
     );
   }
 
-  /// Always circular (e.g., End call)
   Widget _roundButton(IconData icon, Color iconColor, Color bgColor) {
     return CircleAvatar(
       radius: 26,

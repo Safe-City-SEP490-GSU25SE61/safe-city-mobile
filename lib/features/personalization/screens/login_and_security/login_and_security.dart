@@ -81,7 +81,7 @@ class LoginAndSecurityScreen extends StatelessWidget {
                             onChanged: (val) {
                               controller.toggleBiometricLogin(val);
                             },
-                            activeColor: TColors.primary,
+                            activeThumbColor: TColors.primary,
                           ),
                         ),
                       ],

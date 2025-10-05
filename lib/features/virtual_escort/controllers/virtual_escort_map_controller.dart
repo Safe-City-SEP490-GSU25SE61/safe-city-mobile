@@ -1334,7 +1334,7 @@ class VirtualEscortMapController extends GetxController {
           }
         });
 
-    trackingTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) async {
+    trackingTimer = Timer.periodic(const Duration(milliseconds: 300), (timer) async {
       if (lastGpsPosition == null || nextGpsPosition == null || lastGpsTime == null) return;
 
       final now = DateTime.now();
@@ -1482,15 +1482,9 @@ class VirtualEscortMapController extends GetxController {
     final lat2 = pos2.lat * pi / 180.0;
     final lon2 = pos2.lng * pi / 180.0;
 
-    final dLat = lat2 - lat1;
-    final dLon = lon2 - lon1;
-
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
-            cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-
-    return _earthRadius * c;
+    final x = (lon2 - lon1) * cos((lat1 + lat2) / 2);
+    final y = (lat2 - lat1);
+    return sqrt(x * x + y * y) * _earthRadius;
   }
 
   double getLookaheadBearing(List<Position> history, int lookahead) {
@@ -1587,22 +1581,17 @@ class VirtualEscortMapController extends GetxController {
     try {
       final cameraState = await mapboxMap!.getCameraState();
       final bearing = cameraState.bearing;
-      debugPrint('📍 Updating marker to: $lat, $lng with bearing: $bearing');
-
       final updatedFeature = Feature(
         geometry: Point(coordinates: Position(lng, lat)),
         properties: {
           "bearing": bearing,
         }, id: "user_marker",
       );
-
       await mapboxMap!.style.updateGeoJSONSourceFeatures(
         'navigation-marker-source',
         'user_marker_update',
         [updatedFeature],
       );
-
-      debugPrint('✅ Marker updated successfully');
     } catch (e) {
       debugPrint('❌ Failed to update user marker: $e');
       final sources = await mapboxMap!.style.getStyleSources();
